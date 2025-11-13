@@ -1,0 +1,362 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  // output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model TinhTP {
+  id Int @id @default(autoincrement()) @map("TinhTP_ID")
+  maTinhTP String @unique @map("TinhTP_MaTinhTP")
+  tenTinhTP String @map("TinhTP_TenTinhTP")
+  xaPhuongs XaPhuong[]
+
+  @@map("TinhTP")
+}
+
+model XaPhuong {
+  id Int @id @default(autoincrement()) @map("XaPhuong_ID")
+  maXaPhuong String @unique @map("XaPhuong_MaXaPhuong")
+  tenXaPhuong String @map("XaPhuong_TenXaPhuong")
+  tinhTPId Int @map("TinhTP_ID")
+  tinhTP TinhTP @relation(fields: [tinhTPId], references: [id])
+  benhNhans BenhNhan[]
+
+  @@map("XaPhuong")
+}
+
+model BenhNhan {
+  id Int @id @default(autoincrement()) @map("BN_ID")
+  maBenhNhan String @unique @map("BN_MaBenhNhan")
+  hoTen String @map("BN_HoTen")
+  ngaySinh DateTime @map("BN_NgaySinh")
+  gioiTinh Int @map("BN_GioiTinh")
+  sdt String? @unique @map("BN_SDT")
+  cccd String? @unique @map("BN_CCCD")
+  hoTenNguoiNha String? @map("BN_HoTenNguoiNha")
+  sdtNguoiNha String? @map("BN_SDTNguoiNha")
+  quanHe String? @map("BN_QuanHe")
+
+  ngheNghiep NgheNghiep @relation(fields: [ngheNghiepId], references: [id])
+  ngheNghiepId Int @map("NN_ID")
+
+  xaPhuong XaPhuong @relation(fields: [xaPhuongId], references: [id])
+  xaPhuongId Int @map("XaPhuong_ID")
+
+  benhAns BenhAn[]
+
+  @@map("BenhNhan")
+}
+
+model NgheNghiep {
+  id Int @id @default(autoincrement()) @map("NN_ID")
+  maNgheNghiep String @unique @map("NN_MaNgheNghiep")
+  tenNgheNghiep String @map("NN_TenNgheNghiep")
+  benhNhans BenhNhan[]
+
+  @@map("NgheNghiep")
+}
+
+model NhanVien {
+  id Int @id @default(autoincrement()) @map("NV_ID")
+  maNV String @unique @map("NV_MaNV")
+  hoTen String @map("NV_HoTen")
+  ngaySinh DateTime @map("NV_NgaySinh")
+  gioiTinh Int @map("NV_GioiTinh")
+  sdt String? @unique @map("NV_SDT")
+  soChungChiHanhNghe String? @unique @map("NV_SoChungChiHanhNghe")
+  ngayCapChungChi DateTime? @map("NV_NgayCapChungChi")
+  ngayHetHanChungChi DateTime? @map("NV_NgayHetHanChungChi")
+  daXoa Boolean @default(false) @map("NV_DaXoa")
+
+  khoa Khoa @relation(fields: [khoaId], references: [id])
+  khoaId Int @map("Khoa_ID")
+
+  chucDanh ChucDanh @relation(fields: [chucDanhId], references: [id])
+  chucDanhId Int @map("CD_ID")
+
+  chucVu ChucVu @relation(fields: [chucVuId], references: [id])
+  chucVuId Int @map("CV_ID")
+
+  vaiTro VaiTro @relation(fields: [vaiTroId], references: [id])
+  vaiTroId Int @map("VT_ID")
+
+  taiKhoan TaiKhoan? 
+  benhAnTiepNhan BenhAn[] @relation("TiepNhan")
+  benhAnKham BenhAn[] @relation("KhamBenh")
+  hoaDons HoaDon[]
+
+  @@map("NhanVien")
+}
+
+model TaiKhoan {
+  id Int @id @default(autoincrement()) @map("TK_ID")
+  tenDangNhap String @unique @map("TK_TenDangNhap")
+  matKhau String @map("TK_MatKhau")
+  trangThai Boolean @default(true) @map("TK_TrangThai")
+  doiMatKhauLuc DateTime? @map("TK_DoiMatKhauLuc")
+
+  nhanVien NhanVien @relation(fields: [nhanVienId], references: [id])
+  nhanVienId Int @unique @map("NV_ID")
+
+  @@map("TaiKhoan")
+}
+
+model VaiTro {
+  id Int @id @default(autoincrement()) @map("VT_ID")
+  tenVaiTro String @unique @map("VT_TenVT")
+  nhanViens NhanVien[]
+
+  @@map("VaiTro")
+}
+
+model ChucVu {
+  id Int @id @default(autoincrement()) @map("CV_ID")
+  tenChucVu String @unique @map("CV_TenCV")
+  nhanViens NhanVien[]
+
+  @@map("ChucVu")
+}
+
+model ChucDanh {
+  id Int @id @default(autoincrement()) @map("CD_ID")
+  tenChucDanh String @unique @map("CD_TenChucDanh")
+  nhanViens NhanVien[]
+
+  @@map("ChucDanh")
+}
+
+model Khoa {
+  id Int @id @default(autoincrement()) @map("Khoa_ID")
+  tenKhoa String @unique @map("Khoa_TenKhoa")
+  nhanViens NhanVien[]
+  phongs Phong[]
+
+  @@map("Khoa")
+}
+
+model Phong {
+  id Int @id @default(autoincrement()) @map("Phong_ID")
+  tenPhong String @map("Phong_TenPhong")
+
+  khoa Khoa @relation(fields: [khoaId], references: [id])
+  khoaId Int @map("Khoa_ID")
+
+  @@map("Phong")
+}
+
+model BenhAn {
+  id Int @id @default(autoincrement()) @map("BA_ID")
+  maBA String @unique @map("BA_MaBA")
+  thoiGianVao DateTime @map("BA_ThoiGianVao")
+  lyDoKhamBenh String @map("BA_LyDoKhamBenh")
+  trangThai Int @map("BA_TrangThai")
+  thoiGianKetThuc DateTime? @map("BA_ThoiGianKetThuc")
+
+  benhNhan BenhNhan @relation(fields: [benhNhanId], references: [id])
+  benhNhanId Int @map("BN_ID")
+
+  nvTiepNhan NhanVien @relation("TiepNhan", fields: [nvTiepNhanId], references: [id])
+  nvTiepNhanId Int @map("NV_ID_TiepNhan")
+
+  nvKham NhanVien @relation("KhamBenh", fields: [nvKhamId], references: [id])
+  nvKhamId Int @map("NV_ID_Kham")
+
+  phieuKhamBenh PhieuKhamBenh?
+  phieuChiDinhs PhieuChiDinh[]
+  hoaDons HoaDon[]
+
+  @@map("BenhAn")
+}
+
+model PhieuKhamBenh {
+  id Int @id @default(autoincrement()) @map("PKB_ID")
+  maPhieu String @unique @map("PKB_MaPhieu")
+  thoiGianKham DateTime @map("PKB_ThoiGianKham")
+  quaTrinhBenhLy String? @map("PKB_QuaTrinhBenhLy")
+  tienSuBanThan String? @map("PKB_TienSuBanThan")
+  tienSuGiaDinh String? @map("PKB_TienSuGiaDinh")
+  khamToanThan String? @map("PKB_KhamToanThan")
+  khamBoPhan String? @map("PKB_KhamBoPhan")
+  mach Int? @map("PKB_Mach")
+  nhietDo Float? @map("PKB_NhietDo")
+  nhipTho Int? @map("PKB_NhipTho")
+  canNang Float? @map("PKB_CanNang")
+  chieuCao Float? @map("PKB_ChieuCao")
+  huyetApTThu Int? @map("PKB_HuyetApTThu")
+  huyetApTTr Int? @map("PKB_HuyetApTTr")
+  bmi Float? @map("PKB_BMI")
+  phuongPhapDieuTri String? @map("PKB_PhuongPhapDieuTri")
+  xuTri String? @map("PKB_XuTri")
+
+  benhAn BenhAn @relation(fields: [benhAnId], references: [id])
+  benhAnId Int @unique @map("BA_ID")
+
+  chanDoans ChanDoan[]
+
+  @@map("PhieuKhamBenh")
+}
+
+model Benh {
+  id Int @id @default(autoincrement()) @map("Benh_ID")
+  maICD10 String @unique @map("Benh_MaICD10")
+  tenBenh String @map("Benh_TenBenh")
+  chanDoans ChanDoan[]
+
+  @@map("Benh")
+}
+
+model ChanDoan {
+  phieuKhamBenh PhieuKhamBenh @relation(fields: [pkbId], references: [id])
+  pkbId Int @map("PKB_ID")
+
+  benh Benh @relation(fields: [benhId], references: [id])
+  benhId Int @map("Benh_ID")
+
+  benhChinh Boolean @map("CD_BenhChinh")
+
+  @@id([pkbId, benhId])
+  @@map("ChanDoan")
+}
+
+model PhieuChiDinh {
+  id Int @id @default(autoincrement()) @map("PCD_ID")
+  maPhieuCD String @unique @map("PCD_MaPhieuCD")
+  thoiGianTao DateTime @map("PCD_ThoiGianTao")
+  trangThai Int @map("PCD_TrangThai")
+
+  benhAn BenhAn @relation(fields: [benhAnId], references: [id])
+  benhAnId Int @map("BA_ID")
+
+  chiTiet ChiTietPhieuChiDinh[]
+
+  @@map("PhieuChiDinh")
+}
+
+model ChiTietPhieuChiDinh {
+  id Int @id @default(autoincrement()) @map("CTPCD_ID")
+  soLuong Int @map("CTPCD_SoLuong")
+  tongTien Decimal @map("CTPCD_TongTien")
+  yeuCauKQ Boolean @map("CTPCD_YeuCauKQ")
+  trangThaiDongTien Boolean @default(false) @map("CTPCD_TrangThaiDongTien")
+
+  phieuChiDinh PhieuChiDinh @relation(fields: [pcdId], references: [id])
+  pcdId Int @map("PCD_ID")
+
+  dichVu DichVu @relation(fields: [dvId], references: [id])
+  dvId Int @map("DV_ID")
+
+  ketQua KetQua?
+  hoaDonChiTiet HoaDonChiTiet[]
+
+  @@map("ChiTietPhieuChiDinh")
+}
+
+model DichVu {
+  id                  Int                     @id @default(autoincrement()) @map("DV_ID")
+  maDV                String                  @unique @map("DV_MaDV")
+  tenDV               String                  @map("DV_TenDV")
+  donVi               String?                 @map("DV_DonVi")
+  donGia              Decimal                 @map("DV_DonGia")
+  thamChieuMin        String?                @map("DV_ThamChieuMin")
+  thamChieuMax        String?                @map("DV_ThamChieuMax")
+
+  nhomDichVu          NhomDichVu              @relation(fields: [ndvId], references: [id])
+  ndvId               Int                     @map("NDV_ID")
+  
+  chiTietPhieuChiDinh ChiTietPhieuChiDinh[]
+
+  @@map("DichVu")
+}
+
+model NhomDichVu {
+  id              Int        @id @default(autoincrement()) @map("NDV_ID")
+  tenNhomDV       String     @map("NDV_TenNhomDV")
+
+  loaiDichVu      LoaiDichVu @relation(fields: [ldvId], references: [id])
+  ldvId           Int        @map("LDV_ID")
+
+  dichVus         DichVu[]
+
+  @@unique([tenNhomDV, ldvId], map: "NDV_TenNhomDV_LDV_ID_key")
+  @@map("NhomDichVu")
+}
+
+model LoaiDichVu {
+  id          Int          @id @default(autoincrement()) @map("LDV_ID")
+  tenLoai     String       @unique @map("LDV_TenLoai")
+  nhomDichVus NhomDichVu[]
+
+  @@map("LoaiDichVu")
+}
+
+model KetQua {
+  id              Int               @id @default(autoincrement()) @map("KQ_ID")
+  tgTiepNhan      DateTime          @map("KQ_TGTiepNhan")
+  tgThucHien      DateTime          @map("KQ_TGThucHien")
+  tgTraKQ         DateTime          @map("KQ_TGTraKQ")
+  ketQua          String            @db.Text @map("KQ_KetQua")
+  ketLuan         String            @db.Text @map("KQ_KetLuan")
+  ghiChu          String?           @db.Text @map("KQ_GhiChu")
+  url             String?           @map("KQ_URL")
+
+  chiTietPCD      ChiTietPhieuChiDinh @relation(fields: [ctpcdId], references: [id])
+  ctpcdId         Int               @unique @map("CTPCD_ID")
+
+  chiTiet         KetQuaChiTiet?
+
+  @@map("KetQua")
+}
+
+model KetQuaChiTiet {
+  id        Int     @id @default(autoincrement()) @map("KQCT_ID")
+  chiSo     String  @map("KQCT_ChiSo")
+  giaTri    String  @map("KQCT_GiaTri")
+  batThuong Boolean @map("KQCT_BatThuong")
+
+  ketQua    KetQua  @relation(fields: [ketQuaId], references: [id])
+  ketQuaId  Int     @unique @map("KQ_ID")
+
+  @@map("KetQuaChiTiet")
+}
+
+model HoaDon {
+  id              Int             @id @default(autoincrement()) @map("HD_ID")
+  maHD            String          @unique @map("HD_MaHD")
+  ngayLap         DateTime        @map("HD_NgayLap")
+  tongTien        Decimal         @map("HD_TongTien")
+  trangThai       Int             @map("HD_TrangThai")
+
+  benhAn          BenhAn          @relation(fields: [benhAnId], references: [id])
+  benhAnId        Int             @map("BA_ID")
+
+  nhanVien        NhanVien        @relation(fields: [nhanVienId], references: [id])
+  nhanVienId      Int             @map("NV_ID")
+  
+  chiTiet         HoaDonChiTiet[]
+
+  @@map("HoaDon")
+}
+
+model HoaDonChiTiet {
+  id          Int      @id @default(autoincrement()) @map("HDCT_ID")
+  soLuong     Int      @map("HDCT_SoLuong")
+  thanhTien   Decimal  @map("HDCT_ThanhTien")
+
+  hoaDon      HoaDon   @relation(fields: [hoaDonId], references: [id])
+  hoaDonId    Int      @map("HD_ID")
+
+  chiTietPCD  ChiTietPhieuChiDinh @relation(fields: [ctpcdId], references: [id])
+  ctpcdId     Int      @map("CTPCD_ID")
+
+  @@map("HoaDonChiTiet")
+}
