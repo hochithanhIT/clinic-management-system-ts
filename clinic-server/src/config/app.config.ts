@@ -1,13 +1,6 @@
-import dotenv from 'dotenv';
-
-dotenv.config();
-
-interface Config {
-    port: number;
+const appConfig = {
+    host: process.env.APP_HOST as string,
+    port: parseInt(process.env.APP_PORT as string),
 }
 
-const config: Config = {
-    port: Number(process.env.APP_PORT) || 3000, 
-}
-
-export default config;
+export default appConfig;

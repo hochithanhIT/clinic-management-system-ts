@@ -1,6 +1,8 @@
-import app from './app';
-import config from './config/app.config';
+import "tsconfig-paths/register";
+import "dotenv/config"
 
-app.listen(config.port, () => {
-    console.log(`Server is running on port ${config.port}.`);
-})
+import App from "app";
+
+const app = new App;
+
+app.start();
