@@ -1,5 +1,4 @@
-import authConfig from "@config/auth.config";
-import Send from "@utils/response.utils";
+import Send from "../utils/response.utils";
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 
@@ -23,10 +22,10 @@ class AuthMiddleware {
 
         try {
             // 2. Verify the token using the secret from the auth config
-            const decodedToken = jwt.verify(token, authConfig.secret) as DecodedToken; // Type assertion for better type safety
+            const decodedToken = jwt.verify(token, process.env.AUTH_SECRET!) as DecodedToken; // Type assertion for better type safety
 
             // If the token is valid, attach user information to the request object
-            (req as any).nhanVienId = decodedToken.userId; // Attach userId to the request object
+            req.body.nhanVienId = decodedToken.userId; // Attach userId to the request object
 
             // Proceed to the next middleware or route handler
             next();
@@ -48,10 +47,10 @@ class AuthMiddleware {
 
         try {
             // 2. Verify the refresh token using the secret from the auth config
-            const decodedToken = jwt.verify(refreshToken, authConfig.refresh_secret) as { userId: number };
+            const decodedToken = jwt.verify(refreshToken, process.env.AUTH_REFRESH_SECRET!) as { userId: number };
 
             // If the token is valid, attach user information to the request object
-            (req as any).nhanVienId = decodedToken.userId;
+            req.body.nhanVienId = decodedToken.userId;
 
             // Proceed to the next middleware or route handler
             next();

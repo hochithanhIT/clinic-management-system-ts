@@ -1,4 +1,4 @@
-import Send from "@utils/response.utils";
+import Send from "../utils/response.utils";
 import { NextFunction, Request, Response } from "express";
 import { ZodError, ZodSchema } from "zod";
 

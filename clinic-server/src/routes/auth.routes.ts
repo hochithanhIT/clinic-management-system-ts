@@ -1,53 +1,13 @@
-import AuthController from "@controllers/auth.controller";
-import BaseRouter, { RouteConfig } from "./router";
-import ValidationMiddleware from "@middlewares/validation.middleware";
-import authSchema from "validations/auth.schema";
-import AuthMiddleware from "@middlewares/auth.middleware";
+import authController from "../controllers/auth.controller";
+import express from "express";
+import authMiddleware from "../middlewares/auth.middleware";
+import ValidationMiddleware from "../middlewares/validation.middleware";
+const router = express.Router();
 
-class AuthRouter extends BaseRouter {
-    protected routes(): RouteConfig[] {
-        return [
-            {
-                // login
-                method: "post",
-                path: "/login",
-                middlewares: [
-                    ValidationMiddleware.validateBody(authSchema.login)
-                ],
-                handler: AuthController.login
-            },
-            {
-                // register
-                method: "post",
-                path: "/create-account",
-                middlewares: [
-                    ValidationMiddleware.validateBody(authSchema.createAccount)
-                ],
-                handler: AuthController.createAccount
-            },
-            {
-                // logout
-                method: "post",
-                path: "/logout",
-                middlewares: [
-                    // check if user is logged in
-                    AuthMiddleware.authenticateUser
-                ],
-                handler: AuthController.logout
-            },
+router
+    .post("/login", authController.login)
+    .post("/create-account",ValidationMiddleware.validateBody, authController.createAccount)
+    .post("/logout",authMiddleware.authenticateUser, authController.logout)
+    .post("/refresh-token", authMiddleware.refreshTokenValidation, authController.refreshToken);
 
-            {
-                // refresh token
-                method: "post",
-                path: "/refresh-token",
-                middlewares: [
-                    // checks if refresh token is valid
-                    AuthMiddleware.refreshTokenValidation
-                ],
-                handler: AuthController.refreshToken
-            },
-        ]
-    }
-}
-
-export default new AuthRouter().router;
+export default router;

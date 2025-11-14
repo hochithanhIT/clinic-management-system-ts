@@ -15,23 +15,6 @@
     "typeRoots": [
       "node_modules/@types"
     ],
-    "paths": {
-      "@config/*": [
-        "config/*"
-      ],
-      "@middlewares/*": [
-        "middlewares/*"
-      ],
-      "@controllers/*": [
-        "controllers/*"
-      ],
-      "@routes/*": [
-        "routes/*"
-      ],
-      "@utils/*": [
-        "utils/*"
-      ]
-    },
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
     // For nodejs:

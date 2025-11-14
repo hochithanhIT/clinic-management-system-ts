@@ -1,21 +1,9 @@
-import BaseRouter, { RouteConfig } from "./router";
-import AuthMiddleware from "@middlewares/auth.middleware";
-import UserController from "@controllers/user.controller";
+import userController from "../controllers/user.controller";
+import express from "express";
+import authMiddleware from "../middlewares/auth.middleware";
+const router = express.Router();
 
-class UserRoutes extends BaseRouter {
-    protected routes(): RouteConfig[] {
-        return [
-            {
-                // get user info
-                method: "get",
-                path: "/info", // api/user/info
-                middlewares: [
-                    AuthMiddleware.authenticateUser
-                ],
-                handler: UserController.getUser
-            },
-        ]
-    }
-}
+router
+    .get("/", authMiddleware.authenticateUser, userController.getUser);
 
-export default new UserRoutes().router;
+export default router;

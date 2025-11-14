@@ -1,41 +1,32 @@
-import Send from "@utils/response.utils";
+import Send from "../utils/response.utils";
 import { prisma } from "../db";
-import { Request, Response } from "express";
-import { send } from "process";
+import { NextFunction, Request, Response } from "express";
 
-class UserController {
-    /**
-     * Get the user information based on the authenticated user.
-     * The userId is passed from the AuthMiddleware.
-     */
-    static getUser = async (req: Request, res: Response) => {
-        try {
-            const userId = (req as any).nhanVienId; // Extract userId from the authenticated request
+const getUser = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { nhanVienId } = req.body;
 
-            // Fetch the user data from the database (Prisma in this case)
-            const user = await prisma.taiKhoan.findUnique({
-                where: { nhanVienId: userId },
-                select: {
-                    nhanVienId: true,
-                    tenDangNhap: true,
-                    createdAt: true,
-                    updatedAt: true,
-                    // Add other fields you want to return
-                }
-            });
-
-            // If the user is not found, return a 404 error
-            if (!user) {
-                return Send.notFound(res, {}, "User not found");
+        const user = await prisma.taiKhoan.findUnique({
+            where: { nhanVienId },
+            select: {
+                nhanVienId: true,
+                tenDangNhap: true,
+                createdAt: true,
+                updatedAt: true,
+                // Add other fields you want to return
             }
+        });
 
-            // Return the user data in the response
-            return Send.success(res, { user });
-        } catch (error) {
-            console.error("Error fetching user info:", error);
-            return Send.error(res, {}, "Internal server error");
+        if (!user) {
+            return Send.notFound(res, {}, "Không tìm thấy người dùng!");
         }
-    };
+
+        return Send.success(res, { user });
+    } catch (error) {
+        next(error);
+    }
 }
 
-export default UserController;
+export default {
+    getUser
+}
