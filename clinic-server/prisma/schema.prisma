@@ -6,6 +6,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  seed = "prisma/seed.ts"
   // output   = "../generated/prisma"
 }
 
@@ -103,7 +104,9 @@ model TaiKhoan {
   tenDangNhap String @unique @map("TK_TenDangNhap")
   matKhau String @map("TK_MatKhau")
   trangThai Boolean @default(true) @map("TK_TrangThai")
-  doiMatKhauLuc DateTime? @map("TK_DoiMatKhauLuc")
+  refreshToken String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime? @updatedAt
 
   nhanVien NhanVien @relation(fields: [nhanVienId], references: [id])
   nhanVienId Int @unique @map("NV_ID")

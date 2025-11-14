@@ -1,0 +1,4238 @@
+[
+  {
+    "maNgheNghiep": "10",
+    "tenNgheNghiep": "Lãnh đạo cơ quan Đảng Cộng sản Việt Nam cấp trung ương và địa phương (chuyên trách)"
+  },
+  {
+    "maNgheNghiep": "101",
+    "tenNgheNghiep": "Lãnh đạo cơ quan Đảng Cộng sản Việt Nam cấp trung ương (chuyên trách)"
+  },
+  {
+    "maNgheNghiep": "1011",
+    "tenNgheNghiep": "Tổng Bí thư, Thường trực Ban Bí thư, Ban Bí thư, Ủy viên Bộ Chính trị, Ủy viên Ban Chấp hành Trung ương Đảng"
+  },
+  {
+    "maNgheNghiep": "1012",
+    "tenNgheNghiep": "Bí thư, Phó Bí thư Đảng ủy cơ quan trung ương"
+  },
+  {
+    "maNgheNghiep": "1013",
+    "tenNgheNghiep": "Bí thư, Phó Bí thư Đảng ủy khối trực thuộc trung ương"
+  },
+  {
+    "maNgheNghiep": "1014",
+    "tenNgheNghiep": "Trưởng ban, Phó Trưởng ban Đảng và tương đương thuộc cấp trung ương"
+  },
+  {
+    "maNgheNghiep": "1015",
+    "tenNgheNghiep": "Trợ lý Ủy viên Bộ Chính trị"
+  },
+  {
+    "maNgheNghiep": "1016",
+    "tenNgheNghiep": "Vụ trưởng, Phó Vụ trưởng và tương đương"
+  },
+  {
+    "maNgheNghiep": "102",
+    "tenNgheNghiep": "Lãnh đạo cơ quan Đảng Cộng sản Việt Nam cấp tỉnh (chuyên trách)"
+  },
+  {
+    "maNgheNghiep": "1021",
+    "tenNgheNghiep": "Bí thư Tỉnh ủy, Phó Bí thư Tỉnh ủy, Ủy viên Ban Chấp hành Đảng bộ cấp tỉnh"
+  },
+  {
+    "maNgheNghiep": "1022",
+    "tenNgheNghiep": "Bí thư, Phó Bí thư Đảng ủy sở, ban, ngành cấp tỉnh"
+  },
+  {
+    "maNgheNghiep": "1023",
+    "tenNgheNghiep": "Bí thư, Phó Bí thư Đảng ủy khối cơ quan cấp tỉnh"
+  },
+  {
+    "maNgheNghiep": "1024",
+    "tenNgheNghiep": "Trưởng ban, Phó Trưởng ban Đảng và tương đương thuộc cấp tỉnh"
+  },
+  {
+    "maNgheNghiep": "103",
+    "tenNgheNghiep": "Lãnh đạo Đảng Cộng sản Việt Nam cấp huyện (chuyên trách)"
+  },
+  {
+    "maNgheNghiep": "1031",
+    "tenNgheNghiep": "Bí thư Huyện ủy, Phó Bí thư Huyện ủy, Ủy viên Ban Chấp hành Đảng bộ cấp huyện"
+  },
+  {
+    "maNgheNghiep": "1032",
+    "tenNgheNghiep": "Bí thư, Phó Bí thư Đảng ủy ban, ngành cấp huyện"
+  },
+  {
+    "maNgheNghiep": "1033",
+    "tenNgheNghiep": "Trưởng ban, Phó Trưởng ban Đảng và tương đương thuộc cấp huyện"
+  },
+  {
+    "maNgheNghiep": "104",
+    "tenNgheNghiep": "Lãnh đạo Đảng Cộng sản Việt Nam cấp xã (chuyên trách)"
+  },
+  {
+    "maNgheNghiep": "1040",
+    "tenNgheNghiep": "Bí thư, Phó Bí thư Đảng ủy cấp xã"
+  },
+  {
+    "maNgheNghiep": "105",
+    "tenNgheNghiep": "Lãnh đạo Đảng Cộng sản Việt Nam tại doanh nghiệp và các tổ chức sự nghiệp (chuyên trách)"
+  },
+  {
+    "maNgheNghiep": "1050",
+    "tenNgheNghiep": "Bí thư, Phó Bí thư Đảng ủy"
+  },
+  {
+    "maNgheNghiep": "11",
+    "tenNgheNghiep": "Lãnh đạo, quản lý của Quốc hội, Văn phòng Quốc hội và Văn phòng Chủ tịch nước (chuyên trách)"
+  },
+  {
+    "maNgheNghiep": "111",
+    "tenNgheNghiep": "Lãnh đạo, quản lý của Quốc hội, Văn phòng Quốc hội (chuyên trách)"
+  },
+  {
+    "maNgheNghiep": "1111",
+    "tenNgheNghiep": "Chủ tịch Quốc hội, Phó Chủ tịch Quốc hội, Ủy viên thường vụ Quốc hội"
+  },
+  {
+    "maNgheNghiep": "1112",
+    "tenNgheNghiep": "Chủ nhiệm, Phó Chủ nhiệm Ủy ban và tương đương làm việc tại Văn phòng Quốc hội"
+  },
+  {
+    "maNgheNghiep": "1113",
+    "tenNgheNghiep": "Vụ trưởng, Phó Vụ trưởng và tương đương"
+  },
+  {
+    "maNgheNghiep": "112",
+    "tenNgheNghiep": "Lãnh đạo, quản lý của Nhà nước, Văn phòng Chủ tịch nước (chuyên trách)"
+  },
+  {
+    "maNgheNghiep": "1121",
+    "tenNgheNghiep": "Chủ tịch nước, Phó Chủ tịch nước"
+  },
+  {
+    "maNgheNghiep": "1122",
+    "tenNgheNghiep": "Chủ nhiệm, Phó Chủ nhiệm tương đương Bộ trưởng, Thứ trưởng và tương đương làm việc tại Văn phòng Chủ tịch nước"
+  },
+  {
+    "maNgheNghiep": "1123",
+    "tenNgheNghiep": "Vụ trưởng, Phó Vụ trưởng và tương đương"
+  },
+  {
+    "maNgheNghiep": "12",
+    "tenNgheNghiep": "Lãnh đạo, quản lý của Chính phủ, Văn phòng Chính phủ, các bộ, ngành và tương đương thuộc Chính phủ (chuyên trách)"
+  },
+  {
+    "maNgheNghiep": "121",
+    "tenNgheNghiep": "Lãnh đạo, quản lý của Chính phủ, Văn phòng Chính phủ (chuyên trách)"
+  },
+  {
+    "maNgheNghiep": "1211",
+    "tenNgheNghiep": "Thủ tướng, Phó Thủ tướng Chính phủ"
+  },
+  {
+    "maNgheNghiep": "1212",
+    "tenNgheNghiep": "Chủ nhiệm, Phó Chủ nhiệm và tương đương làm việc tại Văn phòng Chính phủ"
+  },
+  {
+    "maNgheNghiep": "1213",
+    "tenNgheNghiep": "Vụ trưởng, Phó Vụ trưởng và tương đương"
+  },
+  {
+    "maNgheNghiep": "122",
+    "tenNgheNghiep": "Lãnh đạo, quản lý bộ, ngành và tương đương thuộc Chính phủ (chuyên trách)"
+  },
+  {
+    "maNgheNghiep": "1221",
+    "tenNgheNghiep": "Bộ trưởng, Thứ trưởng và tương đương của các bộ, ngành, các cơ quan ngang bộ, các cơ quan thuộc Chính phủ"
+  },
+  {
+    "maNgheNghiep": "1222",
+    "tenNgheNghiep": "Trợ lý Bộ trưởng Bộ Ngoại giao"
+  },
+  {
+    "maNgheNghiep": "1223",
+    "tenNgheNghiep": "Vụ trưởng, Phó Vụ trưởng, Trưởng ban, Phó Trưởng ban và tương đương"
+  },
+  {
+    "maNgheNghiep": "123",
+    "tenNgheNghiep": "Lãnh đạo, quản lý tổng cục thuộc bộ (chuyên trách)"
+  },
+  {
+    "maNgheNghiep": "1231",
+    "tenNgheNghiep": "Tổng cục trưởng, Phó Tổng cục trưởng và tương đương"
+  },
+  {
+    "maNgheNghiep": "1232",
+    "tenNgheNghiep": "Vụ trưởng, Phó Vụ trưởng, Trưởng ban, Phó Trưởng ban và tương đương"
+  },
+  {
+    "maNgheNghiep": "13",
+    "tenNgheNghiep": "Lãnh đạo, quản lý của Tòa án nhân dân và Viện Kiểm sát nhân dân (chuyên trách)"
+  },
+  {
+    "maNgheNghiep": "131",
+    "tenNgheNghiep": "Lãnh đạo, quản lý của Tòa án nhân dân tối cao và cấp cao và Viện Kiểm sát nhân dân tối cao và cấp cao (chuyên trách)"
+  },
+  {
+    "maNgheNghiep": "1311",
+    "tenNgheNghiep": "Chánh án, Phó Chánh án Tòa án nhân dân tối cao và cấp cao; Viện trưởng, Phó Viện trưởng Viện Kiểm sát nhân dân tối cao và cấp cao"
+  },
+  {
+    "maNgheNghiep": "1312",
+    "tenNgheNghiep": "Vụ trưởng, Phó Vụ trưởng và tương đương làm việc ở Tòa án nhân dân tối cao và cấp cao và Viện Kiểm sát nhân dân tối cao và cấp cao"
+  },
+  {
+    "maNgheNghiep": "132",
+    "tenNgheNghiep": "Lãnh đạo, quản lý của Tòa án nhân dân và Viện Kiểm sát nhân dân ở địa phương (chuyên trách)"
+  },
+  {
+    "maNgheNghiep": "1321",
+    "tenNgheNghiep": "Chánh án, Phó Chánh án Tòa án nhân dân; Viện trưởng, Phó Viện trưởng Viện Kiểm sát nhân dân cấp tỉnh"
+  },
+  {
+    "maNgheNghiep": "1322",
+    "tenNgheNghiep": "Chánh án, Phó Chánh án Tòa án nhân dân cấp huyện"
+  },
+  {
+    "maNgheNghiep": "133",
+    "tenNgheNghiep": "Lãnh đạo, quản lý của Tòa án khác (trừ Tòa án Quân sự) do luật định (chuyên trách)"
+  },
+  {
+    "maNgheNghiep": "1330",
+    "tenNgheNghiep": "Chánh án, Phó Chánh án Tòa án khác (trừ Tòa án Quân sự) do luật định"
+  },
+  {
+    "maNgheNghiep": "14",
+    "tenNgheNghiep": "Lãnh đạo, quản lý của Hội đồng nhân dân và Ủy ban nhân dân địa phương (kể cả các cơ quan chuyên môn ở địa phương, trừ tư pháp và đoàn thể) (chuyên trách)"
+  },
+  {
+    "maNgheNghiep": "141",
+    "tenNgheNghiep": "Lãnh đạo, quản lý của Hội đồng nhân dân (chuyên trách)"
+  },
+  {
+    "maNgheNghiep": "1411",
+    "tenNgheNghiep": "Chủ tịch, Phó Chủ tịch và Thường trực Hội đồng nhân dân cấp tỉnh"
+  },
+  {
+    "maNgheNghiep": "1412",
+    "tenNgheNghiep": "Trưởng ban, Phó Trưởng ban và tương đương trong các cơ quan của Hội đồng nhân dân cấp tỉnh"
+  },
+  {
+    "maNgheNghiep": "1413",
+    "tenNgheNghiep": "Chủ tịch, Phó Chủ tịch và Thường trực Hội đồng nhân dân cấp huyện"
+  },
+  {
+    "maNgheNghiep": "1414",
+    "tenNgheNghiep": "Trưởng ban, Phó Trưởng ban và tương đương trong các cơ quan của Hội đồng nhân dân cấp huyện"
+  },
+  {
+    "maNgheNghiep": "1415",
+    "tenNgheNghiep": "Chủ tịch, Phó Chủ tịch Hội đồng nhân dân cấp xã"
+  },
+  {
+    "maNgheNghiep": "142",
+    "tenNgheNghiep": "Lãnh đạo, quản lý của Ủy ban nhân dân (kể cả các cơ quan chuyên môn) (chuyên trách)"
+  },
+  {
+    "maNgheNghiep": "1421",
+    "tenNgheNghiep": "Chủ tịch, Phó Chủ tịch và Ủy viên thường trực Ủy ban nhân dân cấp tỉnh"
+  },
+  {
+    "maNgheNghiep": "1422",
+    "tenNgheNghiep": "Chủ tịch, Phó Chủ tịch và Ủy viên thường trực Ủy ban nhân dân cấp huyện"
+  },
+  {
+    "maNgheNghiep": "1423",
+    "tenNgheNghiep": "Chủ tịch, Phó Chủ tịch Ủy ban nhân dân cấp xã"
+  },
+  {
+    "maNgheNghiep": "1424",
+    "tenNgheNghiep": "Trưởng ngành, Phó Trưởng ngành, ban, sở và tương đương của các cơ quan chuyên môn cấp tỉnh"
+  },
+  {
+    "maNgheNghiep": "1425",
+    "tenNgheNghiep": "Trưởng ngành, Phó Trưởng ngành, ban và tương đương của các cơ quan chuyên môn cấp huyện"
+  },
+  {
+    "maNgheNghiep": "15",
+    "tenNgheNghiep": "Lãnh đạo, quản lý khối đoàn thể; Mặt trận Tổ quốc, Liên đoàn Lao động, Hội Phụ nữ, Hội Nông dân, Đoàn Thanh niên Cộng sản Hồ Chí Minh, Hội Cựu chiến binh (chuyên trách)"
+  },
+  {
+    "maNgheNghiep": "151",
+    "tenNgheNghiep": "Lãnh đạo, quản lý khối đoàn thể (trừ Liên đoàn Lao động) (chuyên trách)"
+  },
+  {
+    "maNgheNghiep": "1511",
+    "tenNgheNghiep": "Chủ tịch, Phó Chủ tịch"
+  },
+  {
+    "maNgheNghiep": "1512",
+    "tenNgheNghiep": "Ủy viên cấp trung ương"
+  },
+  {
+    "maNgheNghiep": "1513",
+    "tenNgheNghiep": "Vụ trưởng, Phó Vụ trưởng và tương đương cấp trung ương"
+  },
+  {
+    "maNgheNghiep": "1514",
+    "tenNgheNghiep": "Ủy viên cấp tỉnh"
+  },
+  {
+    "maNgheNghiep": "1515",
+    "tenNgheNghiep": "Ủy viên cấp huyện"
+  },
+  {
+    "maNgheNghiep": "152",
+    "tenNgheNghiep": "Lãnh đạo, quản lý Liên đoàn Lao động (chuyên trách)"
+  },
+  {
+    "maNgheNghiep": "1521",
+    "tenNgheNghiep": "Chủ tịch, Phó Chủ tịch"
+  },
+  {
+    "maNgheNghiep": "1522",
+    "tenNgheNghiep": "Ủy viên của Tổng Liên đoàn Lao động Việt Nam"
+  },
+  {
+    "maNgheNghiep": "1523",
+    "tenNgheNghiep": "Vụ trưởng, Phó Vụ trưởng và tương đương của Tổng Liên đoàn Lao động Việt Nam"
+  },
+  {
+    "maNgheNghiep": "1524",
+    "tenNgheNghiep": "Ủy viên trở lên của Liên đoàn Lao động cấp tỉnh"
+  },
+  {
+    "maNgheNghiep": "1525",
+    "tenNgheNghiep": "Ủy viên trở lên của Liên đoàn Lao động cấp huyện"
+  },
+  {
+    "maNgheNghiep": "1526",
+    "tenNgheNghiep": "Chủ tịch, Phó Chủ tịch tổ chức công đoàn cơ quan bộ, ngành ở trung ương"
+  },
+  {
+    "maNgheNghiep": "1527",
+    "tenNgheNghiep": "Chủ tịch, Phó Chủ tịch tổ chức công đoàn doanh nghiệp và các tổ chức sự nghiệp"
+  },
+  {
+    "maNgheNghiep": "16",
+    "tenNgheNghiep": "Nhà quản lý của Tổ chức nghiệp chủ, nhân đạo và vì quyền lợi đặc thù khác (chuyên trách)"
+  },
+  {
+    "maNgheNghiep": "161",
+    "tenNgheNghiep": "Nhà quản lý của Tổ chức nghiệp chủ (chuyên trách)"
+  },
+  {
+    "maNgheNghiep": "1610",
+    "tenNgheNghiep": "Chủ tịch, Phó Chủ tịch"
+  },
+  {
+    "maNgheNghiep": "162",
+    "tenNgheNghiep": "Nhà quản lý của Tổ chức nhân đạo và vì quyền lợi đặc thù khác (chuyên trách)"
+  },
+  {
+    "maNgheNghiep": "1620",
+    "tenNgheNghiep": "Chủ tịch, Phó Chủ tịch"
+  },
+  {
+    "maNgheNghiep": "17",
+    "tenNgheNghiep": "Nhà quản lý của các cơ quan tập đoàn, tổng công ty và tương đương (chuyên trách)"
+  },
+  {
+    "maNgheNghiep": "171",
+    "tenNgheNghiep": "Chủ tịch, Phó Chủ tịch Hội đồng quản trị, Tổng giám đốc doanh nghiệp, Phó Tổng giám đốc doanh nghiệp, Chủ tịch, Phó Chủ tịch Hội đồng trường, Hiệu trưởng, Phó Hiệu trưởng trường đại học lớn và tương đương (chuyên trách)"
+  },
+  {
+    "maNgheNghiep": "172",
+    "tenNgheNghiep": "Giám đốc, Phó Giám đốc của các đơn vị sản xuất và triển khai thuộc cơ quan tập đoàn, tổng công ty, trường đại học lớn và tương đương (chuyên trách)"
+  },
+  {
+    "maNgheNghiep": "1721",
+    "tenNgheNghiep": "Nông nghiệp, lâm nghiệp và thủy sản"
+  },
+  {
+    "maNgheNghiep": "1722",
+    "tenNgheNghiep": "Khai khoáng, công nghiệp chế biến, chế tạo, sản xuất và phân phối điện, khí đốt, nước nóng, hơi nước và điều hòa không khí"
+  },
+  {
+    "maNgheNghiep": "1723",
+    "tenNgheNghiep": "Xây dựng"
+  },
+  {
+    "maNgheNghiep": "1724",
+    "tenNgheNghiep": "Bán buôn, bán lẻ"
+  },
+  {
+    "maNgheNghiep": "1725",
+    "tenNgheNghiep": "Dịch vụ lưu trú và ăn uống"
+  },
+  {
+    "maNgheNghiep": "1726",
+    "tenNgheNghiep": "Vận tải, kho bãi; Thông tin và truyền thông"
+  },
+  {
+    "maNgheNghiep": "1727",
+    "tenNgheNghiep": "Dịch vụ kinh doanh"
+  },
+  {
+    "maNgheNghiep": "1728",
+    "tenNgheNghiep": "Dịch vụ cá nhân và cộng đồng"
+  },
+  {
+    "maNgheNghiep": "1729",
+    "tenNgheNghiep": "Các đơn vị sản xuất và dịch vụ còn lại chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "173",
+    "tenNgheNghiep": "Giám đốc, Phó Giám đốc các đơn vị quản lý thuộc cơ quan Liên hiệp, Tổng công ty, trường đại học lớn và tương đương (chuyên trách)"
+  },
+  {
+    "maNgheNghiep": "1731",
+    "tenNgheNghiep": "Tài chính, kế toán, quản trị hành chính"
+  },
+  {
+    "maNgheNghiep": "1732",
+    "tenNgheNghiep": "Tổ chức nhân sự và mối quan hệ công nghệ"
+  },
+  {
+    "maNgheNghiep": "1733",
+    "tenNgheNghiep": "Bán hàng và tiếp thị"
+  },
+  {
+    "maNgheNghiep": "1734",
+    "tenNgheNghiep": "Quảng cáo và các vấn đề liên quan đến công chúng"
+  },
+  {
+    "maNgheNghiep": "1735",
+    "tenNgheNghiep": "Cung ứng và phân phối"
+  },
+  {
+    "maNgheNghiep": "1736",
+    "tenNgheNghiep": "Dịch vụ và tính toán"
+  },
+  {
+    "maNgheNghiep": "1737",
+    "tenNgheNghiep": "Nghiên cứu và phát triển"
+  },
+  {
+    "maNgheNghiep": "1739",
+    "tenNgheNghiep": "Các đơn vị khác chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "174",
+    "tenNgheNghiep": "Giám đốc, Phó Giám đốc công ty, doanh nghiệp, xí nghiệp, hợp tác xã; Hiệu trưởng, Phó Hiệu trưởng trường nhỏ và tương đương (chuyên trách)"
+  },
+  {
+    "maNgheNghiep": "1741",
+    "tenNgheNghiep": "Nông nghiệp, lâm nghiệp và thủy sản"
+  },
+  {
+    "maNgheNghiep": "1742",
+    "tenNgheNghiep": "Khai khoáng, công nghiệp chế biến, chế tạo, sản xuất và phân phối điện, khí đốt, nước nóng, hơi nước và điều hòa không khí"
+  },
+  {
+    "maNgheNghiep": "1743",
+    "tenNgheNghiep": "Xây dựng"
+  },
+  {
+    "maNgheNghiep": "1744",
+    "tenNgheNghiep": "Bán buôn, bán lẻ"
+  },
+  {
+    "maNgheNghiep": "1745",
+    "tenNgheNghiep": "Dịch vụ lưu trú và ăn uống"
+  },
+  {
+    "maNgheNghiep": "1746",
+    "tenNgheNghiep": "Vận tải kho bãi; Thông tin và truyền thông"
+  },
+  {
+    "maNgheNghiep": "1747",
+    "tenNgheNghiep": "Dịch vụ kinh doanh"
+  },
+  {
+    "maNgheNghiep": "1748",
+    "tenNgheNghiep": "Dịch vụ cá nhân và cộng đồng"
+  },
+  {
+    "maNgheNghiep": "1749",
+    "tenNgheNghiep": "Các đơn vị sản xuất và dịch vụ còn lại chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "21",
+    "tenNgheNghiep": "Nhà chuyên môn trong lĩnh vực khoa học và kỹ thuật"
+  },
+  {
+    "maNgheNghiep": "211",
+    "tenNgheNghiep": "Nhà chuyên môn về khoa học trái đất và vật lý"
+  },
+  {
+    "maNgheNghiep": "2111",
+    "tenNgheNghiep": "Nhà vật lý học và thiên văn học"
+  },
+  {
+    "maNgheNghiep": "2112",
+    "tenNgheNghiep": "Nhà khí tượng học"
+  },
+  {
+    "maNgheNghiep": "2113",
+    "tenNgheNghiep": "Nhà hóa học"
+  },
+  {
+    "maNgheNghiep": "2114",
+    "tenNgheNghiep": "Nhà địa chất, địa vật lý"
+  },
+  {
+    "maNgheNghiep": "212",
+    "tenNgheNghiep": "Nhà toán học, nhà thống kê"
+  },
+  {
+    "maNgheNghiep": "2121",
+    "tenNgheNghiep": "Nhà toán học"
+  },
+  {
+    "maNgheNghiep": "21211",
+    "tenNgheNghiep": "Nhà toán học"
+  },
+  {
+    "maNgheNghiep": "21212",
+    "tenNgheNghiep": "Nhà phân tích nghiên cứu hoạt động"
+  },
+  {
+    "maNgheNghiep": "2122",
+    "tenNgheNghiep": "Nhà thống kê"
+  },
+  {
+    "maNgheNghiep": "213",
+    "tenNgheNghiep": "Nhà chuyên môn về khoa học sự sống"
+  },
+  {
+    "maNgheNghiep": "2131",
+    "tenNgheNghiep": "Nhà sinh vật học, thực vật học, động vật học và các chuyên môn liên quan"
+  },
+  {
+    "maNgheNghiep": "2132",
+    "tenNgheNghiep": "Nhà tư vấn nông, lâm nghiệp và thủy sản"
+  },
+  {
+    "maNgheNghiep": "21321",
+    "tenNgheNghiep": "Nhà trồng trọt"
+  },
+  {
+    "maNgheNghiep": "21322",
+    "tenNgheNghiep": "Nhà tư vấn làm vườn"
+  },
+  {
+    "maNgheNghiep": "21323",
+    "tenNgheNghiep": "Nhà bệnh học thực vật"
+  },
+  {
+    "maNgheNghiep": "21324",
+    "tenNgheNghiep": "Nhà khoa học đất đai"
+  },
+  {
+    "maNgheNghiep": "21325",
+    "tenNgheNghiep": "Nhà chăn nuôi"
+  },
+  {
+    "maNgheNghiep": "21326",
+    "tenNgheNghiep": "Nhà nuôi cấy tế bào động vật"
+  },
+  {
+    "maNgheNghiep": "21327",
+    "tenNgheNghiep": "Nhà nuôi cấy mô thực vật"
+  },
+  {
+    "maNgheNghiep": "21328",
+    "tenNgheNghiep": "Nhà tư vấn nuôi trồng thủy sản"
+  },
+  {
+    "maNgheNghiep": "21329",
+    "tenNgheNghiep": "Các chuyên gia nông, lâm, thủy sản khác"
+  },
+  {
+    "maNgheNghiep": "2133",
+    "tenNgheNghiep": "Nhà chuyên môn về bảo vệ môi trường"
+  },
+  {
+    "maNgheNghiep": "214",
+    "tenNgheNghiep": "Nhà chuyên môn về kỹ thuật (trừ kỹ thuật điện)"
+  },
+  {
+    "maNgheNghiep": "2141",
+    "tenNgheNghiep": "Kỹ sư công nghiệp chế biến, chế tạo"
+  },
+  {
+    "maNgheNghiep": "2142",
+    "tenNgheNghiep": "Kỹ sư xây dựng"
+  },
+  {
+    "maNgheNghiep": "2143",
+    "tenNgheNghiep": "Kỹ sư môi trường"
+  },
+  {
+    "maNgheNghiep": "2144",
+    "tenNgheNghiep": "Kỹ sư cơ học, cơ khí"
+  },
+  {
+    "maNgheNghiep": "2145",
+    "tenNgheNghiep": "Kỹ sư hóa học"
+  },
+  {
+    "maNgheNghiep": "2146",
+    "tenNgheNghiep": "Kỹ sư khai thác mỏ, luyện kim và các nghề liên quan"
+  },
+  {
+    "maNgheNghiep": "2149",
+    "tenNgheNghiep": "Kỹ sư kỹ thuật khác chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "215",
+    "tenNgheNghiep": "Kỹ sư kỹ thuật điện"
+  },
+  {
+    "maNgheNghiep": "2151",
+    "tenNgheNghiep": "Kỹ sư điện"
+  },
+  {
+    "maNgheNghiep": "2152",
+    "tenNgheNghiep": "Kỹ sư điện tử"
+  },
+  {
+    "maNgheNghiep": "2153",
+    "tenNgheNghiep": "Kỹ sư viễn thông"
+  },
+  {
+    "maNgheNghiep": "216",
+    "tenNgheNghiep": "Kiến trúc sư, nhà quy hoạch, khảo sát và thiết kế"
+  },
+  {
+    "maNgheNghiep": "2161",
+    "tenNgheNghiep": "Kiến trúc sư xây dựng"
+  },
+  {
+    "maNgheNghiep": "2162",
+    "tenNgheNghiep": "Kiến trúc sư cảnh quan"
+  },
+  {
+    "maNgheNghiep": "2163",
+    "tenNgheNghiep": "Nhà thiết kế sản phẩm và may mặc"
+  },
+  {
+    "maNgheNghiep": "21631",
+    "tenNgheNghiep": "Nhà thiết kế trang phục/thời trang, phụ kiện"
+  },
+  {
+    "maNgheNghiep": "21632",
+    "tenNgheNghiep": "Nhà thiết kế công nghiệp và sản phẩm"
+  },
+  {
+    "maNgheNghiep": "2164",
+    "tenNgheNghiep": "Nhà quy hoạch đô thị và giao thông"
+  },
+  {
+    "maNgheNghiep": "21641",
+    "tenNgheNghiep": "Nhà quy hoạch đô thị"
+  },
+  {
+    "maNgheNghiep": "21649",
+    "tenNgheNghiep": "Nhà quy hoạch giao thông khác"
+  },
+  {
+    "maNgheNghiep": "2165",
+    "tenNgheNghiep": "Nhà vẽ bản đồ và khảo sát hiện trường"
+  },
+  {
+    "maNgheNghiep": "21651",
+    "tenNgheNghiep": "Nhà khảo sát chung"
+  },
+  {
+    "maNgheNghiep": "21652",
+    "tenNgheNghiep": "Nhà khảo sát đất"
+  },
+  {
+    "maNgheNghiep": "21653",
+    "tenNgheNghiep": "Nhà khảo sát thủy văn"
+  },
+  {
+    "maNgheNghiep": "21654",
+    "tenNgheNghiep": "Người vẽ bản đồ"
+  },
+  {
+    "maNgheNghiep": "21659",
+    "tenNgheNghiep": "Nhà khảo sát và vẽ bản đồ khác"
+  },
+  {
+    "maNgheNghiep": "2166",
+    "tenNgheNghiep": "Nhà thiết kế đồ họa và truyền thông đa phương tiện"
+  },
+  {
+    "maNgheNghiep": "22",
+    "tenNgheNghiep": "Nhà chuyên môn về sức khỏe"
+  },
+  {
+    "maNgheNghiep": "221",
+    "tenNgheNghiep": "Bác sỹ y khoa"
+  },
+  {
+    "maNgheNghiep": "2211",
+    "tenNgheNghiep": "Bác sỹ đa khoa"
+  },
+  {
+    "maNgheNghiep": "2212",
+    "tenNgheNghiep": "Bác sỹ chuyên khoa"
+  },
+  {
+    "maNgheNghiep": "22121",
+    "tenNgheNghiep": "Bác sỹ tim mạch"
+  },
+  {
+    "maNgheNghiep": "22122",
+    "tenNgheNghiep": "Bác sỹ da liễu"
+  },
+  {
+    "maNgheNghiep": "22123",
+    "tenNgheNghiep": "Bác sỹ tiêu hóa"
+  },
+  {
+    "maNgheNghiep": "22124",
+    "tenNgheNghiep": "Bác sỹ nội khoa"
+  },
+  {
+    "maNgheNghiep": "22125",
+    "tenNgheNghiep": "Bác sỹ ung bướu"
+  },
+  {
+    "maNgheNghiep": "22126",
+    "tenNgheNghiep": "Bác sỹ nhi khoa"
+  },
+  {
+    "maNgheNghiep": "22127",
+    "tenNgheNghiep": "Bác sỹ hô hấp"
+  },
+  {
+    "maNgheNghiep": "22128",
+    "tenNgheNghiep": "Bác sỹ tâm thần"
+  },
+  {
+    "maNgheNghiep": "22129",
+    "tenNgheNghiep": "Bác sỹ chuyên khoa khác"
+  },
+  {
+    "maNgheNghiep": "222",
+    "tenNgheNghiep": "Y tá/Điều dưỡng (cao cấp) và hộ sinh (cao cấp)"
+  },
+  {
+    "maNgheNghiep": "2221",
+    "tenNgheNghiep": "Y tá/Điều dưỡng (cao cấp)"
+  },
+  {
+    "maNgheNghiep": "2222",
+    "tenNgheNghiep": "Hộ sinh (cao cấp)"
+  },
+  {
+    "maNgheNghiep": "223",
+    "tenNgheNghiep": "Nhà chuyên môn về y học cổ truyền và hỗ trợ"
+  },
+  {
+    "maNgheNghiep": "224",
+    "tenNgheNghiep": "Bác sỹ phụ tá"
+  },
+  {
+    "maNgheNghiep": "225",
+    "tenNgheNghiep": "Bác sỹ thú y"
+  },
+  {
+    "maNgheNghiep": "226",
+    "tenNgheNghiep": "Nhà chuyên môn về sức khỏe khác"
+  },
+  {
+    "maNgheNghiep": "2261",
+    "tenNgheNghiep": "Bác sỹ răng - hàm - mặt"
+  },
+  {
+    "maNgheNghiep": "2262",
+    "tenNgheNghiep": "Dược sỹ"
+  },
+  {
+    "maNgheNghiep": "22621",
+    "tenNgheNghiep": "Dược sỹ sản xuất thuốc"
+  },
+  {
+    "maNgheNghiep": "22629",
+    "tenNgheNghiep": "Dược sỹ khác"
+  },
+  {
+    "maNgheNghiep": "2263",
+    "tenNgheNghiep": "Nhà chuyên môn về vệ sinh môi trường và bệnh nghề nghiệp"
+  },
+  {
+    "maNgheNghiep": "2264",
+    "tenNgheNghiep": "Nhà chuyên môn về vật lý trị liệu"
+  },
+  {
+    "maNgheNghiep": "2265",
+    "tenNgheNghiep": "Nhà chuyên môn về dinh dưỡng"
+  },
+  {
+    "maNgheNghiep": "2266",
+    "tenNgheNghiep": "Bác sỹ thính học và đặc trị các khuyết tật về ngôn ngữ"
+  },
+  {
+    "maNgheNghiep": "2267",
+    "tenNgheNghiep": "Nhà chuyên môn về thị lực và nhãn khoa"
+  },
+  {
+    "maNgheNghiep": "2269",
+    "tenNgheNghiep": "Nhà chuyên môn khác về sức khỏe chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "23",
+    "tenNgheNghiep": "Nhà chuyên môn về giảng dạy"
+  },
+  {
+    "maNgheNghiep": "231",
+    "tenNgheNghiep": "Giảng viên cao đẳng, đại học và cao học"
+  },
+  {
+    "maNgheNghiep": "2311",
+    "tenNgheNghiep": "Giảng viên đại học và cao học"
+  },
+  {
+    "maNgheNghiep": "2312",
+    "tenNgheNghiep": "Giảng viên cao đẳng"
+  },
+  {
+    "maNgheNghiep": "232",
+    "tenNgheNghiep": "Giáo viên trung cấp"
+  },
+  {
+    "maNgheNghiep": "233",
+    "tenNgheNghiep": "Giáo viên trung học"
+  },
+  {
+    "maNgheNghiep": "2331",
+    "tenNgheNghiep": "Giáo viên trung học phổ thông (cấp III)"
+  },
+  {
+    "maNgheNghiep": "2332",
+    "tenNgheNghiep": "Giáo viên trung học cơ sở (cấp II)"
+  },
+  {
+    "maNgheNghiep": "234",
+    "tenNgheNghiep": "Giáo viên tiểu học và mầm non"
+  },
+  {
+    "maNgheNghiep": "2341",
+    "tenNgheNghiep": "Giáo viên tiểu học (cấp I)"
+  },
+  {
+    "maNgheNghiep": "2342",
+    "tenNgheNghiep": "Giáo viên mầm non"
+  },
+  {
+    "maNgheNghiep": "239",
+    "tenNgheNghiep": "Nhà chuyên môn giảng dạy khác chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "2391",
+    "tenNgheNghiep": "Chuyên gia về phương pháp giáo dục"
+  },
+  {
+    "maNgheNghiep": "2392",
+    "tenNgheNghiep": "Giáo viên"
+  },
+  {
+    "maNgheNghiep": "2393",
+    "tenNgheNghiep": "Giáo viên ngôn ngữ khác"
+  },
+  {
+    "maNgheNghiep": "2394",
+    "tenNgheNghiep": "Giáo viên âm nhạc khác"
+  },
+  {
+    "maNgheNghiep": "2395",
+    "tenNgheNghiep": "Giáo viên nghệ thuật khác"
+  },
+  {
+    "maNgheNghiep": "2396",
+    "tenNgheNghiep": "Giáo viên công nghệ thông tin"
+  },
+  {
+    "maNgheNghiep": "2399",
+    "tenNgheNghiep": "Nhà chuyên môn giảng dạy khác chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "24",
+    "tenNgheNghiep": "Nhà chuyên môn về kinh doanh và quản lý"
+  },
+  {
+    "maNgheNghiep": "241",
+    "tenNgheNghiep": "Nhà chuyên môn về tài chính"
+  },
+  {
+    "maNgheNghiep": "2411",
+    "tenNgheNghiep": "Kế toán và các nhà chuyên môn có liên quan"
+  },
+  {
+    "maNgheNghiep": "24111",
+    "tenNgheNghiep": "Kế toán (trừ kế toán thuế)"
+  },
+  {
+    "maNgheNghiep": "24112",
+    "tenNgheNghiep": "Kiểm toán"
+  },
+  {
+    "maNgheNghiep": "24113",
+    "tenNgheNghiep": "Kế toán thuế"
+  },
+  {
+    "maNgheNghiep": "2412",
+    "tenNgheNghiep": "Nhà tư vấn tài chính và đầu tư"
+  },
+  {
+    "maNgheNghiep": "2413",
+    "tenNgheNghiep": "Nhà phân tích tài chính và các nhà chuyên môn có liên quan"
+  },
+  {
+    "maNgheNghiep": "24131",
+    "tenNgheNghiep": "Nhà phân tích tài chính"
+  },
+  {
+    "maNgheNghiep": "24132",
+    "tenNgheNghiep": "Nhà phân tích rủi ro"
+  },
+  {
+    "maNgheNghiep": "24133",
+    "tenNgheNghiep": "Nhà quản lý quỹ đầu tư"
+  },
+  {
+    "maNgheNghiep": "24134",
+    "tenNgheNghiep": "Nhà quản lý quỹ ủy thác"
+  },
+  {
+    "maNgheNghiep": "24139",
+    "tenNgheNghiep": "Nhà phân tích tài chính và các nhà chuyên môn có liên quan khác"
+  },
+  {
+    "maNgheNghiep": "242",
+    "tenNgheNghiep": "Nhà chuyên môn về quản trị"
+  },
+  {
+    "maNgheNghiep": "2421",
+    "tenNgheNghiep": "Nhà phân tích tổ chức và quản lý"
+  },
+  {
+    "maNgheNghiep": "2422",
+    "tenNgheNghiep": "Nhà chuyên môn về quản trị chính sách"
+  },
+  {
+    "maNgheNghiep": "2423",
+    "tenNgheNghiep": "Nhà chuyên môn về nhân sự và nghề nghiệp"
+  },
+  {
+    "maNgheNghiep": "2424",
+    "tenNgheNghiep": "Nhà chuyên môn về đào tạo và phát triển nhân viên"
+  },
+  {
+    "maNgheNghiep": "243",
+    "tenNgheNghiep": "Nhà chuyên môn về bán hàng, tiếp thị và quan hệ công chúng"
+  },
+  {
+    "maNgheNghiep": "2431",
+    "tenNgheNghiep": "Nhà chuyên môn về quảng cáo và tiếp thị"
+  },
+  {
+    "maNgheNghiep": "2432",
+    "tenNgheNghiep": "Nhà chuyên môn về quan hệ công chúng"
+  },
+  {
+    "maNgheNghiep": "2433",
+    "tenNgheNghiep": "Nhà chuyên môn về bán hàng hóa kỹ thuật và y tế (không bao gồm công nghệ thông tin và truyền thông)"
+  },
+  {
+    "maNgheNghiep": "2434",
+    "tenNgheNghiep": "Nhà chuyên môn về bán hàng hóa trong lĩnh vực công nghệ thông tin và truyền thông"
+  },
+  {
+    "maNgheNghiep": "244",
+    "tenNgheNghiep": "Nhà chuyên môn điều tiết của Chính phủ"
+  },
+  {
+    "maNgheNghiep": "2441",
+    "tenNgheNghiep": "Nhà chuyên môn về hải quan của Chính phủ"
+  },
+  {
+    "maNgheNghiep": "2442",
+    "tenNgheNghiep": "Nhà chuyên môn về thuế của Chính phủ"
+  },
+  {
+    "maNgheNghiep": "2443",
+    "tenNgheNghiep": "Nhà chuyên môn về trợ cấp xã hội của Chính phủ"
+  },
+  {
+    "maNgheNghiep": "2444",
+    "tenNgheNghiep": "Nhà chuyên môn về cấp phép của Chính phủ"
+  },
+  {
+    "maNgheNghiep": "2445",
+    "tenNgheNghiep": "Kiểm lâm"
+  },
+  {
+    "maNgheNghiep": "2446",
+    "tenNgheNghiep": "Nhà ngoại giao"
+  },
+  {
+    "maNgheNghiep": "2449",
+    "tenNgheNghiep": "Nhà chuyên môn điều tiết của Chính phủ khác chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "25",
+    "tenNgheNghiep": "Nhà chuyên môn trong lĩnh vực công nghệ thông tin và truyền thông"
+  },
+  {
+    "maNgheNghiep": "251",
+    "tenNgheNghiep": "Nhà chuyên môn về phân tích và phát triển phần mềm và các ứng dụng"
+  },
+  {
+    "maNgheNghiep": "2511",
+    "tenNgheNghiep": "Nhà phân tích hệ thống"
+  },
+  {
+    "maNgheNghiep": "25111",
+    "tenNgheNghiep": "Nhà phân tích/thiết kế hệ thống"
+  },
+  {
+    "maNgheNghiep": "25112",
+    "tenNgheNghiep": "Tư vấn quy trình kinh doanh công nghệ thông tin/phân tích kinh doanh"
+  },
+  {
+    "maNgheNghiep": "25113",
+    "tenNgheNghiep": "Nhà kiến trúc giải pháp/doanh nghiệp"
+  },
+  {
+    "maNgheNghiep": "2512",
+    "tenNgheNghiep": "Nhà phát triển phần mềm"
+  },
+  {
+    "maNgheNghiep": "2513",
+    "tenNgheNghiep": "Nhà phát triển web và truyền thông đa phương tiện"
+  },
+  {
+    "maNgheNghiep": "2514",
+    "tenNgheNghiep": "Nhà lập trình các ứng dụng"
+  },
+  {
+    "maNgheNghiep": "2519",
+    "tenNgheNghiep": "Nhà chuyên môn về phát triển phần mềm ứng dụng và nhà phân tích chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "252",
+    "tenNgheNghiep": "Nhà chuyên môn về cơ sở dữ liệu và mạng"
+  },
+  {
+    "maNgheNghiep": "2521",
+    "tenNgheNghiep": "Nhà quản trị và thiết kế cơ sở dữ liệu"
+  },
+  {
+    "maNgheNghiep": "25211",
+    "tenNgheNghiep": "Nhà quản trị cơ sở dữ liệu"
+  },
+  {
+    "maNgheNghiep": "25212",
+    "tenNgheNghiep": "Nhà thiết kế cơ sở dữ liệu"
+  },
+  {
+    "maNgheNghiep": "2522",
+    "tenNgheNghiep": "Nhà quản trị hệ thống"
+  },
+  {
+    "maNgheNghiep": "2523",
+    "tenNgheNghiep": "Nhà chuyên môn về mạng máy tính"
+  },
+  {
+    "maNgheNghiep": "2529",
+    "tenNgheNghiep": "Nhà chuyên môn về cơ sở dữ liệu và mạng chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "25291",
+    "tenNgheNghiep": "Nhà khoa học dữ liệu"
+  },
+  {
+    "maNgheNghiep": "25292",
+    "tenNgheNghiep": "Nhà chuyên môn về mạng và cơ sở dữ liệu"
+  },
+  {
+    "maNgheNghiep": "26",
+    "tenNgheNghiep": "Nhà chuyên môn về luật pháp, văn hóa, xã hội"
+  },
+  {
+    "maNgheNghiep": "261",
+    "tenNgheNghiep": "Nhà chuyên môn về luật"
+  },
+  {
+    "maNgheNghiep": "2611",
+    "tenNgheNghiep": "Luật sư"
+  },
+  {
+    "maNgheNghiep": "26111",
+    "tenNgheNghiep": "Luật sư tham gia tố tụng"
+  },
+  {
+    "maNgheNghiep": "26112",
+    "tenNgheNghiep": "Luật sư tư vấn pháp luật"
+  },
+  {
+    "maNgheNghiep": "26119",
+    "tenNgheNghiep": "Luật sư khác"
+  },
+  {
+    "maNgheNghiep": "2612",
+    "tenNgheNghiep": "Thẩm phán"
+  },
+  {
+    "maNgheNghiep": "2619",
+    "tenNgheNghiep": "Nhà chuyên môn về luật khác chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "26191",
+    "tenNgheNghiep": "Công chứng viên"
+  },
+  {
+    "maNgheNghiep": "26192",
+    "tenNgheNghiep": "Thừa phát lại"
+  },
+  {
+    "maNgheNghiep": "26199",
+    "tenNgheNghiep": "Nhà chuyên môn về luật khác chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "262",
+    "tenNgheNghiep": "Thủ thư, nhà chuyên môn về lưu trữ và giám tuyển"
+  },
+  {
+    "maNgheNghiep": "2621",
+    "tenNgheNghiep": "Nhà chuyên môn về lưu trữ và giám tuyển"
+  },
+  {
+    "maNgheNghiep": "2622",
+    "tenNgheNghiep": "Thủ thư và các nhà chuyên môn về thông tin liên quan"
+  },
+  {
+    "maNgheNghiep": "263",
+    "tenNgheNghiep": "Nhà chuyên môn về xã hội và tôn giáo"
+  },
+  {
+    "maNgheNghiep": "2631",
+    "tenNgheNghiep": "Nhà kinh tế học"
+  },
+  {
+    "maNgheNghiep": "2632",
+    "tenNgheNghiep": "Nhà xã hội học, nhà nhân chủng học và các nghề có liên quan"
+  },
+  {
+    "maNgheNghiep": "2633",
+    "tenNgheNghiep": "Nhà triết học, sử học và khoa học chính trị"
+  },
+  {
+    "maNgheNghiep": "2634",
+    "tenNgheNghiep": "Nhà tâm lý học"
+  },
+  {
+    "maNgheNghiep": "2635",
+    "tenNgheNghiep": "Nhà chuyên môn về tư vấn và công tác xã hội"
+  },
+  {
+    "maNgheNghiep": "2636",
+    "tenNgheNghiep": "Nhà chuyên môn về tôn giáo"
+  },
+  {
+    "maNgheNghiep": "264",
+    "tenNgheNghiep": "Nhà văn, nhà báo và nhà ngôn ngữ học"
+  },
+  {
+    "maNgheNghiep": "2641",
+    "tenNgheNghiep": "Nhà văn và nghề có liên quan"
+  },
+  {
+    "maNgheNghiep": "26411",
+    "tenNgheNghiep": "Nhà văn"
+  },
+  {
+    "maNgheNghiep": "26412",
+    "tenNgheNghiep": "Người viết kịch bản"
+  },
+  {
+    "maNgheNghiep": "26413",
+    "tenNgheNghiep": "Người viết lời quảng cáo"
+  },
+  {
+    "maNgheNghiep": "26414",
+    "tenNgheNghiep": "Người viết tài liệu kỹ thuật"
+  },
+  {
+    "maNgheNghiep": "26415",
+    "tenNgheNghiep": "Nhà biên tập kịch bản và kết nối"
+  },
+  {
+    "maNgheNghiep": "26416",
+    "tenNgheNghiep": "Biên tập viên xuất bản phẩm"
+  },
+  {
+    "maNgheNghiep": "26419",
+    "tenNgheNghiep": "Người viết khác và các nghề liên quan"
+  },
+  {
+    "maNgheNghiep": "2642",
+    "tenNgheNghiep": "Nhà báo, biên tập viên"
+  },
+  {
+    "maNgheNghiep": "26421",
+    "tenNgheNghiep": "Nhà báo"
+  },
+  {
+    "maNgheNghiep": "26422",
+    "tenNgheNghiep": "Biên tập viên"
+  },
+  {
+    "maNgheNghiep": "2643",
+    "tenNgheNghiep": "Nhà biên dịch, phiên dịch và nhà ngôn ngữ khác"
+  },
+  {
+    "maNgheNghiep": "26431",
+    "tenNgheNghiep": "Phiên dịch"
+  },
+  {
+    "maNgheNghiep": "26432",
+    "tenNgheNghiep": "Biên dịch"
+  },
+  {
+    "maNgheNghiep": "26439",
+    "tenNgheNghiep": "Nhà ngôn ngữ khác"
+  },
+  {
+    "maNgheNghiep": "265",
+    "tenNgheNghiep": "Nghệ sỹ sáng tạo và trình diễn"
+  },
+  {
+    "maNgheNghiep": "2651",
+    "tenNgheNghiep": "Nghệ sỹ hình ảnh"
+  },
+  {
+    "maNgheNghiep": "26511",
+    "tenNgheNghiep": "Nhà điêu khắc"
+  },
+  {
+    "maNgheNghiep": "26512",
+    "tenNgheNghiep": "Hoạ sỹ"
+  },
+  {
+    "maNgheNghiep": "26513",
+    "tenNgheNghiep": "Người vẽ tranh hoạt họa"
+  },
+  {
+    "maNgheNghiep": "26519",
+    "tenNgheNghiep": "Nghệ sỹ hình ảnh khác"
+  },
+  {
+    "maNgheNghiep": "2652",
+    "tenNgheNghiep": "Nhạc công, ca sỹ và nhạc sỹ"
+  },
+  {
+    "maNgheNghiep": "26521",
+    "tenNgheNghiep": "Nhạc công"
+  },
+  {
+    "maNgheNghiep": "26522",
+    "tenNgheNghiep": "Nhạc sỹ"
+  },
+  {
+    "maNgheNghiep": "26523",
+    "tenNgheNghiep": "Nhạc trưởng/giám đốc dàn nhạc/ban nhạc/dàn hợp xướng"
+  },
+  {
+    "maNgheNghiep": "26524",
+    "tenNgheNghiep": "Ca sỹ"
+  },
+  {
+    "maNgheNghiep": "26529",
+    "tenNgheNghiep": "Nhạc công, ca sỹ và nhạc sỹ khác"
+  },
+  {
+    "maNgheNghiep": "2653",
+    "tenNgheNghiep": "Vũ công và biên đạo múa"
+  },
+  {
+    "maNgheNghiep": "2654",
+    "tenNgheNghiep": "Đạo diễn, nhà sản xuất phim, sân khấu và các nghề liên quan"
+  },
+  {
+    "maNgheNghiep": "2655",
+    "tenNgheNghiep": "Diễn viên"
+  },
+  {
+    "maNgheNghiep": "2656",
+    "tenNgheNghiep": "Phát thanh viên trên đài, truyền hình và các phương tiện truyền thông đại chúng khác"
+  },
+  {
+    "maNgheNghiep": "2659",
+    "tenNgheNghiep": "Nghệ sỹ sáng tạo và trình diễn liên quan khác chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "31",
+    "tenNgheNghiep": "Kỹ thuật viên khoa học và kỹ thuật"
+  },
+  {
+    "maNgheNghiep": "311",
+    "tenNgheNghiep": "Kỹ thuật viên khoa học vật lý và kỹ thuật"
+  },
+  {
+    "maNgheNghiep": "3111",
+    "tenNgheNghiep": "Kỹ thuật viên khoa học hóa học và vật lý"
+  },
+  {
+    "maNgheNghiep": "31111",
+    "tenNgheNghiep": "Kỹ thuật viên hóa học"
+  },
+  {
+    "maNgheNghiep": "31112",
+    "tenNgheNghiep": "Kỹ thuật viên vật lí"
+  },
+  {
+    "maNgheNghiep": "31119",
+    "tenNgheNghiep": "Kỹ thuật viên hóa học và vật lí khác"
+  },
+  {
+    "maNgheNghiep": "3112",
+    "tenNgheNghiep": "Kỹ thuật viên kỹ thuật xây dựng"
+  },
+  {
+    "maNgheNghiep": "31121",
+    "tenNgheNghiep": "Kỹ thuật viên xây dựng dân dụng"
+  },
+  {
+    "maNgheNghiep": "31122",
+    "tenNgheNghiep": "Kỹ thuật viên kết cấu"
+  },
+  {
+    "maNgheNghiep": "31123",
+    "tenNgheNghiep": "Kỹ thuật viên xây dựng công trình"
+  },
+  {
+    "maNgheNghiep": "31124",
+    "tenNgheNghiep": "Kỹ thuật viên khảo sát đất đai"
+  },
+  {
+    "maNgheNghiep": "31129",
+    "tenNgheNghiep": "Kỹ thuật viên xây dựng dân dụng khác"
+  },
+  {
+    "maNgheNghiep": "3113",
+    "tenNgheNghiep": "Kỹ thuật viên kỹ thuật điện"
+  },
+  {
+    "maNgheNghiep": "31131",
+    "tenNgheNghiep": "Kỹ thuật viên điện dân dụng chung"
+  },
+  {
+    "maNgheNghiep": "31132",
+    "tenNgheNghiep": "Kỹ thuật viên điện dân dụng cao tần"
+  },
+  {
+    "maNgheNghiep": "31139",
+    "tenNgheNghiep": "Kỹ thuật viên điện dân dụng khác"
+  },
+  {
+    "maNgheNghiep": "3114",
+    "tenNgheNghiep": "Kỹ thuật viên kỹ thuật điện tử"
+  },
+  {
+    "maNgheNghiep": "31141",
+    "tenNgheNghiep": "Kỹ thuật viên điện tử dân dụng (chung)"
+  },
+  {
+    "maNgheNghiep": "31142",
+    "tenNgheNghiep": "Kỹ thuật viên bán dẫn"
+  },
+  {
+    "maNgheNghiep": "31143",
+    "tenNgheNghiep": "Kỹ thuật viên thiết bị ghi âm, ghi hình"
+  },
+  {
+    "maNgheNghiep": "31144",
+    "tenNgheNghiep": "Kỹ thuật viên thiết bị đo đạc"
+  },
+  {
+    "maNgheNghiep": "31149",
+    "tenNgheNghiep": "Kỹ thuật viên điện tử dân dụng khác"
+  },
+  {
+    "maNgheNghiep": "3115",
+    "tenNgheNghiep": "Kỹ thuật viên kỹ thuật cơ khí"
+  },
+  {
+    "maNgheNghiep": "31151",
+    "tenNgheNghiep": "Kỹ thuật viên kỹ thuật cơ khí chung"
+  },
+  {
+    "maNgheNghiep": "31152",
+    "tenNgheNghiep": "Kỹ thuật viên cơ khí hàng không"
+  },
+  {
+    "maNgheNghiep": "31153",
+    "tenNgheNghiep": "Kỹ thuật viên máy tự động"
+  },
+  {
+    "maNgheNghiep": "31154",
+    "tenNgheNghiep": "Kỹ thuật viên điều hòa không khí/điện lạnh"
+  },
+  {
+    "maNgheNghiep": "31155",
+    "tenNgheNghiep": "Kỹ thuật viên máy móc, công cụ"
+  },
+  {
+    "maNgheNghiep": "31156",
+    "tenNgheNghiep": "Người thiết kế khuôn/công cụ"
+  },
+  {
+    "maNgheNghiep": "31159",
+    "tenNgheNghiep": "Kỹ thuật viên cơ khí dân dụng khác"
+  },
+  {
+    "maNgheNghiep": "3116",
+    "tenNgheNghiep": "Kỹ thuật viên kỹ thuật hóa học"
+  },
+  {
+    "maNgheNghiep": "3117",
+    "tenNgheNghiep": "Kỹ thuật viên khai thác mỏ và luyện kim"
+  },
+  {
+    "maNgheNghiep": "3118",
+    "tenNgheNghiep": "Kỹ thuật viên phác thảo kỹ thuật"
+  },
+  {
+    "maNgheNghiep": "3119",
+    "tenNgheNghiep": "Kỹ thuật viên khoa học vật lý và kỹ thuật chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "312",
+    "tenNgheNghiep": "Giám sát viên khai thác mỏ, sản xuất và xây dựng"
+  },
+  {
+    "maNgheNghiep": "3121",
+    "tenNgheNghiep": "Giám sát viên khai thác mỏ"
+  },
+  {
+    "maNgheNghiep": "3122",
+    "tenNgheNghiep": "Giám sát viên sản xuất"
+  },
+  {
+    "maNgheNghiep": "3123",
+    "tenNgheNghiep": "Giám sát viên xây dựng"
+  },
+  {
+    "maNgheNghiep": "313",
+    "tenNgheNghiep": "Kỹ thuật viên kiểm soát, vận hành và điều khiển quy trình"
+  },
+  {
+    "maNgheNghiep": "3131",
+    "tenNgheNghiep": "Người vận hành trạm hoặc nhà máy phát điện"
+  },
+  {
+    "maNgheNghiep": "3132",
+    "tenNgheNghiep": "Người vận hành lò đốt rác và nhà máy xử lý nước"
+  },
+  {
+    "maNgheNghiep": "3133",
+    "tenNgheNghiep": "Kiểm soát viên nhà máy xử lý hoá chất"
+  },
+  {
+    "maNgheNghiep": "3134",
+    "tenNgheNghiep": "Người vận hành nhà máy lọc dầu và khí tự nhiên"
+  },
+  {
+    "maNgheNghiep": "3135",
+    "tenNgheNghiep": "Kiểm soát viên quy trình sản xuất kim loại"
+  },
+  {
+    "maNgheNghiep": "3139",
+    "tenNgheNghiep": "Kỹ thuật viên kiểm soát quy trình khác chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "314",
+    "tenNgheNghiep": "Kỹ thuật viên khoa học sự sống và kỹ thuật viên hỗ trợ liên quan"
+  },
+  {
+    "maNgheNghiep": "3141",
+    "tenNgheNghiep": "Kỹ thuật viên khoa học sự sống (không kể y tế)"
+  },
+  {
+    "maNgheNghiep": "3142",
+    "tenNgheNghiep": "Kỹ thuật viên nông nghiệp"
+  },
+  {
+    "maNgheNghiep": "3143",
+    "tenNgheNghiep": "Kỹ thuật viên lâm nghiệp"
+  },
+  {
+    "maNgheNghiep": "3144",
+    "tenNgheNghiep": "Kỹ thuật viên nuôi trồng thủy sản"
+  },
+  {
+    "maNgheNghiep": "315",
+    "tenNgheNghiep": "Kỹ thuật viên và kiểm soát viên tàu thuỷ và phương tiện bay"
+  },
+  {
+    "maNgheNghiep": "3151",
+    "tenNgheNghiep": "Kỹ thuật viên máy của tàu thủy"
+  },
+  {
+    "maNgheNghiep": "3152",
+    "tenNgheNghiep": "Hoa tiêu và nhân viên văn phòng trên tàu"
+  },
+  {
+    "maNgheNghiep": "3153",
+    "tenNgheNghiep": "Phi công phương tiện bay và kỹ thuật viên hỗ trợ liên quan"
+  },
+  {
+    "maNgheNghiep": "3154",
+    "tenNgheNghiep": "Kiểm soát viên không lưu"
+  },
+  {
+    "maNgheNghiep": "3155",
+    "tenNgheNghiep": "Kỹ thuật viên điện tử an toàn không lưu"
+  },
+  {
+    "maNgheNghiep": "32",
+    "tenNgheNghiep": "Kỹ thuật viên sức khỏe"
+  },
+  {
+    "maNgheNghiep": "321",
+    "tenNgheNghiep": "Kỹ thuật viên y tế và dược"
+  },
+  {
+    "maNgheNghiep": "3211",
+    "tenNgheNghiep": "Kỹ thuật viên hình ảnh và thiết bị y tế"
+  },
+  {
+    "maNgheNghiep": "32111",
+    "tenNgheNghiep": "Kỹ thuật viên siêu âm"
+  },
+  {
+    "maNgheNghiep": "32112",
+    "tenNgheNghiep": "Kỹ thuật viên X quang"
+  },
+  {
+    "maNgheNghiep": "32119",
+    "tenNgheNghiep": "Kỹ thuật viên thiết bị y tế và hình ảnh khác"
+  },
+  {
+    "maNgheNghiep": "3212",
+    "tenNgheNghiep": "Kỹ thuật viên phòng thí nghiệm y tế"
+  },
+  {
+    "maNgheNghiep": "3213",
+    "tenNgheNghiep": "Kỹ thuật viên và trợ lý dược"
+  },
+  {
+    "maNgheNghiep": "3214",
+    "tenNgheNghiep": "Kỹ thuật viên lắp răng giả và chỉnh hình"
+  },
+  {
+    "maNgheNghiep": "32141",
+    "tenNgheNghiep": "Kỹ thuật viên lắp chân tay giả và chỉnh hình"
+  },
+  {
+    "maNgheNghiep": "32142",
+    "tenNgheNghiep": "Người làm và sửa các thiết bị chỉnh hình"
+  },
+  {
+    "maNgheNghiep": "32143",
+    "tenNgheNghiep": "Kỹ thuật viên lắp răng giả, chân tay giả và các thiết bị chỉnh hình khác"
+  },
+  {
+    "maNgheNghiep": "322",
+    "tenNgheNghiep": "Y tá/điều dưỡng, kỹ thuật viên chăm sóc bệnh nhân và hộ sinh"
+  },
+  {
+    "maNgheNghiep": "3221",
+    "tenNgheNghiep": "Y tá/điều dưỡng, kỹ thuật viên chăm sóc bệnh nhân"
+  },
+  {
+    "maNgheNghiep": "3222",
+    "tenNgheNghiep": "Hộ sinh"
+  },
+  {
+    "maNgheNghiep": "323",
+    "tenNgheNghiep": "Kỹ thuật viên y học cổ truyền và bổ trợ"
+  },
+  {
+    "maNgheNghiep": "324",
+    "tenNgheNghiep": "Kỹ thuật viên thú y và phụ tá"
+  },
+  {
+    "maNgheNghiep": "325",
+    "tenNgheNghiep": "Kỹ thuật viên sức khỏe khác"
+  },
+  {
+    "maNgheNghiep": "3251",
+    "tenNgheNghiep": "Phụ tá nha khoa và trị liệu"
+  },
+  {
+    "maNgheNghiep": "3252",
+    "tenNgheNghiep": "Kỹ thuật viên ghi chép sổ sách y tế và thông tin về sức khỏe"
+  },
+  {
+    "maNgheNghiep": "3253",
+    "tenNgheNghiep": "Nhân viên y tế cộng đồng"
+  },
+  {
+    "maNgheNghiep": "3254",
+    "tenNgheNghiep": "Kỹ thuật viên nhãn khoa"
+  },
+  {
+    "maNgheNghiep": "3255",
+    "tenNgheNghiep": "Kỹ thuật viên vật lý trị liệu và phụ tá"
+  },
+  {
+    "maNgheNghiep": "3256",
+    "tenNgheNghiep": "Nhân viên trợ giúp y tế"
+  },
+  {
+    "maNgheNghiep": "3257",
+    "tenNgheNghiep": "Thanh tra viên và cộng tác viên môi trường và sức khỏe nghề nghiệp"
+  },
+  {
+    "maNgheNghiep": "3258",
+    "tenNgheNghiep": "Nhân viên cấp cứu"
+  },
+  {
+    "maNgheNghiep": "3259",
+    "tenNgheNghiep": "Kỹ thuật viên sức khỏe khác chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "33",
+    "tenNgheNghiep": "Nhân viên về kinh doanh và quản lý"
+  },
+  {
+    "maNgheNghiep": "331",
+    "tenNgheNghiep": "Nhân viên về toán ứng dụng và tài chính"
+  },
+  {
+    "maNgheNghiep": "3311",
+    "tenNgheNghiep": "Nhân viên môi giới, buôn bán chứng khoán và tài chính"
+  },
+  {
+    "maNgheNghiep": "3312",
+    "tenNgheNghiep": "Nhân viên phụ trách các khoản tín dụng và khoản vay"
+  },
+  {
+    "maNgheNghiep": "3313",
+    "tenNgheNghiep": "Kế toán viên"
+  },
+  {
+    "maNgheNghiep": "3314",
+    "tenNgheNghiep": "Nhân viên về thống kê và toán học ứng dụng có liên quan"
+  },
+  {
+    "maNgheNghiep": "3315",
+    "tenNgheNghiep": "Nhân viên định giá và đánh giá mức độ thiệt hại"
+  },
+  {
+    "maNgheNghiep": "33151",
+    "tenNgheNghiep": "Thẩm định viên/định giá (trừ tài sản vô hình)"
+  },
+  {
+    "maNgheNghiep": "33152",
+    "tenNgheNghiep": "Giám định viên"
+  },
+  {
+    "maNgheNghiep": "33153",
+    "tenNgheNghiep": "Nhân viên định giá tài sản vô hình"
+  },
+  {
+    "maNgheNghiep": "3316",
+    "tenNgheNghiep": "Thủ quỹ"
+  },
+  {
+    "maNgheNghiep": "332",
+    "tenNgheNghiep": "Nhân viên bán hàng, mua sắm và môi giới"
+  },
+  {
+    "maNgheNghiep": "3321",
+    "tenNgheNghiep": "Nhân viên đại diện bảo hiểm"
+  },
+  {
+    "maNgheNghiep": "33211",
+    "tenNgheNghiep": "Đại lý môi giới bảo hiểm (gồm cả nhà kế hoạch tài chính \nđộc lập)"
+  },
+  {
+    "maNgheNghiep": "33219",
+    "tenNgheNghiep": "Đại diện bảo hiểm và các nhân viên hỗ trợ liên quan khác"
+  },
+  {
+    "maNgheNghiep": "3322",
+    "tenNgheNghiep": "Nhân viên đại diện bán hàng hóa thương mại"
+  },
+  {
+    "maNgheNghiep": "3323",
+    "tenNgheNghiep": "Nhân viên/đại lý mua hàng"
+  },
+  {
+    "maNgheNghiep": "33231",
+    "tenNgheNghiep": "Nhân viên thu mua"
+  },
+  {
+    "maNgheNghiep": "33232",
+    "tenNgheNghiep": "Đại lý thu mua"
+  },
+  {
+    "maNgheNghiep": "3324",
+    "tenNgheNghiep": "Nhân viên môi giới thương mại"
+  },
+  {
+    "maNgheNghiep": "333",
+    "tenNgheNghiep": "Nhân viên/đại lý dịch vụ kinh doanh"
+  },
+  {
+    "maNgheNghiep": "3331",
+    "tenNgheNghiep": "Nhân viên làm thủ tục thông quan và vận tải hàng hóa"
+  },
+  {
+    "maNgheNghiep": "3332",
+    "tenNgheNghiep": "Nhân viên tổ chức hội thảo và sự kiện"
+  },
+  {
+    "maNgheNghiep": "3333",
+    "tenNgheNghiep": "Nhân viên môi giới việc làm và nhà thầu"
+  },
+  {
+    "maNgheNghiep": "3334",
+    "tenNgheNghiep": "Nhân viên môi giới bất động sản và quản lý tài sản/bất động sản"
+  },
+  {
+    "maNgheNghiep": "3339",
+    "tenNgheNghiep": "Nhân viên/đại lý dịch vụ kinh doanh khác chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "334",
+    "tenNgheNghiep": "Thư ký hành chính và nhân viên chuyên môn khác"
+  },
+  {
+    "maNgheNghiep": "3341",
+    "tenNgheNghiep": "Giám sát viên văn phòng"
+  },
+  {
+    "maNgheNghiep": "3342",
+    "tenNgheNghiep": "Thư ký luật"
+  },
+  {
+    "maNgheNghiep": "3343",
+    "tenNgheNghiep": "Thư ký hành chính và điều hành"
+  },
+  {
+    "maNgheNghiep": "3344",
+    "tenNgheNghiep": "Thư ký y tế"
+  },
+  {
+    "maNgheNghiep": "335",
+    "tenNgheNghiep": "Nhân viên điều tiết của Chính phủ"
+  },
+  {
+    "maNgheNghiep": "3351",
+    "tenNgheNghiep": "Nhân viên hải quan của Chính phủ"
+  },
+  {
+    "maNgheNghiep": "3352",
+    "tenNgheNghiep": "Nhân viên thuế của Chính phủ"
+  },
+  {
+    "maNgheNghiep": "3353",
+    "tenNgheNghiep": "Nhân viên trợ cấp xã hội của Chính phủ"
+  },
+  {
+    "maNgheNghiep": "3354",
+    "tenNgheNghiep": "Nhân viên cấp phép của Chính phủ"
+  },
+  {
+    "maNgheNghiep": "3355",
+    "tenNgheNghiep": "Kiểm lâm"
+  },
+  {
+    "maNgheNghiep": "3359",
+    "tenNgheNghiep": "Nhân viên điều tiết của Chính phủ khác chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "34",
+    "tenNgheNghiep": "Nhân viên luật pháp, văn hóa, xã hội"
+  },
+  {
+    "maNgheNghiep": "341",
+    "tenNgheNghiep": "Nhân viên về luật pháp, xã hội và tôn giáo"
+  },
+  {
+    "maNgheNghiep": "3411",
+    "tenNgheNghiep": "Nhân viên về luật pháp"
+  },
+  {
+    "maNgheNghiep": "3412",
+    "tenNgheNghiep": "Nhân viên về công tác xã hội"
+  },
+  {
+    "maNgheNghiep": "3413",
+    "tenNgheNghiep": "Nhân viên về tôn giáo"
+  },
+  {
+    "maNgheNghiep": "342",
+    "tenNgheNghiep": "Nhân viên về thể thao và tập luyện"
+  },
+  {
+    "maNgheNghiep": "3421",
+    "tenNgheNghiep": "Vận động viên và người chơi thể thao"
+  },
+  {
+    "maNgheNghiep": "3422",
+    "tenNgheNghiep": "Huấn luyện viên, nhân viên hướng dẫn thể thao và làm việc trong lĩnh vực thể thao"
+  },
+  {
+    "maNgheNghiep": "34221",
+    "tenNgheNghiep": "Huấn luyện viên thể thao"
+  },
+  {
+    "maNgheNghiep": "34222",
+    "tenNgheNghiep": "Nhân viên hướng dẫn thể dục thẩm mỹ"
+  },
+  {
+    "maNgheNghiep": "34223",
+    "tenNgheNghiep": "Nhân viên hướng dẫn tập thể hình"
+  },
+  {
+    "maNgheNghiep": "34224",
+    "tenNgheNghiep": "Nhân viên làm việc trong lĩnh vực thể thao"
+  },
+  {
+    "maNgheNghiep": "34229",
+    "tenNgheNghiep": "Huấn luyện viên, nhân viên hướng dẫn thể thao và làm việc trong lĩnh vực thể thao khác"
+  },
+  {
+    "maNgheNghiep": "3423",
+    "tenNgheNghiep": "Người hướng dẫn tập luyện và giải trí, người chỉ đạo chương trình"
+  },
+  {
+    "maNgheNghiep": "343",
+    "tenNgheNghiep": "Nhân viên về nghệ thuật, văn hóa và ẩm thực"
+  },
+  {
+    "maNgheNghiep": "3431",
+    "tenNgheNghiep": "Nhiếp ảnh gia"
+  },
+  {
+    "maNgheNghiep": "3432",
+    "tenNgheNghiep": "Nhà thiết kế và trang trí nội thất"
+  },
+  {
+    "maNgheNghiep": "3433",
+    "tenNgheNghiep": "Kỹ thuật viên thư viện, viện bảo tàng và triển lãm"
+  },
+  {
+    "maNgheNghiep": "3434",
+    "tenNgheNghiep": "Đầu bếp trưởng"
+  },
+  {
+    "maNgheNghiep": "3439",
+    "tenNgheNghiep": "Nhân viên về nghệ thuật và văn hóa khác"
+  },
+  {
+    "maNgheNghiep": "35",
+    "tenNgheNghiep": "Kỹ thuật viên thông tin và truyền thông"
+  },
+  {
+    "maNgheNghiep": "351",
+    "tenNgheNghiep": "Kỹ thuật viên hỗ trợ người sử dụng và vận hành công nghệ thông tin và truyền thông"
+  },
+  {
+    "maNgheNghiep": "3511",
+    "tenNgheNghiep": "Kỹ thuật viên vận hành công nghệ thông tin và truyền thông"
+  },
+  {
+    "maNgheNghiep": "3512",
+    "tenNgheNghiep": "Kỹ thuật viên hỗ trợ người sử dụng công nghệ thông tin và truyền thông"
+  },
+  {
+    "maNgheNghiep": "3513",
+    "tenNgheNghiep": "Kỹ thuật viên hệ thống và mạng máy tính"
+  },
+  {
+    "maNgheNghiep": "3514",
+    "tenNgheNghiep": "Kỹ thuật viên web"
+  },
+  {
+    "maNgheNghiep": "352",
+    "tenNgheNghiep": "Kỹ thuật viên viễn thông và phát thanh truyền hình"
+  },
+  {
+    "maNgheNghiep": "3521",
+    "tenNgheNghiep": "Kỹ thuật viên truyền hình và nghe - nhìn"
+  },
+  {
+    "maNgheNghiep": "35211",
+    "tenNgheNghiep": "Kỹ thuật viên điều hành chương trình"
+  },
+  {
+    "maNgheNghiep": "35212",
+    "tenNgheNghiep": "Nhân viên điều khiển máy quay phim"
+  },
+  {
+    "maNgheNghiep": "35213",
+    "tenNgheNghiep": "Nhân viên điều khiển máy quay hình động/tivi"
+  },
+  {
+    "maNgheNghiep": "35214",
+    "tenNgheNghiep": "Nhân viên điều khiển thiết bị phòng thu phát thanh truyền hình"
+  },
+  {
+    "maNgheNghiep": "35215",
+    "tenNgheNghiep": "Nhân viên điều khiển thiết bị ghi âm"
+  },
+  {
+    "maNgheNghiep": "35216",
+    "tenNgheNghiep": "Nhân viên dựng phim"
+  },
+  {
+    "maNgheNghiep": "35219",
+    "tenNgheNghiep": "Các kỹ thuật viên phát thanh và nghe nhìn khác"
+  },
+  {
+    "maNgheNghiep": "3522",
+    "tenNgheNghiep": "Kỹ thuật viên kỹ thuật viễn thông"
+  },
+  {
+    "maNgheNghiep": "36",
+    "tenNgheNghiep": "Giáo viên bậc trung"
+  },
+  {
+    "maNgheNghiep": "361",
+    "tenNgheNghiep": "Giáo viên tiểu học"
+  },
+  {
+    "maNgheNghiep": "362",
+    "tenNgheNghiep": "Giáo viên mầm non"
+  },
+  {
+    "maNgheNghiep": "363",
+    "tenNgheNghiep": "Giáo viên dạy các đối tượng bị khuyết tật"
+  },
+  {
+    "maNgheNghiep": "364",
+    "tenNgheNghiep": "Giáo viên khác"
+  },
+  {
+    "maNgheNghiep": "3641",
+    "tenNgheNghiep": "Giáo viên sơ cấp"
+  },
+  {
+    "maNgheNghiep": "3642",
+    "tenNgheNghiep": "Giáo viên đào tạo khác"
+  },
+  {
+    "maNgheNghiep": "41",
+    "tenNgheNghiep": "Nhân viên tổng hợp và nhân viên làm các công việc bàn giấy"
+  },
+  {
+    "maNgheNghiep": "411",
+    "tenNgheNghiep": "Nhân viên tổng hợp"
+  },
+  {
+    "maNgheNghiep": "41101",
+    "tenNgheNghiep": "Nhân viên văn phòng (gồm cả sắp xếp tài liệu và sao chụp)"
+  },
+  {
+    "maNgheNghiep": "41102",
+    "tenNgheNghiep": "Nhân viên nguồn nhân lực/tổ chức"
+  },
+  {
+    "maNgheNghiep": "41109",
+    "tenNgheNghiep": "Nhân viên hành chính khác"
+  },
+  {
+    "maNgheNghiep": "412",
+    "tenNgheNghiep": "Thư ký (tổng hợp)"
+  },
+  {
+    "maNgheNghiep": "413",
+    "tenNgheNghiep": "Nhân viên làm công việc bàn giấy"
+  },
+  {
+    "maNgheNghiep": "4131",
+    "tenNgheNghiep": "Nhân viên đánh máy"
+  },
+  {
+    "maNgheNghiep": "4132",
+    "tenNgheNghiep": "Nhân viên nhập dữ liệu"
+  },
+  {
+    "maNgheNghiep": "42",
+    "tenNgheNghiep": "Nhân viên dịch vụ khách hàng"
+  },
+  {
+    "maNgheNghiep": "421",
+    "tenNgheNghiep": "Nhân viên thu ngân, thu tiền và các nghề liên quan"
+  },
+  {
+    "maNgheNghiep": "4211",
+    "tenNgheNghiep": "Nhân viên giao dịch ngân hàng và các nghề liên quan"
+  },
+  {
+    "maNgheNghiep": "42111",
+    "tenNgheNghiep": "Nhân viên giao dịch ngân hàng"
+  },
+  {
+    "maNgheNghiep": "42112",
+    "tenNgheNghiep": "Nhân viên thu ngân dịch vụ bưu điện"
+  },
+  {
+    "maNgheNghiep": "42113",
+    "tenNgheNghiep": "Nhân viên đổi tiền"
+  },
+  {
+    "maNgheNghiep": "42119",
+    "tenNgheNghiep": "Nhân viên giao dịch và thu ngân khác"
+  },
+  {
+    "maNgheNghiep": "4212",
+    "tenNgheNghiep": "Nhân viên chia bài trong sòng bạc và các nghề liên quan đến cờ bạc khác"
+  },
+  {
+    "maNgheNghiep": "4213",
+    "tenNgheNghiep": "Chủ hiệu cầm đồ và cho vay tiền"
+  },
+  {
+    "maNgheNghiep": "42131",
+    "tenNgheNghiep": "Chủ hiệu cầm đồ"
+  },
+  {
+    "maNgheNghiep": "42132",
+    "tenNgheNghiep": "Người cho vay tiền"
+  },
+  {
+    "maNgheNghiep": "4214",
+    "tenNgheNghiep": "Người thu nợ và các công việc liên quan"
+  },
+  {
+    "maNgheNghiep": "42141",
+    "tenNgheNghiep": "Người thu nợ"
+  },
+  {
+    "maNgheNghiep": "42149",
+    "tenNgheNghiep": "Người thu nợ khác và làm công việc có liên quan"
+  },
+  {
+    "maNgheNghiep": "422",
+    "tenNgheNghiep": "Nhân viên thông tin khách hàng"
+  },
+  {
+    "maNgheNghiep": "4221",
+    "tenNgheNghiep": "Nhân viên và tư vấn viên du lịch"
+  },
+  {
+    "maNgheNghiep": "4222",
+    "tenNgheNghiep": "Nhân viên trung tâm thông tin liên lạc"
+  },
+  {
+    "maNgheNghiep": "4223",
+    "tenNgheNghiep": "Nhân viên vận hành tổng đài điện thoại"
+  },
+  {
+    "maNgheNghiep": "4224",
+    "tenNgheNghiep": "Nhân viên lễ tân khách sạn"
+  },
+  {
+    "maNgheNghiep": "4225",
+    "tenNgheNghiep": "Nhân viên hướng dẫn"
+  },
+  {
+    "maNgheNghiep": "4226",
+    "tenNgheNghiep": "Lễ tân (tổng hợp)"
+  },
+  {
+    "maNgheNghiep": "4227",
+    "tenNgheNghiep": "Phỏng vấn viên điều tra và nghiên cứu thị trường"
+  },
+  {
+    "maNgheNghiep": "4229",
+    "tenNgheNghiep": "Nhân viên thông tin khách hàng chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "43",
+    "tenNgheNghiep": "Nhân viên ghi chép số liệu và vật liệu"
+  },
+  {
+    "maNgheNghiep": "431",
+    "tenNgheNghiep": "Nhân viên làm công việc liên quan đến số liệu"
+  },
+  {
+    "maNgheNghiep": "4311",
+    "tenNgheNghiep": "Nhân viên kế toán"
+  },
+  {
+    "maNgheNghiep": "4312",
+    "tenNgheNghiep": "Nhân viên thống kê, tài chính và bảo hiểm"
+  },
+  {
+    "maNgheNghiep": "4313",
+    "tenNgheNghiep": "Nhân viên kế toán tiền lương"
+  },
+  {
+    "maNgheNghiep": "432",
+    "tenNgheNghiep": "Nhân viên ghi chép nguyên vật liệu và vận chuyển"
+  },
+  {
+    "maNgheNghiep": "4321",
+    "tenNgheNghiep": "Nhân viên ghi chép tồn kho"
+  },
+  {
+    "maNgheNghiep": "4322",
+    "tenNgheNghiep": "Nhân viên sản xuất"
+  },
+  {
+    "maNgheNghiep": "4323",
+    "tenNgheNghiep": "Nhân viên vận chuyển"
+  },
+  {
+    "maNgheNghiep": "44",
+    "tenNgheNghiep": "Nhân viên hỗ trợ văn phòng khác"
+  },
+  {
+    "maNgheNghiep": "4401",
+    "tenNgheNghiep": "Nhân viên thư viện"
+  },
+  {
+    "maNgheNghiep": "4402",
+    "tenNgheNghiep": "Nhân viên phân loại và vận chuyển thư"
+  },
+  {
+    "maNgheNghiep": "4403",
+    "tenNgheNghiep": "Nhân viên đánh mã, đọc và sửa bản in thử"
+  },
+  {
+    "maNgheNghiep": "4404",
+    "tenNgheNghiep": "Người ghi chép thuê và người làm các công việc có liên quan"
+  },
+  {
+    "maNgheNghiep": "4405",
+    "tenNgheNghiep": "Nhân viên văn thư và phô tô"
+  },
+  {
+    "maNgheNghiep": "4406",
+    "tenNgheNghiep": "Nhân viên tổ chức nhân sự"
+  },
+  {
+    "maNgheNghiep": "4409",
+    "tenNgheNghiep": "Nhân viên hỗ trợ văn phòng khác chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "51",
+    "tenNgheNghiep": "Nhân viên dịch vụ cá nhân"
+  },
+  {
+    "maNgheNghiep": "511",
+    "tenNgheNghiep": "Nhân viên hướng dẫn, tổ chức khách du lịch"
+  },
+  {
+    "maNgheNghiep": "5111",
+    "tenNgheNghiep": "Tiếp viên trên tàu hoặc máy bay"
+  },
+  {
+    "maNgheNghiep": "5112",
+    "tenNgheNghiep": "Nhân viên phụ tàu xe"
+  },
+  {
+    "maNgheNghiep": "5113",
+    "tenNgheNghiep": "Nhân viên hướng dẫn du lịch"
+  },
+  {
+    "maNgheNghiep": "51131",
+    "tenNgheNghiep": "Nhân viên hướng dẫn khu thiên nhiên"
+  },
+  {
+    "maNgheNghiep": "51132",
+    "tenNgheNghiep": "Nhân viên hướng dẫn công viên chủ đề"
+  },
+  {
+    "maNgheNghiep": "51139",
+    "tenNgheNghiep": "Nhân viên hướng dẫn du lịch khác (như di tích lịch sử, \nbảo tàng)"
+  },
+  {
+    "maNgheNghiep": "512",
+    "tenNgheNghiep": "Đầu bếp"
+  },
+  {
+    "maNgheNghiep": "513",
+    "tenNgheNghiep": "Bồi bàn và nhân viên pha chế"
+  },
+  {
+    "maNgheNghiep": "5131",
+    "tenNgheNghiep": "Bồi bàn"
+  },
+  {
+    "maNgheNghiep": "51311",
+    "tenNgheNghiep": "Tổ trưởng/Giám sát bồi bàn"
+  },
+  {
+    "maNgheNghiep": "51312",
+    "tenNgheNghiep": "Bồi bàn (trừ bồi bàn rượu)"
+  },
+  {
+    "maNgheNghiep": "51313",
+    "tenNgheNghiep": "Bồi bàn rượu"
+  },
+  {
+    "maNgheNghiep": "5132",
+    "tenNgheNghiep": "Nhân viên pha chế"
+  },
+  {
+    "maNgheNghiep": "514",
+    "tenNgheNghiep": "Thợ làm đầu, nhân viên làm đẹp"
+  },
+  {
+    "maNgheNghiep": "5141",
+    "tenNgheNghiep": "Thợ làm đầu"
+  },
+  {
+    "maNgheNghiep": "5142",
+    "tenNgheNghiep": "Nhân viên làm đẹp và nhân viên có liên quan"
+  },
+  {
+    "maNgheNghiep": "515",
+    "tenNgheNghiep": "Người giám sát tòa nhà, quản gia"
+  },
+  {
+    "maNgheNghiep": "5151",
+    "tenNgheNghiep": "Người giám sát việc dọn dẹp và vệ sinh trong văn phòng, khách sạn và các cơ quan khác"
+  },
+  {
+    "maNgheNghiep": "5152",
+    "tenNgheNghiep": "Người quản lý công việc gia đình"
+  },
+  {
+    "maNgheNghiep": "5153",
+    "tenNgheNghiep": "Người chăm sóc, bảo vệ tòa nhà"
+  },
+  {
+    "maNgheNghiep": "516",
+    "tenNgheNghiep": "Nhân viên dịch vụ cá nhân khác"
+  },
+  {
+    "maNgheNghiep": "5161",
+    "tenNgheNghiep": "Nhà chiêm tinh, nhà tướng số và những người có liên quan đến tâm linh khác"
+  },
+  {
+    "maNgheNghiep": "5162",
+    "tenNgheNghiep": "Người bồi phòng và những người được thuê để làm bầu bạn"
+  },
+  {
+    "maNgheNghiep": "5163",
+    "tenNgheNghiep": "Người làm nghề phục vụ tang lễ và ướp xác"
+  },
+  {
+    "maNgheNghiep": "5164",
+    "tenNgheNghiep": "Nhân viên chăm sóc và làm đẹp động vật"
+  },
+  {
+    "maNgheNghiep": "5165",
+    "tenNgheNghiep": "Giáo viên hướng dẫn lái xe"
+  },
+  {
+    "maNgheNghiep": "5169",
+    "tenNgheNghiep": "Nhân viên dịch vụ cá nhân khác chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "52",
+    "tenNgheNghiep": "Nhân viên bán hàng"
+  },
+  {
+    "maNgheNghiep": "521",
+    "tenNgheNghiep": "Người bán hàng trên đường phố và tại chợ"
+  },
+  {
+    "maNgheNghiep": "5211",
+    "tenNgheNghiep": "Người bán hàng trong quầy hàng và tại chợ"
+  },
+  {
+    "maNgheNghiep": "5212",
+    "tenNgheNghiep": "Người bán đồ ăn trên đường phố"
+  },
+  {
+    "maNgheNghiep": "522",
+    "tenNgheNghiep": "Nhân viên bán hàng trong cửa hàng"
+  },
+  {
+    "maNgheNghiep": "5221",
+    "tenNgheNghiep": "Chủ cửa hiệu"
+  },
+  {
+    "maNgheNghiep": "5222",
+    "tenNgheNghiep": "Nhân viên giám sát cửa hàng"
+  },
+  {
+    "maNgheNghiep": "5223",
+    "tenNgheNghiep": "Nhân viên trợ giúp bán hàng"
+  },
+  {
+    "maNgheNghiep": "523",
+    "tenNgheNghiep": "Nhân viên thu ngân và bán vé"
+  },
+  {
+    "maNgheNghiep": "52301",
+    "tenNgheNghiep": "Nhân viên thu ngân và bán vé"
+  },
+  {
+    "maNgheNghiep": "52302",
+    "tenNgheNghiep": "Nhân viên thu ngân"
+  },
+  {
+    "maNgheNghiep": "52309",
+    "tenNgheNghiep": "Nhân viên thu ngân và bán vé có liên quan khác"
+  },
+  {
+    "maNgheNghiep": "524",
+    "tenNgheNghiep": "Nhân viên bán hàng khác"
+  },
+  {
+    "maNgheNghiep": "5241",
+    "tenNgheNghiep": "Nhân viên làm mẫu"
+  },
+  {
+    "maNgheNghiep": "5242",
+    "tenNgheNghiep": "Nhân viên thuyết minh giới thiệu hàng hóa"
+  },
+  {
+    "maNgheNghiep": "5243",
+    "tenNgheNghiep": "Nhân viên bán hàng tận nhà"
+  },
+  {
+    "maNgheNghiep": "5244",
+    "tenNgheNghiep": "Nhân viên bán hàng qua trung tâm liên lạc"
+  },
+  {
+    "maNgheNghiep": "5245",
+    "tenNgheNghiep": "Nhân viên phục vụ ở các trạm dịch vụ"
+  },
+  {
+    "maNgheNghiep": "5246",
+    "tenNgheNghiep": "Nhân viên phục vụ đồ ăn uống"
+  },
+  {
+    "maNgheNghiep": "5249",
+    "tenNgheNghiep": "Nhân viên bán hàng khác chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "53",
+    "tenNgheNghiep": "Nhân viên chăm sóc cá nhân"
+  },
+  {
+    "maNgheNghiep": "531",
+    "tenNgheNghiep": "Nhân viên chăm sóc trẻ em và người phụ tá cho giáo viên"
+  },
+  {
+    "maNgheNghiep": "5311",
+    "tenNgheNghiep": "Nhân viên chăm sóc trẻ em"
+  },
+  {
+    "maNgheNghiep": "5312",
+    "tenNgheNghiep": "Người phụ tá cho giáo viên"
+  },
+  {
+    "maNgheNghiep": "532",
+    "tenNgheNghiep": "Nhân viên chăm sóc cá nhân trong các dịch vụ y tế"
+  },
+  {
+    "maNgheNghiep": "5321",
+    "tenNgheNghiep": "Nhân viên hỗ trợ về chăm sóc sức khỏe"
+  },
+  {
+    "maNgheNghiep": "5322",
+    "tenNgheNghiep": "Nhân viên chăm sóc cá nhân tại nhà"
+  },
+  {
+    "maNgheNghiep": "53221",
+    "tenNgheNghiep": "Nhân viên chăm sóc cá nhân (như vật lý trị liệu)"
+  },
+  {
+    "maNgheNghiep": "53222",
+    "tenNgheNghiep": "Điều dưỡng tại nhà"
+  },
+  {
+    "maNgheNghiep": "5329",
+    "tenNgheNghiep": "Nhân viên chăm sóc cá nhân trong các dịch vụ y tế chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "54",
+    "tenNgheNghiep": "Nhân viên dịch vụ bảo vệ"
+  },
+  {
+    "maNgheNghiep": "5401",
+    "tenNgheNghiep": "Nhân viên an ninh (trừ công an)"
+  },
+  {
+    "maNgheNghiep": "5409",
+    "tenNgheNghiep": "Nhân viên dịch vụ bảo vệ khác chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "54091",
+    "tenNgheNghiep": "Thám tử tư"
+  },
+  {
+    "maNgheNghiep": "54092",
+    "tenNgheNghiep": "Nhân viên bảo vệ rừng"
+  },
+  {
+    "maNgheNghiep": "54099",
+    "tenNgheNghiep": "Nhân viên dịch vụ bảo vệ khác còn lại chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "61",
+    "tenNgheNghiep": "Lao động có kỹ năng trong nông nghiệp có sản phẩm chủ yếu để bán"
+  },
+  {
+    "maNgheNghiep": "611",
+    "tenNgheNghiep": "Lao động trồng trọt và làm vườn có sản phẩm chủ yếu để bán"
+  },
+  {
+    "maNgheNghiep": "6111",
+    "tenNgheNghiep": "Lao động trồng, thu hoạch rau và cây mùa vụ"
+  },
+  {
+    "maNgheNghiep": "61111",
+    "tenNgheNghiep": "Lao động trồng, thu hoạch lúa"
+  },
+  {
+    "maNgheNghiep": "61112",
+    "tenNgheNghiep": "Lao động trồng, thu hoạch rau các loại"
+  },
+  {
+    "maNgheNghiep": "61119",
+    "tenNgheNghiep": "Lao động trồng, thu hoạch cây mùa vụ khác"
+  },
+  {
+    "maNgheNghiep": "6112",
+    "tenNgheNghiep": "Lao động trồng, thu hoạch sản phẩm cây bụi và cây thân gỗ"
+  },
+  {
+    "maNgheNghiep": "61121",
+    "tenNgheNghiep": "Lao động trồng, thu hoạch sản phẩm cây cà phê"
+  },
+  {
+    "maNgheNghiep": "61122",
+    "tenNgheNghiep": "Lao động trồng, thu hoạch sản phẩm cây chè"
+  },
+  {
+    "maNgheNghiep": "61123",
+    "tenNgheNghiep": "Lao động trồng, thu hoạch sản phẩm cây tiêu"
+  },
+  {
+    "maNgheNghiep": "61124",
+    "tenNgheNghiep": "Lao động trồng, thu hoạch sản phẩm cây điều"
+  },
+  {
+    "maNgheNghiep": "61125",
+    "tenNgheNghiep": "Lao động trồng, thu hoạch sản phẩm cây cao su"
+  },
+  {
+    "maNgheNghiep": "61129",
+    "tenNgheNghiep": "Lao động trồng, thu hoạch sản phẩm cây bụi và cây thân gỗ khác"
+  },
+  {
+    "maNgheNghiep": "6113",
+    "tenNgheNghiep": "Lao động làm vườn, trồng vườn và vườn ươm"
+  },
+  {
+    "maNgheNghiep": "61131",
+    "tenNgheNghiep": "Lao động trồng, thu hoạch hoa, cây cảnh"
+  },
+  {
+    "maNgheNghiep": "61139",
+    "tenNgheNghiep": "Lao động làm vườn, trồng vườn và vườn ươm khác"
+  },
+  {
+    "maNgheNghiep": "6114",
+    "tenNgheNghiep": "Lao động trồng trọt hỗn hợp"
+  },
+  {
+    "maNgheNghiep": "612",
+    "tenNgheNghiep": "Lao động chăn nuôi"
+  },
+  {
+    "maNgheNghiep": "6121",
+    "tenNgheNghiep": "Lao động chăn nuôi gia súc và vật nuôi lấy sữa"
+  },
+  {
+    "maNgheNghiep": "61211",
+    "tenNgheNghiep": "Lao động chăn nuôi trâu bò"
+  },
+  {
+    "maNgheNghiep": "61212",
+    "tenNgheNghiep": "Lao động chăn nuôi dê, cừu, hươu"
+  },
+  {
+    "maNgheNghiep": "61213",
+    "tenNgheNghiep": "Lao động chăn nuôi lợn"
+  },
+  {
+    "maNgheNghiep": "61219",
+    "tenNgheNghiep": "Lao động chăn nuôi gia súc khác"
+  },
+  {
+    "maNgheNghiep": "6122",
+    "tenNgheNghiep": "Lao động chăn nuôi gia cầm"
+  },
+  {
+    "maNgheNghiep": "61221",
+    "tenNgheNghiep": "Lao động chăn nuôi gà"
+  },
+  {
+    "maNgheNghiep": "61222",
+    "tenNgheNghiep": "Lao động chăn nuôi vịt, ngan, ngỗng"
+  },
+  {
+    "maNgheNghiep": "61229",
+    "tenNgheNghiep": "Lao động chăn nuôi gia cầm khác"
+  },
+  {
+    "maNgheNghiep": "6123",
+    "tenNgheNghiep": "Lao động nuôi ong và nuôi tằm"
+  },
+  {
+    "maNgheNghiep": "61231",
+    "tenNgheNghiep": "Lao động nuôi ong"
+  },
+  {
+    "maNgheNghiep": "61232",
+    "tenNgheNghiep": "Lao động nuôi tằm"
+  },
+  {
+    "maNgheNghiep": "6129",
+    "tenNgheNghiep": "Lao động chăn nuôi chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "613",
+    "tenNgheNghiep": "Lao động trồng trọt và chăn nuôi hỗn hợp"
+  },
+  {
+    "maNgheNghiep": "62",
+    "tenNgheNghiep": "Lao động có kỹ năng trong lâm nghiệp, thủy sản và săn bắn có sản phẩm chủ yếu để bán"
+  },
+  {
+    "maNgheNghiep": "621",
+    "tenNgheNghiep": "Lao động trong lâm nghiệp và lĩnh vực có liên quan"
+  },
+  {
+    "maNgheNghiep": "62101",
+    "tenNgheNghiep": "Lao động ươm giống cây lâm nghiệp"
+  },
+  {
+    "maNgheNghiep": "62102",
+    "tenNgheNghiep": "Lao động trồng rừng và chăm sóc rừng lấy gỗ"
+  },
+  {
+    "maNgheNghiep": "62103",
+    "tenNgheNghiep": "Lao động trồng rừng và chăm sóc rừng tre, nứa"
+  },
+  {
+    "maNgheNghiep": "62109",
+    "tenNgheNghiep": "Lao động trong lâm nghiệp và lĩnh vực có liên quan khác"
+  },
+  {
+    "maNgheNghiep": "622",
+    "tenNgheNghiep": "Lao động thủy sản, săn bắn và đánh bẫy"
+  },
+  {
+    "maNgheNghiep": "6221",
+    "tenNgheNghiep": "Lao động nuôi trồng thủy sản"
+  },
+  {
+    "maNgheNghiep": "62211",
+    "tenNgheNghiep": "Lao động nuôi cá"
+  },
+  {
+    "maNgheNghiep": "62212",
+    "tenNgheNghiep": "Lao động nuôi tôm"
+  },
+  {
+    "maNgheNghiep": "62219",
+    "tenNgheNghiep": "Lao động nuôi trồng thủy sản khác"
+  },
+  {
+    "maNgheNghiep": "6222",
+    "tenNgheNghiep": "Lao động khai thác thủy sản trong nội địa"
+  },
+  {
+    "maNgheNghiep": "62221",
+    "tenNgheNghiep": "Lao động khai thác cá trong nội địa"
+  },
+  {
+    "maNgheNghiep": "62229",
+    "tenNgheNghiep": "Lao động khai thác thủy sản khác trong nội địa"
+  },
+  {
+    "maNgheNghiep": "6223",
+    "tenNgheNghiep": "Lao động khai thác thủy sản trong vùng biển Việt Nam"
+  },
+  {
+    "maNgheNghiep": "62231",
+    "tenNgheNghiep": "Lao động khai thác cá trong vùng biển Việt Nam"
+  },
+  {
+    "maNgheNghiep": "62239",
+    "tenNgheNghiep": "Lao động khai thác thủy sản khác trong vùng biển Việt Nam"
+  },
+  {
+    "maNgheNghiep": "6224",
+    "tenNgheNghiep": "Lao động săn bắn, đánh bẫy"
+  },
+  {
+    "maNgheNghiep": "63",
+    "tenNgheNghiep": "Lao động tự cung tự cấp trong nông nghiệp, lâm nghiệp và thủy sản"
+  },
+  {
+    "maNgheNghiep": "631",
+    "tenNgheNghiep": "Lao động trồng trọt tự cung tự cấp"
+  },
+  {
+    "maNgheNghiep": "632",
+    "tenNgheNghiep": "Lao động chăn nuôi gia súc tự cung tự cấp"
+  },
+  {
+    "maNgheNghiep": "633",
+    "tenNgheNghiep": "Lao động trồng trọt và chăn nuôi hỗn hợp tự cung tự cấp"
+  },
+  {
+    "maNgheNghiep": "634",
+    "tenNgheNghiep": "Lao động đánh cá, săn bắn, đánh bẫy và thu hái tự cung tự cấp"
+  },
+  {
+    "maNgheNghiep": "71",
+    "tenNgheNghiep": "Lao động xây dựng và lao động có liên quan đến nghề xây dựng (trừ thợ điện)"
+  },
+  {
+    "maNgheNghiep": "711",
+    "tenNgheNghiep": "Thợ xây dựng khung nhà và thợ khác có liên quan"
+  },
+  {
+    "maNgheNghiep": "7111",
+    "tenNgheNghiep": "Thợ xây nhà"
+  },
+  {
+    "maNgheNghiep": "7112",
+    "tenNgheNghiep": "Thợ nề và các thợ có liên quan"
+  },
+  {
+    "maNgheNghiep": "7113",
+    "tenNgheNghiep": "Thợ xây nhà bằng đá, thợ cắt đá, thợ tách đá và thợ khắc đá"
+  },
+  {
+    "maNgheNghiep": "71131",
+    "tenNgheNghiep": "Thợ đẽo đá/thợ khắc đá"
+  },
+  {
+    "maNgheNghiep": "71132",
+    "tenNgheNghiep": "Thợ xây nhà bằng đá"
+  },
+  {
+    "maNgheNghiep": "7114",
+    "tenNgheNghiep": "Thợ đổ bê tông và các thợ có liên quan"
+  },
+  {
+    "maNgheNghiep": "71141",
+    "tenNgheNghiep": "Thợ đổ bê tông cốt thép (chung)"
+  },
+  {
+    "maNgheNghiep": "71142",
+    "tenNgheNghiep": "Thợ bê tông"
+  },
+  {
+    "maNgheNghiep": "71149",
+    "tenNgheNghiep": "Thợ bê tông khác, thợ hoàn thiện bê tông và thợ liên quan khác"
+  },
+  {
+    "maNgheNghiep": "7115",
+    "tenNgheNghiep": "Thợ mộc và thợ làm đồ gỗ"
+  },
+  {
+    "maNgheNghiep": "7119",
+    "tenNgheNghiep": "Thợ xây dựng khung nhà và thợ khác có liên quan chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "71191",
+    "tenNgheNghiep": "Thợ giàn giáo"
+  },
+  {
+    "maNgheNghiep": "71192",
+    "tenNgheNghiep": "Thợ phá dỡ"
+  },
+  {
+    "maNgheNghiep": "71193",
+    "tenNgheNghiep": "Thợ ốp tường"
+  },
+  {
+    "maNgheNghiep": "71199",
+    "tenNgheNghiep": "Thợ xây khác và thợ có liên quan chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "712",
+    "tenNgheNghiep": "Thợ hoàn thiện công trình và thợ có liên quan"
+  },
+  {
+    "maNgheNghiep": "7121",
+    "tenNgheNghiep": "Thợ lợp mái"
+  },
+  {
+    "maNgheNghiep": "7122",
+    "tenNgheNghiep": "Thợ lát sàn và thợ lát đá"
+  },
+  {
+    "maNgheNghiep": "7123",
+    "tenNgheNghiep": "Thợ thạch cao"
+  },
+  {
+    "maNgheNghiep": "7124",
+    "tenNgheNghiep": "Thợ lắp đặt vật liệu cách âm, cách nhiệt"
+  },
+  {
+    "maNgheNghiep": "71241",
+    "tenNgheNghiep": "Thợ lắp đặt cách điện xây dựng"
+  },
+  {
+    "maNgheNghiep": "71242",
+    "tenNgheNghiep": "Thợ nồi hơi/thợ ống cách điện"
+  },
+  {
+    "maNgheNghiep": "71243",
+    "tenNgheNghiep": "Thợ lắp đặt cách điện thiết bị điều hòa không khí"
+  },
+  {
+    "maNgheNghiep": "71244",
+    "tenNgheNghiep": "Thợ lắp đặt vật liệu chịu lửa"
+  },
+  {
+    "maNgheNghiep": "71249",
+    "tenNgheNghiep": "Thợ lắp đặt vật liệu cách âm, cách nhiệt khác"
+  },
+  {
+    "maNgheNghiep": "7125",
+    "tenNgheNghiep": "Thợ lắp kính"
+  },
+  {
+    "maNgheNghiep": "7126",
+    "tenNgheNghiep": "Thợ ống nước"
+  },
+  {
+    "maNgheNghiep": "7127",
+    "tenNgheNghiep": "Thợ cơ khí thiết bị điều hòa không khí và làm lạnh"
+  },
+  {
+    "maNgheNghiep": "713",
+    "tenNgheNghiep": "Thợ sơn, người lau dọn tòa nhà và lao động có liên quan"
+  },
+  {
+    "maNgheNghiep": "7131",
+    "tenNgheNghiep": "Thợ sơn và thợ liên quan khác"
+  },
+  {
+    "maNgheNghiep": "71311",
+    "tenNgheNghiep": "Thợ sơn"
+  },
+  {
+    "maNgheNghiep": "71312",
+    "tenNgheNghiep": "Thợ dán giấy dán tường/trần"
+  },
+  {
+    "maNgheNghiep": "7132",
+    "tenNgheNghiep": "Thợ phun sơn và thợ đánh véc ni"
+  },
+  {
+    "maNgheNghiep": "71321",
+    "tenNgheNghiep": "Thợ sơn kết cấu thép/sơn tàu"
+  },
+  {
+    "maNgheNghiep": "71322",
+    "tenNgheNghiep": "Thợ phun sơn xe cơ giới"
+  },
+  {
+    "maNgheNghiep": "71323",
+    "tenNgheNghiep": "Thợ vẽ bảng hiệu"
+  },
+  {
+    "maNgheNghiep": "71324",
+    "tenNgheNghiep": "Thợ phun sơn (trừ tàu, xe cơ giới và biển báo)"
+  },
+  {
+    "maNgheNghiep": "71329",
+    "tenNgheNghiep": "Thợ sơn khác và thợ có liên quan"
+  },
+  {
+    "maNgheNghiep": "7133",
+    "tenNgheNghiep": "Người lau dọn tòa nhà"
+  },
+  {
+    "maNgheNghiep": "72",
+    "tenNgheNghiep": "Thợ luyện kim, cơ khí và thợ có liên quan"
+  },
+  {
+    "maNgheNghiep": "721",
+    "tenNgheNghiep": "Thợ luyện kim loại, thợ đúc, thợ hàn và thợ có liên quan"
+  },
+  {
+    "maNgheNghiep": "7211",
+    "tenNgheNghiep": "Thợ tạo khuôn và lõi kim loại"
+  },
+  {
+    "maNgheNghiep": "7212",
+    "tenNgheNghiep": "Thợ hàn và thợ cắt kim loại bằng nhiệt"
+  },
+  {
+    "maNgheNghiep": "72121",
+    "tenNgheNghiep": "Thợ hàn"
+  },
+  {
+    "maNgheNghiep": "72122",
+    "tenNgheNghiep": "Thợ cắt kim loại bằng nhiệt"
+  },
+  {
+    "maNgheNghiep": "7213",
+    "tenNgheNghiep": "Thợ luyện kim loại"
+  },
+  {
+    "maNgheNghiep": "7214",
+    "tenNgheNghiep": "Thợ chuẩn bị và lắp ráp các cấu kiện kim loại"
+  },
+  {
+    "maNgheNghiep": "7215",
+    "tenNgheNghiep": "Thợ lắp ráp và thợ nối cáp"
+  },
+  {
+    "maNgheNghiep": "722",
+    "tenNgheNghiep": "Thợ rèn, thợ chế tạo các dụng cụ và thợ có liên quan"
+  },
+  {
+    "maNgheNghiep": "7221",
+    "tenNgheNghiep": "Thợ rèn, thợ quai búa và thợ rèn ép nén kim loại"
+  },
+  {
+    "maNgheNghiep": "7222",
+    "tenNgheNghiep": "Thợ chế tạo dụng cụ và thợ có liên quan"
+  },
+  {
+    "maNgheNghiep": "7223",
+    "tenNgheNghiep": "Thợ lắp ráp và vận hành máy công cụ kim loại"
+  },
+  {
+    "maNgheNghiep": "7224",
+    "tenNgheNghiep": "Thợ đánh bóng, thợ mài kim loại và dụng cụ kim loại"
+  },
+  {
+    "maNgheNghiep": "723",
+    "tenNgheNghiep": "Thợ cơ khí và sửa chữa máy móc"
+  },
+  {
+    "maNgheNghiep": "7231",
+    "tenNgheNghiep": "Thợ cơ khí và sửa chữa xe có động cơ"
+  },
+  {
+    "maNgheNghiep": "72311",
+    "tenNgheNghiep": "Thợ cơ khí xe có động cơ"
+  },
+  {
+    "maNgheNghiep": "72312",
+    "tenNgheNghiep": "Thợ sửa chữa xe có động cơ"
+  },
+  {
+    "maNgheNghiep": "7232",
+    "tenNgheNghiep": "Thợ cơ khí và sửa chữa động cơ máy bay"
+  },
+  {
+    "maNgheNghiep": "72321",
+    "tenNgheNghiep": "Thợ cơ khí máy bay"
+  },
+  {
+    "maNgheNghiep": "72322",
+    "tenNgheNghiep": "Thợ sửa chữa động cơ máy bay"
+  },
+  {
+    "maNgheNghiep": "7233",
+    "tenNgheNghiep": "Thợ cơ khí và sửa chữa máy móc nông nghiệp và công nghiệp"
+  },
+  {
+    "maNgheNghiep": "72331",
+    "tenNgheNghiep": "Thợ cơ khí máy móc (chung)"
+  },
+  {
+    "maNgheNghiep": "72332",
+    "tenNgheNghiep": "Thợ sửa chữa máy móc (chung)"
+  },
+  {
+    "maNgheNghiep": "72333",
+    "tenNgheNghiep": "Thợ cơ khí máy móc công nghiệp/máy văn phòng"
+  },
+  {
+    "maNgheNghiep": "72334",
+    "tenNgheNghiep": "Thợ sửa chữa động cơ biển"
+  },
+  {
+    "maNgheNghiep": "72335",
+    "tenNgheNghiep": "Thợ lắp đặt máy móc, thiết bị"
+  },
+  {
+    "maNgheNghiep": "72339",
+    "tenNgheNghiep": "Thợ cơ khí và sửa chữa máy móc khác (như thợ cơ khí máy móc nông nghiệp)"
+  },
+  {
+    "maNgheNghiep": "7234",
+    "tenNgheNghiep": "Thợ sửa chữa xe đạp và thợ có liên quan"
+  },
+  {
+    "maNgheNghiep": "73",
+    "tenNgheNghiep": "Thợ thủ công và thợ liên quan đến in"
+  },
+  {
+    "maNgheNghiep": "731",
+    "tenNgheNghiep": "Thợ thủ công"
+  },
+  {
+    "maNgheNghiep": "7311",
+    "tenNgheNghiep": "Thợ sản xuất và sửa chữa dụng cụ chính xác"
+  },
+  {
+    "maNgheNghiep": "7312",
+    "tenNgheNghiep": "Thợ sản xuất và điều chỉnh nhạc cụ"
+  },
+  {
+    "maNgheNghiep": "7313",
+    "tenNgheNghiep": "Thợ kim hoàn"
+  },
+  {
+    "maNgheNghiep": "73131",
+    "tenNgheNghiep": "Thợ kim hoàn (nói chung)"
+  },
+  {
+    "maNgheNghiep": "73132",
+    "tenNgheNghiep": "Thợ cắt và đánh bóng đá quý"
+  },
+  {
+    "maNgheNghiep": "73133",
+    "tenNgheNghiep": "Thợ vàng/thợ bạc"
+  },
+  {
+    "maNgheNghiep": "73134",
+    "tenNgheNghiep": "Thợ khắc kim hoàn"
+  },
+  {
+    "maNgheNghiep": "73139",
+    "tenNgheNghiep": "Thợ kim hoàn khác"
+  },
+  {
+    "maNgheNghiep": "7314",
+    "tenNgheNghiep": "Thợ gốm và thợ có liên quan"
+  },
+  {
+    "maNgheNghiep": "73141",
+    "tenNgheNghiep": "Thợ gốm"
+  },
+  {
+    "maNgheNghiep": "73142",
+    "tenNgheNghiep": "Thợ gạch ngói"
+  },
+  {
+    "maNgheNghiep": "73149",
+    "tenNgheNghiep": "Thợ gốm và thợ có liên quan khác"
+  },
+  {
+    "maNgheNghiep": "7315",
+    "tenNgheNghiep": "Thợ sản xuất, thợ cắt, thợ mài và thợ hoàn thiện đồ thủy tinh"
+  },
+  {
+    "maNgheNghiep": "7316",
+    "tenNgheNghiep": "Thợ vẽ biển quảng cáo, thợ trang trí, thợ khắc và thợ khắc axit"
+  },
+  {
+    "maNgheNghiep": "73161",
+    "tenNgheNghiep": "Thợ khắc thủy tinh/thợ khắc axit"
+  },
+  {
+    "maNgheNghiep": "73162",
+    "tenNgheNghiep": "Thợ vẽ/thợ trang trí thủy tinh và gốm"
+  },
+  {
+    "maNgheNghiep": "73169",
+    "tenNgheNghiep": "Thợ vẽ biển quảng cáo, thợ trang trí, thợ khắc và thợ khắc axit khác"
+  },
+  {
+    "maNgheNghiep": "7317",
+    "tenNgheNghiep": "Thợ thủ công sản xuất đồ gỗ, rổ rá và các nguyên liệu có liên quan"
+  },
+  {
+    "maNgheNghiep": "7318",
+    "tenNgheNghiep": "Thợ thủ công dệt vải, da và các nguyên liệu có liên quan"
+  },
+  {
+    "maNgheNghiep": "7319",
+    "tenNgheNghiep": "Thợ thủ công khác chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "732",
+    "tenNgheNghiep": "Thợ liên quan đến in"
+  },
+  {
+    "maNgheNghiep": "7321",
+    "tenNgheNghiep": "Thợ thực hiện công đoạn trước in"
+  },
+  {
+    "maNgheNghiep": "7322",
+    "tenNgheNghiep": "Thợ in"
+  },
+  {
+    "maNgheNghiep": "73221",
+    "tenNgheNghiep": "Thợ in offset, in lõm, in cao, in lưới và in kỹ thuật số"
+  },
+  {
+    "maNgheNghiep": "73229",
+    "tenNgheNghiep": "Thợ in khác"
+  },
+  {
+    "maNgheNghiep": "7323",
+    "tenNgheNghiep": "Thợ hoàn thiện sản phẩm in"
+  },
+  {
+    "maNgheNghiep": "74",
+    "tenNgheNghiep": "Thợ điện và thợ điện tử"
+  },
+  {
+    "maNgheNghiep": "741",
+    "tenNgheNghiep": "Thợ lắp đặt và sửa chữa thiết bị điện"
+  },
+  {
+    "maNgheNghiep": "7411",
+    "tenNgheNghiep": "Thợ lắp điện cho tòa nhà và thợ điện có liên quan"
+  },
+  {
+    "maNgheNghiep": "7412",
+    "tenNgheNghiep": "Thợ lắp ráp và thợ cơ khí điện"
+  },
+  {
+    "maNgheNghiep": "74121",
+    "tenNgheNghiep": "Thợ lắp ráp điện (chung)"
+  },
+  {
+    "maNgheNghiep": "74122",
+    "tenNgheNghiep": "Thợ lắp ráp điện thang máy, thang cuốn và các thiết bị liên quan"
+  },
+  {
+    "maNgheNghiep": "74123",
+    "tenNgheNghiep": "Thợ sửa chữa điện gia dụng"
+  },
+  {
+    "maNgheNghiep": "74129",
+    "tenNgheNghiep": "Thơ lắp ráp và thợ cơ khí điện khác"
+  },
+  {
+    "maNgheNghiep": "7413",
+    "tenNgheNghiep": "Thợ lắp đặt và sửa chữa đường dây điện"
+  },
+  {
+    "maNgheNghiep": "74131",
+    "tenNgheNghiep": "Thợ lắp đặt đường dây điện"
+  },
+  {
+    "maNgheNghiep": "74132",
+    "tenNgheNghiep": "Thợ ghép cáp điện"
+  },
+  {
+    "maNgheNghiep": "74139",
+    "tenNgheNghiep": "Thợ lắp đặt và sửa chữa đường dây điện khác"
+  },
+  {
+    "maNgheNghiep": "742",
+    "tenNgheNghiep": "Thợ lắp đặt và thợ sửa chữa điện tử viễn thông"
+  },
+  {
+    "maNgheNghiep": "7421",
+    "tenNgheNghiep": "Thợ cơ khí và thợ dịch vụ điện tử"
+  },
+  {
+    "maNgheNghiep": "74211",
+    "tenNgheNghiep": "Thợ lắp đặt thiết bị điện tử (chung)"
+  },
+  {
+    "maNgheNghiep": "74212",
+    "tenNgheNghiep": "Thợ cơ khí thiết bị video và âm thanh"
+  },
+  {
+    "maNgheNghiep": "74219",
+    "tenNgheNghiep": "Thợ lắp đặt thiết bị điện tử khác"
+  },
+  {
+    "maNgheNghiep": "7422",
+    "tenNgheNghiep": "Thợ lắp đặt và dịch vụ kỹ thuật thông tin và truyền thông"
+  },
+  {
+    "maNgheNghiep": "74221",
+    "tenNgheNghiep": "Thợ lắp đặt phát sóng rada, phát thanh truyền hình/thiết bị truyền dẫn"
+  },
+  {
+    "maNgheNghiep": "74222",
+    "tenNgheNghiep": "Thợ lắp đặt và sửa chữa máy tính và thiết bị điện tử liên quan"
+  },
+  {
+    "maNgheNghiep": "74223",
+    "tenNgheNghiep": "Thợ kéo dây cáp viễn thông"
+  },
+  {
+    "maNgheNghiep": "74224",
+    "tenNgheNghiep": "Thợ cài đặt viễn thông/dịch vụ viễn thông"
+  },
+  {
+    "maNgheNghiep": "75",
+    "tenNgheNghiep": "Thợ chế biến thực phẩm, gia công gỗ, may mặc, đồ thủ công và thợ có liên quan khác"
+  },
+  {
+    "maNgheNghiep": "751",
+    "tenNgheNghiep": "Thợ chế biến thực phẩm và các thợ khác có liên quan"
+  },
+  {
+    "maNgheNghiep": "7511",
+    "tenNgheNghiep": "Thợ giết, mổ, chuẩn bị thịt, cá và thực phẩm khác có liên quan"
+  },
+  {
+    "maNgheNghiep": "75111",
+    "tenNgheNghiep": "Thợ giết mổ"
+  },
+  {
+    "maNgheNghiep": "75119",
+    "tenNgheNghiep": "Thợ giết mổ, chuẩn bị thịt, cá và thực phẩm khác có liên quan"
+  },
+  {
+    "maNgheNghiep": "7512",
+    "tenNgheNghiep": "Thợ nướng bánh, thợ làm bánh ngọt và bánh kẹo"
+  },
+  {
+    "maNgheNghiep": "75121",
+    "tenNgheNghiep": "Thợ làm bánh (chung)"
+  },
+  {
+    "maNgheNghiep": "75122",
+    "tenNgheNghiep": "Thợ làm bánh mỳ"
+  },
+  {
+    "maNgheNghiep": "75123",
+    "tenNgheNghiep": "Thợ làm bánh ngọt và bánh kẹo"
+  },
+  {
+    "maNgheNghiep": "7513",
+    "tenNgheNghiep": "Thợ làm sản phẩm từ sữa"
+  },
+  {
+    "maNgheNghiep": "7514",
+    "tenNgheNghiep": "Thợ bảo quản rau, hoa quả tươi và các thứ có liên quan"
+  },
+  {
+    "maNgheNghiep": "7515",
+    "tenNgheNghiep": "Thợ nếm và phân loại đồ uống, thực phẩm"
+  },
+  {
+    "maNgheNghiep": "75151",
+    "tenNgheNghiep": "Thợ nếm cà phê và trà"
+  },
+  {
+    "maNgheNghiep": "75159",
+    "tenNgheNghiep": "Thợ nếm và phân loại đồ uống, thực phẩm khác"
+  },
+  {
+    "maNgheNghiep": "7516",
+    "tenNgheNghiep": "Thợ sản xuất và chuẩn bị thuốc lá"
+  },
+  {
+    "maNgheNghiep": "752",
+    "tenNgheNghiep": "Thợ xử lý gỗ, thợ sản xuất đồ gỗ và các thợ có liên quan"
+  },
+  {
+    "maNgheNghiep": "7521",
+    "tenNgheNghiep": "Thợ xử lý gỗ"
+  },
+  {
+    "maNgheNghiep": "75211",
+    "tenNgheNghiep": "Thợ lò sấy"
+  },
+  {
+    "maNgheNghiep": "75212",
+    "tenNgheNghiep": "Thợ xử lý gỗ"
+  },
+  {
+    "maNgheNghiep": "75219",
+    "tenNgheNghiep": "Thợ xử lý gỗ khác"
+  },
+  {
+    "maNgheNghiep": "7522",
+    "tenNgheNghiep": "Thợ sản xuất làm đồ gỗ và các thợ có liên quan"
+  },
+  {
+    "maNgheNghiep": "75221",
+    "tenNgheNghiep": "Thợ sản xuất đồ nội thất"
+  },
+  {
+    "maNgheNghiep": "75222",
+    "tenNgheNghiep": "Thợ hoàn thiện đồ gỗ"
+  },
+  {
+    "maNgheNghiep": "75223",
+    "tenNgheNghiep": "Thợ sản xuất khung hình"
+  },
+  {
+    "maNgheNghiep": "75229",
+    "tenNgheNghiep": "Thợ sản xuất đồ gỗ và các thợ có liên quan khác"
+  },
+  {
+    "maNgheNghiep": "7523",
+    "tenNgheNghiep": "Thợ lắp đặt và vận hành máy công cụ chế biến gỗ"
+  },
+  {
+    "maNgheNghiep": "753",
+    "tenNgheNghiep": "Thợ may mặc và các thợ có liên quan"
+  },
+  {
+    "maNgheNghiep": "7531",
+    "tenNgheNghiep": "Thợ may, thợ làm da thú và thợ làm mũ"
+  },
+  {
+    "maNgheNghiep": "7532",
+    "tenNgheNghiep": "Thợ tạo mẫu và cắt quần áo và các thợ có liên quan"
+  },
+  {
+    "maNgheNghiep": "75321",
+    "tenNgheNghiep": "Thợ tạo mẫu"
+  },
+  {
+    "maNgheNghiep": "75322",
+    "tenNgheNghiep": "Thợ cắt"
+  },
+  {
+    "maNgheNghiep": "75329",
+    "tenNgheNghiep": "Thợ tạo và cắt mẫu áo quần và các mẫu có liên quan khác"
+  },
+  {
+    "maNgheNghiep": "7533",
+    "tenNgheNghiep": "Thợ khâu vá, thợ thêu và các thợ có liên quan"
+  },
+  {
+    "maNgheNghiep": "7534",
+    "tenNgheNghiep": "Thợ làm nghề bọc đồ đạc và các thợ có liên quan"
+  },
+  {
+    "maNgheNghiep": "7535",
+    "tenNgheNghiep": "Thợ thuộc da sống, thợ nhuộm và thợ chuyên lột da, lông thú"
+  },
+  {
+    "maNgheNghiep": "7536",
+    "tenNgheNghiep": "Thợ đóng giày và các thợ có liên quan"
+  },
+  {
+    "maNgheNghiep": "75361",
+    "tenNgheNghiep": "Thợ đóng giày"
+  },
+  {
+    "maNgheNghiep": "75362",
+    "tenNgheNghiep": "Thợ sản xuất giày chỉnh hình"
+  },
+  {
+    "maNgheNghiep": "75363",
+    "tenNgheNghiep": "Thợ vá giày"
+  },
+  {
+    "maNgheNghiep": "75364",
+    "tenNgheNghiep": "Thợ sản xuất/lắp ráp hàng da"
+  },
+  {
+    "maNgheNghiep": "75369",
+    "tenNgheNghiep": "Thợ đóng giày và các thợ có liên quan khác"
+  },
+  {
+    "maNgheNghiep": "754",
+    "tenNgheNghiep": "Thợ thủ công khác và các thợ có liên quan"
+  },
+  {
+    "maNgheNghiep": "7541",
+    "tenNgheNghiep": "Thợ lặn"
+  },
+  {
+    "maNgheNghiep": "7542",
+    "tenNgheNghiep": "Thợ giật mìn phá đá"
+  },
+  {
+    "maNgheNghiep": "7543",
+    "tenNgheNghiep": "Thợ phân loại và kiểm tra sản phẩm (trừ thực phẩm và đồ uống)"
+  },
+  {
+    "maNgheNghiep": "7544",
+    "tenNgheNghiep": "Thợ hun khói và thợ kiểm soát thực vật, động vật có hại khác"
+  },
+  {
+    "maNgheNghiep": "7549",
+    "tenNgheNghiep": "Thợ thủ công và các thợ khác chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "81",
+    "tenNgheNghiep": "Thợ vận hành máy móc và thiết bị"
+  },
+  {
+    "maNgheNghiep": "811",
+    "tenNgheNghiep": "Thợ vận hành máy móc, thiết bị xử lý khai khoáng"
+  },
+  {
+    "maNgheNghiep": "8111",
+    "tenNgheNghiep": "Thợ khai thác mỏ và đá"
+  },
+  {
+    "maNgheNghiep": "8112",
+    "tenNgheNghiep": "Thợ vận hành thiết bị chế biến khoáng sản và đá"
+  },
+  {
+    "maNgheNghiep": "8113",
+    "tenNgheNghiep": "Thợ khoan, đào giếng và các thợ có liên quan"
+  },
+  {
+    "maNgheNghiep": "81131",
+    "tenNgheNghiep": "Thợ khoan giếng (giếng dầu khí)"
+  },
+  {
+    "maNgheNghiep": "81132",
+    "tenNgheNghiep": "Thợ khoan giếng (trừ giếng dầu khí)"
+  },
+  {
+    "maNgheNghiep": "81133",
+    "tenNgheNghiep": "Thợ vận hành máy khoan sâu"
+  },
+  {
+    "maNgheNghiep": "81139",
+    "tenNgheNghiep": "Thợ khoan, đào giếng và các thợ có liên quan khác"
+  },
+  {
+    "maNgheNghiep": "8114",
+    "tenNgheNghiep": "Thợ vận hành máy sản xuất xi măng, đá và khoáng khác"
+  },
+  {
+    "maNgheNghiep": "81141",
+    "tenNgheNghiep": "Thợ vận hành máy sản xuất sản phẩm bê tông đúc sẵn"
+  },
+  {
+    "maNgheNghiep": "81142",
+    "tenNgheNghiep": "Thợ vận hành máy sản xuất xi măng amiăng"
+  },
+  {
+    "maNgheNghiep": "81143",
+    "tenNgheNghiep": "Thợ vận hành máy làm gạch đất nung, ngói"
+  },
+  {
+    "maNgheNghiep": "81144",
+    "tenNgheNghiep": "Thợ vận hành máy trộn bê tông"
+  },
+  {
+    "maNgheNghiep": "81145",
+    "tenNgheNghiep": "Thợ vận hành bơm bê tông"
+  },
+  {
+    "maNgheNghiep": "81149",
+    "tenNgheNghiep": "Thợ vận hành máy chế biến và các sản phẩm khoáng sản khác"
+  },
+  {
+    "maNgheNghiep": "812",
+    "tenNgheNghiep": "Thợ vận hành thiết bị xử lý và hoàn thiện kim loại"
+  },
+  {
+    "maNgheNghiep": "8121",
+    "tenNgheNghiep": "Thợ vận hành thiết bị xử lý kim loại"
+  },
+  {
+    "maNgheNghiep": "8122",
+    "tenNgheNghiep": "Thợ vận hành máy hoàn thiện, tráng, mạ kim loại"
+  },
+  {
+    "maNgheNghiep": "813",
+    "tenNgheNghiep": "Thợ vận hành máy móc, thiết bị sản xuất hóa học và sản xuất sản phẩm phim ảnh"
+  },
+  {
+    "maNgheNghiep": "8131",
+    "tenNgheNghiep": "Thợ vận hành máy và thiết bị sản xuất hóa chất"
+  },
+  {
+    "maNgheNghiep": "81311",
+    "tenNgheNghiep": "Thợ vận hành thiết bị nghiền/trộn hóa chất"
+  },
+  {
+    "maNgheNghiep": "81312",
+    "tenNgheNghiep": "Thợ vận hành máy xử lý nhiệt hóa học"
+  },
+  {
+    "maNgheNghiep": "81313",
+    "tenNgheNghiep": "Thợ vận hành máy lọc và tách hóa chất"
+  },
+  {
+    "maNgheNghiep": "81314",
+    "tenNgheNghiep": "Thợ vận hành hóa chất tĩnh/lò phản ứng"
+  },
+  {
+    "maNgheNghiep": "81315",
+    "tenNgheNghiep": "Thợ vận hành máy sợi tổng hợp"
+  },
+  {
+    "maNgheNghiep": "81319",
+    "tenNgheNghiep": "Thợ vận hành máy và thiết bị sản xuất hóa học khác"
+  },
+  {
+    "maNgheNghiep": "8132",
+    "tenNgheNghiep": "Thợ vận hành máy sản xuất sản phẩm phim ảnh"
+  },
+  {
+    "maNgheNghiep": "814",
+    "tenNgheNghiep": "Thợ vận hành máy sản xuất sản phẩm giấy, nhựa và cao su"
+  },
+  {
+    "maNgheNghiep": "8141",
+    "tenNgheNghiep": "Thợ vận hành máy sản xuất sản phẩm cao su"
+  },
+  {
+    "maNgheNghiep": "81411",
+    "tenNgheNghiep": "Thợ vận hành máy phay cao su"
+  },
+  {
+    "maNgheNghiep": "81412",
+    "tenNgheNghiep": "Thợ vận hành máy cán cao su"
+  },
+  {
+    "maNgheNghiep": "81419",
+    "tenNgheNghiep": "Thợ vận hành máy sản xuất sản phẩm cao su khác"
+  },
+  {
+    "maNgheNghiep": "8142",
+    "tenNgheNghiep": "Thợ vận hành máy sản xuất sản phẩm nhựa"
+  },
+  {
+    "maNgheNghiep": "8143",
+    "tenNgheNghiep": "Thợ vận hành máy sản xuất sản phẩm từ giấy và thùng catong"
+  },
+  {
+    "maNgheNghiep": "81431",
+    "tenNgheNghiep": "Thợ vận hành máy làm thùng catong/hộp giấy"
+  },
+  {
+    "maNgheNghiep": "81432",
+    "tenNgheNghiep": "Thợ vận hành máy sản xuất sản phẩm giấy"
+  },
+  {
+    "maNgheNghiep": "81439",
+    "tenNgheNghiep": "Thợ vận hành máy sản xuất sản phẩm giấy và thùng catong khác"
+  },
+  {
+    "maNgheNghiep": "815",
+    "tenNgheNghiep": "Thợ vận hành máy sản xuất nguyên liệu dệt, da lông thú và da thuộc"
+  },
+  {
+    "maNgheNghiep": "8151",
+    "tenNgheNghiep": "Thợ vận hành máy xe sợi, kéo sợi và cuộn sợi"
+  },
+  {
+    "maNgheNghiep": "81511",
+    "tenNgheNghiep": "Thợ vận hành máy xe chỉ (chỉ và sợi)"
+  },
+  {
+    "maNgheNghiep": "81512",
+    "tenNgheNghiep": "Thợ vận hành máy cuộn chỉ (chỉ và sợi)"
+  },
+  {
+    "maNgheNghiep": "8152",
+    "tenNgheNghiep": "Thợ vận hành máy dệt kim, máy đan"
+  },
+  {
+    "maNgheNghiep": "81521",
+    "tenNgheNghiep": "Thợ vận hành máy dệt"
+  },
+  {
+    "maNgheNghiep": "81522",
+    "tenNgheNghiep": "Thợ vận hành máy đan"
+  },
+  {
+    "maNgheNghiep": "8153",
+    "tenNgheNghiep": "Thợ vận hành máy may"
+  },
+  {
+    "maNgheNghiep": "81531",
+    "tenNgheNghiep": "Thợ vận hành máy may"
+  },
+  {
+    "maNgheNghiep": "81532",
+    "tenNgheNghiep": "Thợ vận hành máy thêu"
+  },
+  {
+    "maNgheNghiep": "8154",
+    "tenNgheNghiep": "Thợ vận hành máy tẩy trắng, máy nhuộm và làm sạch sợi"
+  },
+  {
+    "maNgheNghiep": "81541",
+    "tenNgheNghiep": "Thợ vận hành máy tẩy trắng"
+  },
+  {
+    "maNgheNghiep": "81542",
+    "tenNgheNghiep": "Thợ vận hành máy nhuộm"
+  },
+  {
+    "maNgheNghiep": "81543",
+    "tenNgheNghiep": "Thợ vận hành máy làm sạch sợi"
+  },
+  {
+    "maNgheNghiep": "81549",
+    "tenNgheNghiep": "Thợ vận hành máy tẩy trắng, máy nhuộm và làm sạch sợi khác"
+  },
+  {
+    "maNgheNghiep": "8155",
+    "tenNgheNghiep": "Thợ vận hành máy chuẩn bị da, lông thú"
+  },
+  {
+    "maNgheNghiep": "8156",
+    "tenNgheNghiep": "Thợ vận hành máy đóng giầy, dép và các thợ có liên quan"
+  },
+  {
+    "maNgheNghiep": "8157",
+    "tenNgheNghiep": "Thợ vận hành máy giặt là"
+  },
+  {
+    "maNgheNghiep": "8159",
+    "tenNgheNghiep": "Thợ vận hành máy sản xuất nguyên liệu dệt, da lông thú và da thuộc chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "816",
+    "tenNgheNghiep": "Thợ vận hành máy sản xuất thực phẩm và các thợ có liên quan"
+  },
+  {
+    "maNgheNghiep": "81601",
+    "tenNgheNghiep": "Thợ vận hành máy sản xuất các sản phẩm từ thịt và cá"
+  },
+  {
+    "maNgheNghiep": "81602",
+    "tenNgheNghiep": "Thợ vận hành máy sản xuất sữa và bánh kẹo"
+  },
+  {
+    "maNgheNghiep": "81603",
+    "tenNgheNghiep": "Thợ vận hành máy xay ngũ cốc và gia vị"
+  },
+  {
+    "maNgheNghiep": "81604",
+    "tenNgheNghiep": "Thợ vận hành máy nướng và các sản phẩm từ ngũ cốc"
+  },
+  {
+    "maNgheNghiep": "81605",
+    "tenNgheNghiep": "Thợ vận hành máy sản xuất các sản phẩm từ trái cây, rau quả"
+  },
+  {
+    "maNgheNghiep": "81606",
+    "tenNgheNghiep": "Thợ vận hành máy chế biến và tinh chế đường"
+  },
+  {
+    "maNgheNghiep": "81607",
+    "tenNgheNghiep": "Thợ vận hành máy sản xuất bia, rượu và nước giải khát khác"
+  },
+  {
+    "maNgheNghiep": "81608",
+    "tenNgheNghiep": "Thợ vận hành máy sản xuất thuốc lá"
+  },
+  {
+    "maNgheNghiep": "81609",
+    "tenNgheNghiep": "Thợ vận hành máy sản xuất thực phẩm và các thợ có liên quan chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "817",
+    "tenNgheNghiep": "Thợ vận hành thiết bị chế biến gỗ và sản xuất giấy"
+  },
+  {
+    "maNgheNghiep": "8171",
+    "tenNgheNghiep": "Thợ vận hành máy nghiền bột giấy và làm giấy"
+  },
+  {
+    "maNgheNghiep": "81711",
+    "tenNgheNghiep": "Thợ vận hành thiết bị chế tạo bột giấy"
+  },
+  {
+    "maNgheNghiep": "81712",
+    "tenNgheNghiep": "Thợ vận hành thiết bị chế tạo giấy"
+  },
+  {
+    "maNgheNghiep": "81719",
+    "tenNgheNghiep": "Thợ vận hành thiết bị chế tạo bột giấy và giấy"
+  },
+  {
+    "maNgheNghiep": "8172",
+    "tenNgheNghiep": "Thợ vận hành máy chế biến gỗ"
+  },
+  {
+    "maNgheNghiep": "81721",
+    "tenNgheNghiep": "Thợ cưa"
+  },
+  {
+    "maNgheNghiep": "81722",
+    "tenNgheNghiep": "Thợ vận hành máy cắt"
+  },
+  {
+    "maNgheNghiep": "81723",
+    "tenNgheNghiep": "Thợ sơn lõi ván ép"
+  },
+  {
+    "maNgheNghiep": "81724",
+    "tenNgheNghiep": "Thợ vận hành máy ép ván ép"
+  },
+  {
+    "maNgheNghiep": "81725",
+    "tenNgheNghiep": "Thợ phân loại gỗ"
+  },
+  {
+    "maNgheNghiep": "81726",
+    "tenNgheNghiep": "Thợ vận hành máy chế biến gỗ"
+  },
+  {
+    "maNgheNghiep": "81727",
+    "tenNgheNghiep": "Thợ vận hành máy cưa gỗ chính xác"
+  },
+  {
+    "maNgheNghiep": "81729",
+    "tenNgheNghiep": "Thợ vận hành thiết bị chế biến gỗ khác"
+  },
+  {
+    "maNgheNghiep": "818",
+    "tenNgheNghiep": "Thợ vận hành máy móc thiết bị khác"
+  },
+  {
+    "maNgheNghiep": "8181",
+    "tenNgheNghiep": "Thợ vận hành thiết bị sản xuất thủy tinh và gốm"
+  },
+  {
+    "maNgheNghiep": "81811",
+    "tenNgheNghiep": "Thợ vận hành lò nung thủy tinh/gốm"
+  },
+  {
+    "maNgheNghiep": "81812",
+    "tenNgheNghiep": "Thợ sản xuất sợi thủy tinh"
+  },
+  {
+    "maNgheNghiep": "81819",
+    "tenNgheNghiep": "Thợ vận hành thiết bị sản xuất thủy tinh và gốm"
+  },
+  {
+    "maNgheNghiep": "8182",
+    "tenNgheNghiep": "Thợ vận hành động cơ hơi nước và nồi hơi"
+  },
+  {
+    "maNgheNghiep": "81821",
+    "tenNgheNghiep": "Thợ vận hành động cơ hơi nước"
+  },
+  {
+    "maNgheNghiep": "81822",
+    "tenNgheNghiep": "Thợ đốt lò"
+  },
+  {
+    "maNgheNghiep": "81829",
+    "tenNgheNghiep": "Thợ vận hành động cơ hơi nước và nồi hơi khác"
+  },
+  {
+    "maNgheNghiep": "8183",
+    "tenNgheNghiep": "Thợ vận hành thiết bị đóng gói, đóng chai và dán nhãn"
+  },
+  {
+    "maNgheNghiep": "8189",
+    "tenNgheNghiep": "Thợ vận hành máy móc, thiết bị khác chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "81891",
+    "tenNgheNghiep": "Thợ vận hành máy in, máy đóng sách và máy có liên quan"
+  },
+  {
+    "maNgheNghiep": "81892",
+    "tenNgheNghiep": "Thợ vận hành máy cắt dây cáp và dây tải điện"
+  },
+  {
+    "maNgheNghiep": "81893",
+    "tenNgheNghiep": "Thợ vận hành máy sản xuất con chip silicon"
+  },
+  {
+    "maNgheNghiep": "81894",
+    "tenNgheNghiep": "Thợ vận hành dây chuyền lắp ráp tự động và vận hành rô bốt công nghiệp"
+  },
+  {
+    "maNgheNghiep": "81899",
+    "tenNgheNghiep": "Thợ vận hành thiết bị khác chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "82",
+    "tenNgheNghiep": "Thợ lắp ráp"
+  },
+  {
+    "maNgheNghiep": "8201",
+    "tenNgheNghiep": "Thợ lắp ráp máy cơ khí"
+  },
+  {
+    "maNgheNghiep": "8202",
+    "tenNgheNghiep": "Thợ lắp ráp thiết bị điện và điện tử"
+  },
+  {
+    "maNgheNghiep": "82021",
+    "tenNgheNghiep": "Thợ lắp ráp thiết bị điện/linh kiện điện"
+  },
+  {
+    "maNgheNghiep": "82022",
+    "tenNgheNghiep": "Thợ lắp ráp thiết bị điện tử/linh kiện điện tử"
+  },
+  {
+    "maNgheNghiep": "82023",
+    "tenNgheNghiep": "Thợ lắp ráp pin"
+  },
+  {
+    "maNgheNghiep": "8209",
+    "tenNgheNghiep": "Thợ lắp ráp chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "82091",
+    "tenNgheNghiep": "Thợ lắp ráp đồ chơi"
+  },
+  {
+    "maNgheNghiep": "82099",
+    "tenNgheNghiep": "Thợ lắp ráp khác chưa được phân vào đâu (lắp ráp sản phẩm nhựa, lắp ráp sản phẩm cao su)"
+  },
+  {
+    "maNgheNghiep": "83",
+    "tenNgheNghiep": "Lái xe và thợ vận hành thiết bị chuyển động"
+  },
+  {
+    "maNgheNghiep": "831",
+    "tenNgheNghiep": "Lái các phương tiện vận chuyển trên đường ray và các công nhân có liên quan"
+  },
+  {
+    "maNgheNghiep": "8311",
+    "tenNgheNghiep": "Lái các phương tiện vận chuyển trên đường ray"
+  },
+  {
+    "maNgheNghiep": "8312",
+    "tenNgheNghiep": "Nhân viên điều khiển tín hiệu, bẻ ghi và chuyển hướng tàu hỏa"
+  },
+  {
+    "maNgheNghiep": "83121",
+    "tenNgheNghiep": "Nhân viên điều khiển tín hiệu, bẻ ghi và chuyển hướng tàu hỏa"
+  },
+  {
+    "maNgheNghiep": "83129",
+    "tenNgheNghiep": "Nhân viên đường sắt khác và nhân viên có liên quan"
+  },
+  {
+    "maNgheNghiep": "832",
+    "tenNgheNghiep": "Lái xe con, xe tải và xe máy"
+  },
+  {
+    "maNgheNghiep": "8321",
+    "tenNgheNghiep": "Lái xe máy"
+  },
+  {
+    "maNgheNghiep": "83211",
+    "tenNgheNghiep": "Người chở người, chở hàng bằng xe máy (không phải là thư)"
+  },
+  {
+    "maNgheNghiep": "83212",
+    "tenNgheNghiep": "Người chở người, chở hàng bằng xe máy sử dụng các thiết bị di động cá nhân (lái xe máy công nghệ)"
+  },
+  {
+    "maNgheNghiep": "8322",
+    "tenNgheNghiep": "Lái xe con, taxi và xe tải hạng nhẹ"
+  },
+  {
+    "maNgheNghiep": "83221",
+    "tenNgheNghiep": "Lái xe taxi"
+  },
+  {
+    "maNgheNghiep": "83222",
+    "tenNgheNghiep": "Lái xe con"
+  },
+  {
+    "maNgheNghiep": "83223",
+    "tenNgheNghiep": "Lái xe tải hạng nhẹ"
+  },
+  {
+    "maNgheNghiep": "83224",
+    "tenNgheNghiep": "Lái xe cứu thương"
+  },
+  {
+    "maNgheNghiep": "83225",
+    "tenNgheNghiep": "Người trông bãi đỗ xe"
+  },
+  {
+    "maNgheNghiep": "83229",
+    "tenNgheNghiep": "Lái xe con và xe hạng nhẹ khác"
+  },
+  {
+    "maNgheNghiep": "833",
+    "tenNgheNghiep": "Lái xe tải hạng vừa, hạng nặng, xe buýt và xe điện"
+  },
+  {
+    "maNgheNghiep": "8331",
+    "tenNgheNghiep": "Lái xe buýt và xe điện"
+  },
+  {
+    "maNgheNghiep": "83311",
+    "tenNgheNghiep": "Lái xe buýt"
+  },
+  {
+    "maNgheNghiep": "83312",
+    "tenNgheNghiep": "Lái xe điện"
+  },
+  {
+    "maNgheNghiep": "8332",
+    "tenNgheNghiep": "Lái xe tải hạng vừa và xe tải hạng nặng"
+  },
+  {
+    "maNgheNghiep": "83321",
+    "tenNgheNghiep": "Lái xe tải hạng nặng"
+  },
+  {
+    "maNgheNghiep": "83322",
+    "tenNgheNghiep": "Lái xe tải rơ móoc (bao gồm cả lái xe chính)"
+  },
+  {
+    "maNgheNghiep": "83323",
+    "tenNgheNghiep": "Lái xe cứu hỏa"
+  },
+  {
+    "maNgheNghiep": "83324",
+    "tenNgheNghiep": "Lái thiết bị di động sân bay"
+  },
+  {
+    "maNgheNghiep": "83325",
+    "tenNgheNghiep": "Lái xe tải trộn bê tông"
+  },
+  {
+    "maNgheNghiep": "83326",
+    "tenNgheNghiep": "Lái xe tải chở chất thải (bao gồm cả xe tải móc với thùng chứa cuộn)"
+  },
+  {
+    "maNgheNghiep": "83329",
+    "tenNgheNghiep": "Lái xe tải hạng vừa và xe tải hạng nặng khác"
+  },
+  {
+    "maNgheNghiep": "834",
+    "tenNgheNghiep": "Thợ vận hành thiết bị chuyển động"
+  },
+  {
+    "maNgheNghiep": "8341",
+    "tenNgheNghiep": "Thợ vận hành thiết bị nông nghiệp và lâm nghiệp"
+  },
+  {
+    "maNgheNghiep": "8342",
+    "tenNgheNghiep": "Thợ vận hành máy đào đất và thợ vận hành thiết bị có liên quan"
+  },
+  {
+    "maNgheNghiep": "83421",
+    "tenNgheNghiep": "Thợ vận hành máy đào"
+  },
+  {
+    "maNgheNghiep": "83422",
+    "tenNgheNghiep": "Thợ vận hành máy ủi"
+  },
+  {
+    "maNgheNghiep": "83423",
+    "tenNgheNghiep": "Thợ vận hành máy nạo vét"
+  },
+  {
+    "maNgheNghiep": "83424",
+    "tenNgheNghiep": "Thợ vận hành máy đóng cọc/máy khoan"
+  },
+  {
+    "maNgheNghiep": "83425",
+    "tenNgheNghiep": "Thợ vận hành máy làm đường"
+  },
+  {
+    "maNgheNghiep": "83426",
+    "tenNgheNghiep": "Thợ vận hành máy đào hầm (kể cả thợ vận hành máy kích ống)"
+  },
+  {
+    "maNgheNghiep": "83429",
+    "tenNgheNghiep": "Thợ vận hành máy đào đất và thợ vận hành thiết bị có liên quan khác"
+  },
+  {
+    "maNgheNghiep": "8343",
+    "tenNgheNghiep": "Thợ vận hành cần trục và thợ vận hành các thiết bị có liên quan"
+  },
+  {
+    "maNgheNghiep": "83431",
+    "tenNgheNghiep": "Thợ vận hành cần trục (chung)"
+  },
+  {
+    "maNgheNghiep": "83432",
+    "tenNgheNghiep": "Thợ vận hành cần trục (hải cảng)"
+  },
+  {
+    "maNgheNghiep": "83439",
+    "tenNgheNghiep": "Thợ vận hành cần trục và thợ vận hành các thiết bị có liên quan khác"
+  },
+  {
+    "maNgheNghiep": "8344",
+    "tenNgheNghiep": "Thợ vận hành xe bốc dỡ"
+  },
+  {
+    "maNgheNghiep": "835",
+    "tenNgheNghiep": "Thủy thủ trên tàu và những thợ có liên quan (trừ lao động trên tàu đánh bắt thủy sản)"
+  },
+  {
+    "maNgheNghiep": "83501",
+    "tenNgheNghiep": "Người lái tàu"
+  },
+  {
+    "maNgheNghiep": "83502",
+    "tenNgheNghiep": "Thủy thủ (bao gồm cả người chủ tàu)"
+  },
+  {
+    "maNgheNghiep": "83509",
+    "tenNgheNghiep": "Thủy thủ trên tàu và những thợ có liên quan khác"
+  },
+  {
+    "maNgheNghiep": "91",
+    "tenNgheNghiep": "Người quét dọn và giúp việc"
+  },
+  {
+    "maNgheNghiep": "911",
+    "tenNgheNghiep": "Người quét dọn và giúp việc gia đình, khách sạn và văn phòng"
+  },
+  {
+    "maNgheNghiep": "9111",
+    "tenNgheNghiep": "Người quét dọn và giúp việc gia đình"
+  },
+  {
+    "maNgheNghiep": "91111",
+    "tenNgheNghiep": "Người giúp việc gia đình (chung)"
+  },
+  {
+    "maNgheNghiep": "91119",
+    "tenNgheNghiep": "Người quét dọn và giúp việc gia đình khác"
+  },
+  {
+    "maNgheNghiep": "9112",
+    "tenNgheNghiep": "Người quét dọn và giúp việc trong văn phòng, khách sạn và các cơ sở khác"
+  },
+  {
+    "maNgheNghiep": "91121",
+    "tenNgheNghiep": "Người dọn dẹp văn phòng"
+  },
+  {
+    "maNgheNghiep": "91122",
+    "tenNgheNghiep": "Người dọn dẹp khách sạn"
+  },
+  {
+    "maNgheNghiep": "91123",
+    "tenNgheNghiep": "Người dọn dẹp cơ sở công nghiệp"
+  },
+  {
+    "maNgheNghiep": "91124",
+    "tenNgheNghiep": "Người dọn dẹp cơ sở thực phẩm và đồ uống (như nhà hàng, trung tâm bán hàng rong)"
+  },
+  {
+    "maNgheNghiep": "91125",
+    "tenNgheNghiep": "Người dọn dẹp khu dân cư (như chung cư, căn hộ riêng, khu vực chung trong khu dân cư)"
+  },
+  {
+    "maNgheNghiep": "91126",
+    "tenNgheNghiep": "Người dọn dẹp khu vực công cộng (như trạm dừng xe buýt, đường sắt, cống rãnh, cầu trên cao, đường giao thông, đường cao tốc, công viên, bãi biển)"
+  },
+  {
+    "maNgheNghiep": "91127",
+    "tenNgheNghiep": "Người dọn dẹp các phương tiện (như máy bay, tàu hỏa, tàu điện ngầm)"
+  },
+  {
+    "maNgheNghiep": "91129",
+    "tenNgheNghiep": "Người dọn dẹp ở các cơ sở khác (như trung tâm mua sắm, trường học, bệnh viện, những nơi thờ tự)"
+  },
+  {
+    "maNgheNghiep": "912",
+    "tenNgheNghiep": "Thợ rửa xe cộ, làm sạch cửa sổ, giặt là và những người làm công việc dọn dẹp bằng tay khác"
+  },
+  {
+    "maNgheNghiep": "9121",
+    "tenNgheNghiep": "Thợ giặt là bằng tay"
+  },
+  {
+    "maNgheNghiep": "9122",
+    "tenNgheNghiep": "Thợ rửa xe cộ"
+  },
+  {
+    "maNgheNghiep": "9123",
+    "tenNgheNghiep": "Thợ làm sạch cửa sổ"
+  },
+  {
+    "maNgheNghiep": "9129",
+    "tenNgheNghiep": "Thợ lau dọn khác"
+  },
+  {
+    "maNgheNghiep": "92",
+    "tenNgheNghiep": "Lao động giản đơn trong nông nghiệp, lâm nghiệp và thủy sản"
+  },
+  {
+    "maNgheNghiep": "9201",
+    "tenNgheNghiep": "Lao động trồng trọt"
+  },
+  {
+    "maNgheNghiep": "9202",
+    "tenNgheNghiep": "Lao động chăn nuôi"
+  },
+  {
+    "maNgheNghiep": "9203",
+    "tenNgheNghiep": "Lao động trồng trọt và chăn nuôi hỗn hợp"
+  },
+  {
+    "maNgheNghiep": "9204",
+    "tenNgheNghiep": "Lao động làm vườn"
+  },
+  {
+    "maNgheNghiep": "9205",
+    "tenNgheNghiep": "Lao động lâm nghiệp"
+  },
+  {
+    "maNgheNghiep": "9206",
+    "tenNgheNghiep": "Lao động thủy sản"
+  },
+  {
+    "maNgheNghiep": "92061",
+    "tenNgheNghiep": "Lao động nuôi trồng thủy sản"
+  },
+  {
+    "maNgheNghiep": "92062",
+    "tenNgheNghiep": "Lao động khai thác thủy sản trong nội địa"
+  },
+  {
+    "maNgheNghiep": "92063",
+    "tenNgheNghiep": "Lao động khai thác thủy sản trong vùng biển Việt Nam"
+  },
+  {
+    "maNgheNghiep": "93",
+    "tenNgheNghiep": "Lao động trong ngành khai khoáng, xây dựng, công nghiệp chế biến, chế tạo và giao thông vận tải"
+  },
+  {
+    "maNgheNghiep": "931",
+    "tenNgheNghiep": "Lao động trong ngành khai khoáng và xây dựng"
+  },
+  {
+    "maNgheNghiep": "9311",
+    "tenNgheNghiep": "Lao động trong khai thác mỏ và khai thác đá"
+  },
+  {
+    "maNgheNghiep": "9312",
+    "tenNgheNghiep": "Lao động trong xây dựng công trình kỹ thuật (không phải nhà)"
+  },
+  {
+    "maNgheNghiep": "9313",
+    "tenNgheNghiep": "Thợ phụ xây dựng"
+  },
+  {
+    "maNgheNghiep": "932",
+    "tenNgheNghiep": "Lao động trong công nghiệp"
+  },
+  {
+    "maNgheNghiep": "9321",
+    "tenNgheNghiep": "Lao động đóng gói thủ công"
+  },
+  {
+    "maNgheNghiep": "9329",
+    "tenNgheNghiep": "Lao động công nghiệp khác chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "933",
+    "tenNgheNghiep": "Lao động vận chuyển và kho hàng"
+  },
+  {
+    "maNgheNghiep": "9331",
+    "tenNgheNghiep": "Lái xe bằng tay và đạp chân"
+  },
+  {
+    "maNgheNghiep": "9332",
+    "tenNgheNghiep": "Người điều khiển máy kéo và phương tiện do gia súc kéo"
+  },
+  {
+    "maNgheNghiep": "9333",
+    "tenNgheNghiep": "Người mang vác hàng"
+  },
+  {
+    "maNgheNghiep": "93331",
+    "tenNgheNghiep": "Người mang vác hàng hóa xuống tàu và lên bờ"
+  },
+  {
+    "maNgheNghiep": "93332",
+    "tenNgheNghiep": "Người mang vác đường sắt/đường bộ"
+  },
+  {
+    "maNgheNghiep": "93333",
+    "tenNgheNghiep": "Người bốc xếp máy bay (như hành lý sân bay/xử lý hàng hóa)"
+  },
+  {
+    "maNgheNghiep": "93334",
+    "tenNgheNghiep": "Người bốc xếp tại kho"
+  },
+  {
+    "maNgheNghiep": "93335",
+    "tenNgheNghiep": "Người phục vụ xe vận chuyển hàng hóa"
+  },
+  {
+    "maNgheNghiep": "93336",
+    "tenNgheNghiep": "Người đẩy hàng"
+  },
+  {
+    "maNgheNghiep": "93337",
+    "tenNgheNghiep": "Người buộc dây hàng hóa"
+  },
+  {
+    "maNgheNghiep": "93339",
+    "tenNgheNghiep": "Người mang vác hàng khác"
+  },
+  {
+    "maNgheNghiep": "9334",
+    "tenNgheNghiep": "Người bày hàng lên giá"
+  },
+  {
+    "maNgheNghiep": "94",
+    "tenNgheNghiep": "Người phụ giúp chuẩn bị thực phẩm"
+  },
+  {
+    "maNgheNghiep": "9401",
+    "tenNgheNghiep": "Người chuẩn bị đồ ăn nhanh"
+  },
+  {
+    "maNgheNghiep": "9402",
+    "tenNgheNghiep": "Người phụ bếp"
+  },
+  {
+    "maNgheNghiep": "95",
+    "tenNgheNghiep": "Lao động trên đường phố và lao động có liên quan đến bán hàng"
+  },
+  {
+    "maNgheNghiep": "951",
+    "tenNgheNghiep": "Lao động trên đường phố và lao động có liên quan"
+  },
+  {
+    "maNgheNghiep": "952",
+    "tenNgheNghiep": "Người bán hàng rong trên đường phố (trừ đồ ăn)"
+  },
+  {
+    "maNgheNghiep": "96",
+    "tenNgheNghiep": "Người thu dọn vật thải và lao động giản đơn khác"
+  },
+  {
+    "maNgheNghiep": "961",
+    "tenNgheNghiep": "Người thu dọn vật thải"
+  },
+  {
+    "maNgheNghiep": "9611",
+    "tenNgheNghiep": "Người thu gom rác và tái chế"
+  },
+  {
+    "maNgheNghiep": "9612",
+    "tenNgheNghiep": "Người thu dọn, sắp xếp, phân loại rác"
+  },
+  {
+    "maNgheNghiep": "9613",
+    "tenNgheNghiep": "Người quét dọn và lao động khác có liên quan"
+  },
+  {
+    "maNgheNghiep": "962",
+    "tenNgheNghiep": "Lao động giản đơn khác"
+  },
+  {
+    "maNgheNghiep": "9621",
+    "tenNgheNghiep": "Người đưa thư, người giao hàng và người khuân vác hành lý"
+  },
+  {
+    "maNgheNghiep": "96211",
+    "tenNgheNghiep": "Người đưa thư"
+  },
+  {
+    "maNgheNghiep": "96212",
+    "tenNgheNghiep": "Người giao hàng"
+  },
+  {
+    "maNgheNghiep": "96213",
+    "tenNgheNghiep": "Người khuân vác ở khách sạn"
+  },
+  {
+    "maNgheNghiep": "96214",
+    "tenNgheNghiep": "Người khuân vác (trừ khách sạn)"
+  },
+  {
+    "maNgheNghiep": "9622",
+    "tenNgheNghiep": "Người làm công việc lặt vặt"
+  },
+  {
+    "maNgheNghiep": "9623",
+    "tenNgheNghiep": "Người đọc đồng hồ đo và người thu tiền từ máy bán hàng tự động"
+  },
+  {
+    "maNgheNghiep": "9624",
+    "tenNgheNghiep": "Người thu gom nước và củi"
+  },
+  {
+    "maNgheNghiep": "9629",
+    "tenNgheNghiep": "Lao động giản đơn khác chưa được phân vào đâu"
+  },
+  {
+    "maNgheNghiep": "99",
+    "tenNgheNghiep": "Khác"
+  },
+  {
+    "maNgheNghiep": "01",
+    "tenNgheNghiep": "Lực lượng quân đội"
+  },
+  {
+    "maNgheNghiep": "011",
+    "tenNgheNghiep": "Sĩ quan"
+  },
+  {
+    "maNgheNghiep": "012",
+    "tenNgheNghiep": "Hạ sĩ quan, binh sĩ"
+  },
+  {
+    "maNgheNghiep": "013",
+    "tenNgheNghiep": "Lực lượng khác trong quân đội"
+  },
+  {
+    "maNgheNghiep": "002",
+    "tenNgheNghiep": "Học sinh, sinh viên"
+  },
+  {
+    "maNgheNghiep": "02",
+    "tenNgheNghiep": "Lực lượng công an"
+  },
+  {
+    "maNgheNghiep": "021",
+    "tenNgheNghiep": "Sĩ quan"
+  },
+  {
+    "maNgheNghiep": "022",
+    "tenNgheNghiep": "Hạ sĩ quan, chiến sĩ"
+  },
+  {
+    "maNgheNghiep": "023",
+    "tenNgheNghiep": "Lực lượng khác trong công an"
+  },
+  {
+    "maNgheNghiep": "003",
+    "tenNgheNghiep": "Hưu trí"
+  },
+  {
+    "maNgheNghiep": "03",
+    "tenNgheNghiep": "Cơ yếu và lực lượng vũ trang khác"
+  },
+  {
+    "maNgheNghiep": "031",
+    "tenNgheNghiep": "Cơ yếu"
+  },
+  {
+    "maNgheNghiep": "032",
+    "tenNgheNghiep": "Lực lượng vũ trang khác"
+  }
+]

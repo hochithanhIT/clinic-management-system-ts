@@ -1,0 +1,389 @@
+[
+  {
+    "maDV": "XN-HH-001",
+    "tenDV": "Công thức máu (CBC)",
+    "donVi": "lần",
+    "donGia": "90000",
+    "thamChieuMin": "Nam: 4.5-6.5; Nữ: 3.9-5.6 (RBC...)",
+    "thamChieuMax": null,
+    "ndvId": 1
+  },
+  {
+    "maDV": "XN-HH-002",
+    "tenDV": "Định nhóm máu ABO/Rh",
+    "donVi": "lần",
+    "donGia": "70000",
+    "thamChieuMin": null,
+    "thamChieuMax": null,
+    "ndvId": 1
+  },
+  {
+    "maDV": "XN-HH-003",
+    "tenDV": "Thời gian prothrombin (PT/INR)",
+    "donVi": "lần",
+    "donGia": "80000",
+    "thamChieuMin": "0.8 INR",
+    "thamChieuMax": "1.2 INR",
+    "ndvId": 1
+  },
+  {
+    "maDV": "XN-MD-001",
+    "tenDV": "Đường huyết (Glucose)",
+    "donVi": "lần",
+    "donGia": "60000",
+    "thamChieuMin": "3.9 mmol/L",
+    "thamChieuMax": "5.5 mmol/L",
+    "ndvId": 2
+  },
+  {
+    "maDV": "XN-HS-002",
+    "tenDV": "Cholesterol toàn phần",
+    "donVi": "lần",
+    "donGia": "70000",
+    "thamChieuMin": null,
+    "thamChieuMax": "< 5.2 mmol/L",
+    "ndvId": 2
+  },
+  {
+    "maDV": "XN-HS-003",
+    "tenDV": "Triglyceride",
+    "donVi": "lần",
+    "donGia": "70000",
+    "thamChieuMin": null,
+    "thamChieuMax": "< 1.7 mmol/L",
+    "ndvId": 2
+  },
+  {
+    "maDV": "XN-HSM-001",
+    "tenDV": "Creatinin huyết thanh",
+    "donVi": "lần",
+    "donGia": "70000",
+    "thamChieuMin": "Nam: 62–115 µmol/L; Nữ: 53–97",
+    "thamChieuMax": null,
+    "ndvId": 3
+  },
+  {
+    "maDV": "XN-HSM-002",
+    "tenDV": "Ure huyết",
+    "donVi": "lần",
+    "donGia": "65000",
+    "thamChieuMin": "2.5 mmol/L",
+    "thamChieuMax": "7.5 mmol/L",
+    "ndvId": 3
+  },
+  {
+    "maDV": "XN-HSM-003",
+    "tenDV": "Acid uric",
+    "donVi": "lần",
+    "donGia": "65000",
+    "thamChieuMin": "Nam: 208–428 µmol/L; Nữ: 155–357",
+    "thamChieuMax": null,
+    "ndvId": 3
+  },
+  {
+    "maDV": "XN-K-001",
+    "tenDV": "Tổng phân tích nước tiểu",
+    "donVi": "lần",
+    "donGia": "70000",
+    "thamChieuMin": "Âm tính protein/đường",
+    "thamChieuMax": null,
+    "ndvId": 4
+  },
+  {
+    "maDV": "XN-K-002",
+    "tenDV": "Test thai HCG nước tiểu",
+    "donVi": "lần",
+    "donGia": "80000",
+    "thamChieuMin": "Âm tính/ Dương tính",
+    "thamChieuMax": null,
+    "ndvId": 4
+  },
+  {
+    "maDV": "CDHA-CT-001",
+    "tenDV": "CT sọ não không cản quang",
+    "donVi": "lần",
+    "donGia": "1200000",
+    "thamChieuMin": null,
+    "thamChieuMax": null,
+    "ndvId": 5
+  },
+  {
+    "maDV": "CDHA-CT-002",
+    "tenDV": "CT ngực có cản quang",
+    "donVi": "lần",
+    "donGia": "1800000",
+    "thamChieuMin": null,
+    "thamChieuMax": null,
+    "ndvId": 5
+  },
+  {
+    "maDV": "CDHA-XQ-001",
+    "tenDV": "X-quang ngực thẳng",
+    "donVi": "lần",
+    "donGia": "120000",
+    "thamChieuMin": null,
+    "thamChieuMax": null,
+    "ndvId": 6
+  },
+  {
+    "maDV": "CDHA-XQ-002",
+    "tenDV": "X-quang cột sống thắt lưng",
+    "donVi": "lần",
+    "donGia": "150000",
+    "thamChieuMin": null,
+    "thamChieuMax": null,
+    "ndvId": 6
+  },
+  {
+    "maDV": "TDCH-HH-001",
+    "tenDV": "Đo chức năng hô hấp (Spirometry)",
+    "donVi": "lần",
+    "donGia": "250000",
+    "thamChieuMin": "FEV1, FVC theo tuổi/giới",
+    "thamChieuMax": null,
+    "ndvId": 7
+  },
+  {
+    "maDV": "CDHA-MRI-001",
+    "tenDV": "MRI sọ não không cản từ",
+    "donVi": "lần",
+    "donGia": "2700000",
+    "thamChieuMin": null,
+    "thamChieuMax": null,
+    "ndvId": 8
+  },
+  {
+    "maDV": "NS-TH-001",
+    "tenDV": "Nội soi dạ dày",
+    "donVi": "lần",
+    "donGia": "900000",
+    "thamChieuMin": null,
+    "thamChieuMax": null,
+    "ndvId": 9
+  },
+  {
+    "maDV": "NS-TH-002",
+    "tenDV": "Nội soi đại tràng",
+    "donVi": "lần",
+    "donGia": "1200000",
+    "thamChieuMin": null,
+    "thamChieuMax": null,
+    "ndvId": 9
+  },
+  {
+    "maDV": "NS-TMH-001",
+    "tenDV": "Nội soi tai mũi họng",
+    "donVi": "lần",
+    "donGia": "400000",
+    "thamChieuMin": null,
+    "thamChieuMax": null,
+    "ndvId": 10
+  },
+  {
+    "maDV": "SA-TQ-001",
+    "tenDV": "Siêu âm tổng quát",
+    "donVi": "lần",
+    "donGia": "200000",
+    "thamChieuMin": null,
+    "thamChieuMax": null,
+    "ndvId": 11
+  },
+  {
+    "maDV": "SA-TS-001",
+    "tenDV": "Siêu âm thai",
+    "donVi": "lần",
+    "donGia": "250000",
+    "thamChieuMin": null,
+    "thamChieuMax": null,
+    "ndvId": 11
+  },
+  {
+    "maDV": "CDHA-DR-001",
+    "tenDV": "X-quang kỹ thuật số chi trên",
+    "donVi": "lần",
+    "donGia": "160000",
+    "thamChieuMin": null,
+    "thamChieuMax": null,
+    "ndvId": 12
+  },
+  {
+    "maDV": "CDHA-ECG-001",
+    "tenDV": "Điện tim thường (ECG)",
+    "donVi": "lần",
+    "donGia": "150000",
+    "thamChieuMin": "60 bpm",
+    "thamChieuMax": "100 bpm",
+    "ndvId": 13
+  },
+  {
+    "maDV": "PT-001",
+    "tenDV": "Cắt ruột thừa",
+    "donVi": "ca",
+    "donGia": "6000000",
+    "thamChieuMin": null,
+    "thamChieuMax": null,
+    "ndvId": 14
+  },
+  {
+    "maDV": "PT-002",
+    "tenDV": "Mổ thoát vị bẹn",
+    "donVi": "ca",
+    "donGia": "8000000",
+    "thamChieuMin": null,
+    "thamChieuMax": null,
+    "ndvId": 14
+  },
+  {
+    "maDV": "TT-001",
+    "tenDV": "Khâu vết thương nhỏ",
+    "donVi": "ca",
+    "donGia": "300000",
+    "thamChieuMin": null,
+    "thamChieuMax": null,
+    "ndvId": 15
+  },
+  {
+    "maDV": "TT-002",
+    "tenDV": "Nặn áp xe nhỏ",
+    "donVi": "ca",
+    "donGia": "400000",
+    "thamChieuMin": null,
+    "thamChieuMax": null,
+    "ndvId": 15
+  },
+  {
+    "maDV": "XN-HSNT-001",
+    "tenDV": "Tổng phân tích nước tiểu",
+    "donVi": "mẫu",
+    "donGia": "60000",
+    "thamChieuMin": null,
+    "thamChieuMax": null,
+    "ndvId": 2
+  },
+  {
+    "maDV": "XN-HSNT-002",
+    "tenDV": "Vi khuẩn niệu bán định lượng",
+    "donVi": "mẫu",
+    "donGia": "70000",
+    "thamChieuMin": null,
+    "thamChieuMax": null,
+    "ndvId": 2
+  },
+  {
+    "maDV": "XN-HSM-004",
+    "tenDV": "Uric acid",
+    "donVi": "mẫu",
+    "donGia": "50000",
+    "thamChieuMin": null,
+    "thamChieuMax": null,
+    "ndvId": 3
+  },
+  {
+    "maDV": "XN-HSM-005",
+    "tenDV": "AST (GOT)",
+    "donVi": "mẫu",
+    "donGia": "60000",
+    "thamChieuMin": null,
+    "thamChieuMax": null,
+    "ndvId": 3
+  },
+  {
+    "maDV": "XN-HSM-006",
+    "tenDV": "ALT (GPT)",
+    "donVi": "mẫu",
+    "donGia": "60000",
+    "thamChieuMin": null,
+    "thamChieuMax": null,
+    "ndvId": 3
+  },
+  {
+    "maDV": "CDHA-HH-001",
+    "tenDV": "Đo chức năng hô hấp (spirometry)",
+    "donVi": "lần",
+    "donGia": "250000",
+    "thamChieuMin": null,
+    "thamChieuMax": null,
+    "ndvId": 7
+  },
+  {
+    "maDV": "CDHA-MRI-002",
+    "tenDV": "MRI khớp gối",
+    "donVi": "lần",
+    "donGia": "2600000",
+    "thamChieuMin": null,
+    "thamChieuMax": null,
+    "ndvId": 8
+  },
+  {
+    "maDV": "CDHA-NS-001",
+    "tenDV": "Nội soi dạ dày",
+    "donVi": "lần",
+    "donGia": "900000",
+    "thamChieuMin": null,
+    "thamChieuMax": null,
+    "ndvId": 9
+  },
+  {
+    "maDV": "CDHA-NS-002",
+    "tenDV": "Nội soi đại tràng",
+    "donVi": "lần",
+    "donGia": "1200000",
+    "thamChieuMin": null,
+    "thamChieuMax": null,
+    "ndvId": 9
+  },
+  {
+    "maDV": "CDHA-NS-TMH-001",
+    "tenDV": "Nội soi tai mũi họng",
+    "donVi": "lần",
+    "donGia": "300000",
+    "thamChieuMin": null,
+    "thamChieuMax": null,
+    "ndvId": 10
+  },
+  {
+    "maDV": "CDHA-SA-001",
+    "tenDV": "Siêu âm bụng tổng quát",
+    "donVi": "lần",
+    "donGia": "150000",
+    "thamChieuMin": null,
+    "thamChieuMax": null,
+    "ndvId": 11
+  },
+  {
+    "maDV": "CDHA-SA-002",
+    "tenDV": "Siêu âm tuyến giáp",
+    "donVi": "lần",
+    "donGia": "150000",
+    "thamChieuMin": null,
+    "thamChieuMax": null,
+    "ndvId": 11
+  },
+  {
+    "maDV": "CDHA-SA-003",
+    "tenDV": "Siêu âm sản khoa",
+    "donVi": "lần",
+    "donGia": "180000",
+    "thamChieuMin": null,
+    "thamChieuMax": null,
+    "ndvId": 11
+  },
+  {
+    "maDV": "CDHA-ĐT-001",
+    "tenDV": "Điện tim (ECG) 12 chuyển đạo",
+    "donVi": "lần",
+    "donGia": "120000",
+    "thamChieuMin": null,
+    "thamChieuMax": null,
+    "ndvId": 13
+  },
+  {
+    "maDV": "TT-003",
+    "tenDV": "Băng bó vết thương nhỏ",
+    "donVi": "lần",
+    "donGia": "80000",
+    "thamChieuMin": null,
+    "thamChieuMax": null,
+    "ndvId": 15
+  }
+]

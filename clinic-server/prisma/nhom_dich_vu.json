@@ -1,0 +1,62 @@
+[
+    {
+        "tenNhomDV": "Xét nghiệm huyết học",
+        "ldvId": 1
+    },
+    {
+        "tenNhomDV":"Xét nghiệm hóa sinh - nước tiểu",
+        "ldvId": 1
+    },
+    {
+        "tenNhomDV":"Xét nghiệm hóa sinh máu",
+        "ldvId": 1
+    },
+    {
+        "tenNhomDV": "Xét nghiệm khác",
+        "ldvId": 1
+    },
+    {
+        "tenNhomDV": "Chụp CT",
+        "ldvId": 2
+    },
+    {
+        "tenNhomDV": "Chụp X-quang",
+        "ldvId": 2
+    },
+    {
+        "tenNhomDV": "Chức năng hô hấp",
+        "ldvId": 2
+    },
+    {
+        "tenNhomDV": "MRI",
+        "ldvId": 2
+    },
+    {
+        "tenNhomDV": "Nội soi",
+        "ldvId": 2
+    },
+    {
+        "tenNhomDV": "Nội soi tai mũi họng",
+        "ldvId": 2
+    },
+    {
+        "tenNhomDV": "Siêu âm",
+        "ldvId": 2
+    },
+    {
+        "tenNhomDV": "X-quang kỹ thuật số",
+        "ldvId": 2
+    },
+    {
+        "tenNhomDV": "Điện tim",
+        "ldvId": 2
+    },
+    {
+        "tenNhomDV": "Phẫu thuật",
+        "ldvId": 3
+    },
+    {
+        "tenNhomDV": "Thủ thuật",
+        "ldvId": 3
+    }
+]

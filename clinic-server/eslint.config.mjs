@@ -14,6 +14,7 @@ export default defineConfig([
   {
     rules: {
       '@typescript-eslint/no-unused-vars': ['warn'],
+      '@typescript-eslint/prefer-const': ['warn'],
     },
   },
 ]);

@@ -1,0 +1,35 @@
+[
+    { "tenPhong": "Phòng Khám Ngoại 1", "khoaId": 1 },
+    { "tenPhong": "Phòng Khám Ngoại 2", "khoaId": 1 },
+    { "tenPhong": "Phòng Thủ Thuật Ngoại", "khoaId": 1 },
+
+    { "tenPhong": "Phòng Khám Nhi 1", "khoaId": 2 },
+    { "tenPhong": "Phòng Khám Nhi 2", "khoaId": 2 },
+
+    { "tenPhong": "Phòng Khám TMH 1", "khoaId": 3 },
+    { "tenPhong": "Phòng Khám TMH 2", "khoaId": 3 },
+
+    { "tenPhong": "Phòng Khám RHM 1", "khoaId": 4 },
+    { "tenPhong": "Phòng Khám RHM 2", "khoaId": 4 },
+
+    { "tenPhong": "Phòng Khám Mắt 1", "khoaId": 5 },
+    { "tenPhong": "Phòng Khám Mắt 2", "khoaId": 5 },
+
+    { "tenPhong": "Phòng Khám Da Liễu 1", "khoaId": 6 },
+    { "tenPhong": "Phòng Khám Da Liễu 2", "khoaId": 6 },
+
+    { "tenPhong": "Phòng Khám Tim Mạch 1", "khoaId": 7 },
+    { "tenPhong": "Phòng Khám Tim Mạch 2", "khoaId": 7 },
+
+    { "tenPhong": "Phòng Khám Cơ Xương Khớp", "khoaId": 8 },
+    { "tenPhong": "Phòng Vật Lý Trị Liệu", "khoaId": 8 },
+
+    { "tenPhong": "Phòng Siêu Âm", "khoaId": 9 },
+    { "tenPhong": "Phòng X-quang", "khoaId": 9 },
+    { "tenPhong": "Phòng Chụp CT", "khoaId": 9 },
+    { "tenPhong": "Phòng MRI", "khoaId": 9 },
+    { "tenPhong": "Phòng Điện Tim", "khoaId": 9 },
+    { "tenPhong": "Phòng Nội Soi", "khoaId": 9 },
+
+    { "tenPhong": "Phòng Xét Nghiệm", "khoaId": 10 }
+]
