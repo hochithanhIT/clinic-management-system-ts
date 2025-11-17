@@ -1,7 +1,7 @@
 import Send from "../utils/response.utils";
 import { prisma } from "../db";
-import { Request, Response } from "express";
-import authSchema from "validations/auth.schema";
+import { NextFunction, Request, Response } from "express";
+import authSchema from "../validations/auth.schema";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import jwt from "jsonwebtoken";
@@ -107,6 +107,62 @@ const createAccount = async (req: Request, res: Response) => {
 
 }
 
+const changePassword = async (req: Request, res: Response) => {
+    try {
+        const nhanVienId: number | undefined = req.body.nhanVienId;
+        if (!nhanVienId) {
+            return Send.unauthorized(res, null, "Không xác định được người dùng");
+        }
+
+        const { currentPassword, newPassword } = authSchema.changePassword.parse(req.body);
+
+        const account = await prisma.taiKhoan.findUnique({
+            where: { nhanVienId },
+            select: {
+                nhanVienId: true,
+                tenDangNhap: true,
+                matKhau: true,
+            },
+        });
+
+        if (!account) {
+            return Send.notFound(res, null, "Không tìm thấy tài khoản người dùng");
+        }
+
+        const isCurrentPasswordValid = await bcrypt.compare(currentPassword, account.matKhau);
+        if (!isCurrentPasswordValid) {
+            return Send.badRequest(res, null, "Mật khẩu hiện tại không chính xác");
+        }
+
+        const isSamePassword = await bcrypt.compare(newPassword, account.matKhau);
+        if (isSamePassword) {
+            return Send.badRequest(res, null, "Mật khẩu mới phải khác mật khẩu hiện tại");
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        await prisma.taiKhoan.update({
+            where: { nhanVienId: account.nhanVienId },
+            data: {
+                matKhau: hashedPassword,
+                refreshToken: null,
+            },
+        });
+
+        res.clearCookie("accessToken");
+        res.clearCookie("refreshToken");
+
+        return Send.success(res, null, "Đổi mật khẩu thành công, vui lòng đăng nhập lại");
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            return Send.validationErrors(res, error.flatten().fieldErrors);
+        }
+
+        console.error("Đổi mật khẩu thất bại:", error);
+        return Send.error(res, null, "Đổi mật khẩu thất bại");
+    }
+}
+
 const logout = async (req: Request, res: Response) => {
     try {
         const { nhanVienId }= req.body;
@@ -164,9 +220,36 @@ const refreshToken = async (req: Request, res: Response) => {
     }
 } 
 
+const getAccountInfo = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { nhanVienId } = req.body;
+
+        const user = await prisma.taiKhoan.findUnique({
+            where: { nhanVienId },
+            select: {
+                nhanVienId: true,
+                tenDangNhap: true,
+                createdAt: true,
+                updatedAt: true,
+                // Add other fields you want to return
+            }
+        });
+
+        if (!user) {
+            return Send.notFound(res, {}, "Không tìm thấy người dùng!");
+        }
+
+        return Send.success(res, { user });
+    } catch (error) {
+        next(error);
+    }
+}
+
 export default {
     login,
     createAccount,
+    changePassword,
     logout,
-    refreshToken
+    refreshToken,
+    getAccountInfo
 }

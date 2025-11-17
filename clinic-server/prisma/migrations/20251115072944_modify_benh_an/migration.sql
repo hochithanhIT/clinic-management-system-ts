@@ -1,0 +1,8 @@
+-- DropForeignKey
+ALTER TABLE "BenhAn" DROP CONSTRAINT "BenhAn_NV_ID_Kham_fkey";
+
+-- AlterTable
+ALTER TABLE "BenhAn" ALTER COLUMN "NV_ID_Kham" DROP NOT NULL;
+
+-- AddForeignKey
+ALTER TABLE "BenhAn" ADD CONSTRAINT "BenhAn_NV_ID_Kham_fkey" FOREIGN KEY ("NV_ID_Kham") REFERENCES "NhanVien"("NV_ID") ON DELETE SET NULL ON UPDATE CASCADE;

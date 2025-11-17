@@ -171,8 +171,8 @@ model BenhAn {
   nvTiepNhan NhanVien @relation("TiepNhan", fields: [nvTiepNhanId], references: [id])
   nvTiepNhanId Int @map("NV_ID_TiepNhan")
 
-  nvKham NhanVien @relation("KhamBenh", fields: [nvKhamId], references: [id])
-  nvKhamId Int @map("NV_ID_Kham")
+  nvKham NhanVien? @relation("KhamBenh", fields: [nvKhamId], references: [id])
+  nvKhamId Int? @map("NV_ID_Kham")
 
   phieuKhamBenh PhieuKhamBenh?
   phieuChiDinhs PhieuChiDinh[]
