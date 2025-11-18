@@ -380,6 +380,32 @@ const deletePatient = async (
   try {
     const { id }: GetPatientParam = patientSchema.getPatientParam.parse(req.params);
 
+    const patient = await prisma.benhNhan.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+
+    if (!patient) {
+      return Send.notFound(res, null, "Không tìm thấy bệnh nhân");
+    }
+
+    const [examinationCount, serviceOrderCount] = await Promise.all([
+      prisma.phieuKhamBenh.count({
+        where: { benhAn: { benhNhanId: id } },
+      }),
+      prisma.phieuChiDinh.count({
+        where: { benhAn: { benhNhanId: id } },
+      }),
+    ]);
+
+    if (examinationCount > 0 || serviceOrderCount > 0) {
+      return Send.badRequest(
+        res,
+        null,
+        "Không thể xóa bệnh nhân vì đã có phiếu khám bệnh hoặc phiếu chỉ định dịch vụ",
+      );
+    }
+
     await prisma.benhNhan.delete({
       where: { id },
     });

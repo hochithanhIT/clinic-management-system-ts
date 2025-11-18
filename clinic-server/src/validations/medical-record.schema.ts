@@ -38,7 +38,8 @@ const baseMedicalRecordBody = z.object({
   trangThai: z.coerce
     .number()
     .int("Trạng thái không hợp lệ")
-    .min(0, "Trạng thái không hợp lệ"),
+    .min(0, "Trạng thái không hợp lệ")
+    .optional(),
   thoiGianKetThuc: z
     .union([
       z.coerce.date(),

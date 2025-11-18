@@ -4,9 +4,12 @@ import { prisma } from "../db";
 import Send from "../utils/response.utils";
 import medicalRecordSchema from "../validations/medical-record.schema";
 import { z } from "zod";
+import clinicConstants from "../constants/clinic.constants";
 
 const MEDICAL_RECORD_CODE_PREFIX = "BA";
 const MEDICAL_RECORD_CODE_PAD = 6;
+const SERVICE_ORDER_CODE_PREFIX = "PCD";
+const SERVICE_ORDER_CODE_PAD = 6;
 
 const medicalRecordSelect = {
   id: true,
@@ -164,6 +167,38 @@ const generateNextMedicalRecordCode = async () => {
   }
 };
 
+const generateNextServiceOrderCode = async () => {
+  const latestOrder = await prisma.phieuChiDinh.findFirst({
+    select: { maPhieuCD: true },
+    orderBy: { id: "desc" },
+  });
+
+  let nextSequence = 1;
+  if (latestOrder?.maPhieuCD) {
+    const match = latestOrder.maPhieuCD.match(/(\d+)$/);
+    if (match) {
+      nextSequence = Number.parseInt(match[1], 10) + 1;
+    }
+  }
+
+  while (true) {
+    const candidate = `${SERVICE_ORDER_CODE_PREFIX}${String(nextSequence).padStart(
+      SERVICE_ORDER_CODE_PAD,
+      "0",
+    )}`;
+    const exists = await prisma.phieuChiDinh.findUnique({
+      where: { maPhieuCD: candidate },
+      select: { id: true },
+    });
+
+    if (!exists) {
+      return candidate;
+    }
+
+    nextSequence += 1;
+  }
+};
+
 const getMedicalRecords = async (
   req: Request,
   res: Response,
@@ -291,7 +326,7 @@ const createMedicalRecord = async (
     const doctorId =
       typeof payload.nvKhamId === "number" ? payload.nvKhamId : undefined;
 
-    const [existingCode, patient, staffReceiver, staffDoctor] = await Promise.all([
+    const [existingCode, patient, staffReceiver, staffDoctor, examService] = await Promise.all([
       prisma.benhAn.findUnique({
         where: { maBA },
         select: { id: true },
@@ -310,6 +345,10 @@ const createMedicalRecord = async (
             select: { id: true },
           })
         : Promise.resolve(null),
+      prisma.dichVu.findFirst({
+        where: { maDV: clinicConstants.examServiceCode },
+        select: { id: true, donGia: true },
+      }),
     ]);
 
     if (existingCode) {
@@ -328,6 +367,14 @@ const createMedicalRecord = async (
       return Send.badRequest(res, null, "Nhân viên khám bệnh không tồn tại");
     }
 
+    if (!examService) {
+      return Send.error(
+        res,
+        null,
+        "Không tìm thấy dịch vụ khám bệnh, vui lòng liên hệ quản trị viên",
+      );
+    }
+
     if (payload.thoiGianKetThuc instanceof Date) {
       if (payload.thoiGianKetThuc < payload.thoiGianVao) {
         return Send.badRequest(
@@ -338,22 +385,55 @@ const createMedicalRecord = async (
       }
     }
 
-    const medicalRecord = await prisma.benhAn.create({
-      data: {
-        maBA,
-        thoiGianVao: payload.thoiGianVao,
-        lyDoKhamBenh: payload.lyDoKhamBenh.trim(),
-        trangThai: payload.trangThai,
-        thoiGianKetThuc:
-          payload.thoiGianKetThuc instanceof Date
-            ? payload.thoiGianKetThuc
-            : null,
-        benhNhan: { connect: { id: payload.benhNhanId } },
-        nvTiepNhan: { connect: { id: payload.nvTiepNhanId } },
-        ...(doctorId ? { nvKham: { connect: { id: doctorId } } } : {}),
-      },
+    const serviceOrderCode = await generateNextServiceOrderCode();
+
+    const createdRecordId = await prisma.$transaction(async (tx) => {
+      const record = await tx.benhAn.create({
+        data: {
+          maBA,
+          thoiGianVao: payload.thoiGianVao,
+          lyDoKhamBenh: payload.lyDoKhamBenh.trim(),
+          trangThai: clinicConstants.medicalRecordStatus.waitingForExam,
+          thoiGianKetThuc: null,
+          benhNhan: { connect: { id: payload.benhNhanId } },
+          nvTiepNhan: { connect: { id: payload.nvTiepNhanId } },
+          ...(doctorId ? { nvKham: { connect: { id: doctorId } } } : {}),
+        },
+        select: { id: true },
+      });
+
+      const serviceOrder = await tx.phieuChiDinh.create({
+        data: {
+          maPhieuCD: serviceOrderCode,
+          thoiGianTao: payload.thoiGianVao,
+          trangThai: clinicConstants.serviceOrderStatus.pendingPayment,
+          benhAn: { connect: { id: record.id } },
+        },
+        select: { id: true },
+      });
+
+      await tx.chiTietPhieuChiDinh.create({
+        data: {
+          soLuong: 1,
+          tongTien: examService.donGia,
+          yeuCauKQ: false,
+          trangThaiDongTien: false,
+          phieuChiDinh: { connect: { id: serviceOrder.id } },
+          dichVu: { connect: { id: examService.id } },
+        },
+      });
+
+      return record.id;
+    });
+
+    const medicalRecord = await prisma.benhAn.findUnique({
+      where: { id: createdRecordId },
       select: medicalRecordSelect,
     });
+
+    if (!medicalRecord) {
+      return Send.error(res, null, "Không thể lấy thông tin bệnh án vừa tạo");
+    }
 
     return Send.success(
       res,

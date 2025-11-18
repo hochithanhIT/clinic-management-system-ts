@@ -4,6 +4,7 @@ import { prisma } from "../db";
 import Send from "../utils/response.utils";
 import medicalExaminationSchema from "../validations/medical-examination.schema";
 import { z } from "zod";
+import clinicConstants from "../constants/clinic.constants";
 
 const MEDICAL_EXAMINATION_CODE_PREFIX = "PKB";
 const MEDICAL_EXAMINATION_CODE_PAD = 6;
@@ -189,7 +190,7 @@ const createMedicalExamination = async (
       ? payload.maPhieu.trim().toUpperCase()
       : await generateNextMedicalExaminationCode();
 
-    const [existingCode, medicalRecord, existingExam] = await Promise.all([
+    const [existingCode, medicalRecord, existingExam, unpaidExamOrder] = await Promise.all([
       prisma.phieuKhamBenh.findUnique({
         where: { maPhieu },
         select: { id: true },
@@ -200,6 +201,14 @@ const createMedicalExamination = async (
       }),
       prisma.phieuKhamBenh.findUnique({
         where: { benhAnId: payload.benhAnId },
+        select: { id: true },
+      }),
+      prisma.chiTietPhieuChiDinh.findFirst({
+        where: {
+          trangThaiDongTien: false,
+          dichVu: { maDV: clinicConstants.examServiceCode },
+          phieuChiDinh: { benhAnId: payload.benhAnId },
+        },
         select: { id: true },
       }),
     ]);
@@ -217,6 +226,14 @@ const createMedicalExamination = async (
         res,
         null,
         "Bệnh án đã có phiếu khám bệnh, vui lòng cập nhật phiếu hiện có",
+      );
+    }
+
+    if (unpaidExamOrder) {
+      return Send.badRequest(
+        res,
+        null,
+        "Phiếu chỉ định dịch vụ khám bệnh chưa được thanh toán",
       );
     }
 
