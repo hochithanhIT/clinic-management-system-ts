@@ -1,4 +1,10 @@
 <script setup lang="ts">
+definePage({
+  alias: ['/'],
+  meta: {
+    requiresAuth: true,
+  }
+})
 
 </script>
 

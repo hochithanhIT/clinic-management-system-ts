@@ -6,4 +6,11 @@ const router = createRouter({
   routes,
 })
 
+router.beforeEach((to, from) => {
+  const loggedIn = false
+  if (to.meta.requiresAuth && !loggedIn) {
+    router.replace({ name: '/login/' })
+  }
+})
+
 export default router
