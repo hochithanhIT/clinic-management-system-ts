@@ -28,7 +28,8 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
     origin: [
-        'http://localhost:3000', // your frontend url
+        'http://localhost:3000', // production frontend
+        'http://localhost:5173', // local Vite dev server
     ],
     methods: ["GET", "POST", "DELETE", "PUT", "PATCH"],
     credentials: true

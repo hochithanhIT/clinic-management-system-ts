@@ -14,12 +14,12 @@ const login = async (req: Request, res: Response) => {
             where: { tenDangNhap }
         });
         if (!user) {
-            return Send.error(res, null, "Tên đăng nhập hoặc mật khẩu không đúng!");
+            return Send.error(res, null, "Invalid username or password.");
         }
 
         const isPasswordValid = await bcrypt.compare(matKhau, user.matKhau);
         if (!isPasswordValid) {
-            return Send.error(res, null, "Tên đăng nhập hoặc mật khẩu không đúng!");
+            return Send.error(res, null, "Invalid username or password.");
         }
 
         const accessToken = jwt.sign(
@@ -58,8 +58,8 @@ const login = async (req: Request, res: Response) => {
             tenDangNhap: user.tenDangNhap,
         })
     } catch (error) {
-        console.error("Đăng nhập thất bại:", error);
-        return Send.error(res, null, "Đăng nhập thất bại!");
+        console.error("Login failed:", error);
+        return Send.error(res, null, "Login failed.");
     }
 }
 
@@ -72,14 +72,14 @@ const createAccount = async (req: Request, res: Response) => {
         })
 
         if (existingAccount) {
-            return Send.error(res, null, "Nhân viên đã có tài khoản!");
+            return Send.error(res, null, "Employee already has an account.");
         }
 
         const existingUsername = await prisma.taiKhoan.findUnique({
             where: { tenDangNhap }
         })
         if (existingUsername) {
-            return Send.error(res, null, "Tên đăng nhập đã tồn tại!");
+            return Send.error(res, null, "Username already exists.");
         }
 
         const DEFAULT_PASSWORD = process.env.DEFAULT_PASSWORD
@@ -99,10 +99,10 @@ const createAccount = async (req: Request, res: Response) => {
         return Send.success(res, {
             id: newAccount.nhanVienId,
             tenDangNhap: newAccount.tenDangNhap,
-        }, "Tạo tài khoản thành công!");
+        }, "Account created successfully.");
     } catch (error) {
-        console.error("Tạo tài khoản thất bại:", error);
-        return Send.error(res, null, "Tạo tài khoản thất bại!");
+        console.error("Account creation failed:", error);
+        return Send.error(res, null, "Account creation failed.");
     }
 
 }
@@ -111,7 +111,7 @@ const changePassword = async (req: Request, res: Response) => {
     try {
         const nhanVienId: number | undefined = req.body.nhanVienId;
         if (!nhanVienId) {
-            return Send.unauthorized(res, null, "Không xác định được người dùng");
+            return Send.unauthorized(res, null, "Unable to identify user");
         }
 
         const { currentPassword, newPassword } = authSchema.changePassword.parse(req.body);
@@ -126,17 +126,17 @@ const changePassword = async (req: Request, res: Response) => {
         });
 
         if (!account) {
-            return Send.notFound(res, null, "Không tìm thấy tài khoản người dùng");
+            return Send.notFound(res, null, "User account not found");
         }
 
         const isCurrentPasswordValid = await bcrypt.compare(currentPassword, account.matKhau);
         if (!isCurrentPasswordValid) {
-            return Send.badRequest(res, null, "Mật khẩu hiện tại không chính xác");
+            return Send.badRequest(res, null, "Current password is incorrect");
         }
 
         const isSamePassword = await bcrypt.compare(newPassword, account.matKhau);
         if (isSamePassword) {
-            return Send.badRequest(res, null, "Mật khẩu mới phải khác mật khẩu hiện tại");
+            return Send.badRequest(res, null, "New password must differ from the current password");
         }
 
         const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -152,14 +152,14 @@ const changePassword = async (req: Request, res: Response) => {
         res.clearCookie("accessToken");
         res.clearCookie("refreshToken");
 
-        return Send.success(res, null, "Đổi mật khẩu thành công, vui lòng đăng nhập lại");
+        return Send.success(res, null, "Password updated successfully, please sign in again");
     } catch (error) {
         if (error instanceof z.ZodError) {
             return Send.validationErrors(res, error.flatten().fieldErrors);
         }
 
-        console.error("Đổi mật khẩu thất bại:", error);
-        return Send.error(res, null, "Đổi mật khẩu thất bại");
+        console.error("Password change failed:", error);
+        return Send.error(res, null, "Password change failed");
     }
 }
 
@@ -176,10 +176,10 @@ const logout = async (req: Request, res: Response) => {
         res.clearCookie("accessToken");
         res.clearCookie("refreshToken");
 
-        return Send.success(res, null, "Đăng xuất thành công!");
+        return Send.success(res, null, "Signed out successfully.");
     } catch (error) {
-        console.error("Đăng xuất thất bại:", error);
-        return Send.error(res, null, "Đăng xuất thất bại!");
+        console.error("Sign out failed:", error);
+        return Send.error(res, null, "Sign out failed.");
     }
 }
 
@@ -193,11 +193,11 @@ const refreshToken = async (req: Request, res: Response) => {
         });
 
         if (!user || !user.refreshToken) {
-            return Send.unauthorized(res, "Vui lòng đăng nhập lại!");
+            return Send.unauthorized(res, "Please sign in again.");
         }
 
         if (user.refreshToken !== refreshToken) {
-            return Send.unauthorized(res, "Vui lòng đăng nhập lại!");
+            return Send.unauthorized(res, "Please sign in again.");
         }
 
         const newAccessToken = jwt.sign(
@@ -213,10 +213,10 @@ const refreshToken = async (req: Request, res: Response) => {
             sameSite: "strict"
         })
 
-        return Send.success(res, null, "Làm mới token thành công!");
+        return Send.success(res, null, "Token refreshed successfully.");
     } catch (error) {
-        console.error("Làm mới token thất bại:", error);
-        return Send.error(res, null, "Làm mới token thất bại!");
+        console.error("Token refresh failed:", error);
+        return Send.error(res, null, "Token refresh failed.");
     }
 } 
 
@@ -236,7 +236,7 @@ const getAccountInfo = async (req: Request, res: Response, next: NextFunction) =
         });
 
         if (!user) {
-            return Send.notFound(res, {}, "Không tìm thấy người dùng!");
+            return Send.notFound(res, {}, "User not found.");
         }
 
         return Send.success(res, { user });

@@ -79,6 +79,7 @@
     "triggerRef": true,
     "unref": true,
     "useAttrs": true,
+    "useAuthStore": true,
     "useCssModule": true,
     "useCssVars": true,
     "useId": true,

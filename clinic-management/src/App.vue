@@ -1,9 +1,22 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { Toaster } from '@/components/ui/sonner'
+import AppNavbar from './components/AppNavbar.vue'
+
+const route = useRoute()
+
+const showNavbar = computed(() => {
+  return !(route.meta.hideNavbar as boolean)
+})
+</script>
 
 <template>
-  <main>
-    <router-view></router-view>
-  </main>
+  <div class="min-h-svh flex flex-col">
+    <AppNavbar v-if="showNavbar" class="sticky top-0 z-50 bg-primary shadow-md shrink-0" />
+    <main class="flex flex-1">
+      <router-view class="flex-1" />
+    </main>
+  </div>
+  <Toaster position="top-right" richColors />
 </template>
 
 <style scoped></style>

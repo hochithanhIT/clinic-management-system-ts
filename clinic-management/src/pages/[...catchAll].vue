@@ -1,4 +1,11 @@
 <script setup lang="ts">
+definePage({
+  name: '/PageNotFound/',
+  meta: {
+    requiresAuth: false,
+    hideNavbar: true,
+  },
+})
 </script>
 
 <template>
