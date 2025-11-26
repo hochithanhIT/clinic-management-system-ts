@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { toast } from 'vue-sonner'
+
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -7,22 +11,72 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from '@/components/ui/navigation-menu'
+import { ApiError } from '@/services/http'
+import { useAuthStore } from '@/stores/auth'
+import { useWorkspaceStore } from '@/stores/workspace'
 
-const systemMenu: { name: string; path: string }[] = [
-  { name: 'Room Configuration', path: '/room-configuration' },
-  { name: 'Change Password', path: '/' },
-  { name: 'SignOut', path: '/' },
+type MenuRouteItem = {
+  name: string
+  path: string
+}
+
+type MenuActionItem = {
+  name: string
+  action: () => Promise<void> | void
+}
+
+type MenuItem = MenuRouteItem | MenuActionItem
+
+const authStore = useAuthStore()
+const workspaceStore = useWorkspaceStore()
+const router = useRouter()
+const signingOut = ref(false)
+
+const handleSignOut = async () => {
+  if (signingOut.value) {
+    return
+  }
+
+  signingOut.value = true
+
+  try {
+    await authStore.logout()
+    toast.success('Signed out successfully.')
+  } catch (error) {
+    const message = error instanceof ApiError ? error.message : 'Sign out failed, please try again.'
+    toast.error(message)
+  } finally {
+    workspaceStore.clear()
+    signingOut.value = false
+    await router.replace({ path: '/login/' })
+  }
+}
+
+const isActionItem = (item: MenuItem): item is MenuActionItem => 'action' in item
+
+const handleMenuItemClick = async (item: MenuItem) => {
+  if (!isActionItem(item) || signingOut.value) {
+    return
+  }
+
+  await item.action()
+}
+
+const systemMenu: MenuItem[] = [
+  { name: 'Room Configuration', path: '/room-configuration/' },
+  { name: 'Change Password', path: '/change-password/' },
+  { name: 'Sign Out', action: handleSignOut },
 ]
-const receptionMenu: { name: string; path: string }[] = [
+const receptionMenu: MenuRouteItem[] = [
   { name: 'Patient Registration', path: '/' },
   { name: 'Follow-up Appointment', path: '/' },
   { name: 'Administrative Info', path: '/' },
 ]
-const medicalExaminationMenu: { name: string; path: string }[] = [
+const medicalExaminationMenu: MenuRouteItem[] = [
   { name: 'Medical Examination', path: '/' },
   { name: 'Off-schedule Examination', path: '/' },
 ]
-const diagnosticsMenu: { name: string; path: string }[] = [
+const diagnosticsMenu: MenuRouteItem[] = [
   { name: 'Laboratory', path: '/' },
   { name: 'Ultrasound', path: '/' },
   { name: 'Endoscopy', path: '/' },
@@ -53,13 +107,23 @@ const diagnosticsMenu: { name: string; path: string }[] = [
             <NavigationMenuContent>
               <ul class="grid w-[200px] gap-2">
                 <li v-for="item in systemMenu" :key="item.name">
-                  <NavigationMenuLink as-child>
+                  <NavigationMenuLink v-if="!isActionItem(item)" as-child>
                     <router-link
                       :to="item.path"
                       class="block rounded-md px-3 py-2 text-sm font-medium hover:bg-accent"
                     >
                       {{ item.name }}
                     </router-link>
+                  </NavigationMenuLink>
+                  <NavigationMenuLink v-else as-child>
+                    <button
+                      type="button"
+                      class="block w-full rounded-md px-3 py-2 text-left text-sm font-medium hover:bg-accent disabled:opacity-60 cursor-pointer"
+                      :disabled="signingOut"
+                      @click.prevent="handleMenuItemClick(item)"
+                    >
+                      {{ item.name }}
+                    </button>
                   </NavigationMenuLink>
                 </li>
               </ul>

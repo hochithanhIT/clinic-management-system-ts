@@ -37,10 +37,29 @@ export interface ApiRequestConfig<T = unknown> extends AxiosRequestConfig<T> {
   json?: T
 }
 
+const REFRESH_ENDPOINT = "/auth/refresh-token"
+
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
 })
+
+type RetriableRequestConfig = InternalAxiosRequestConfig & { _retry?: boolean }
+
+let refreshPromise: Promise<void> | null = null
+
+const refreshAccessToken = async (): Promise<void> => {
+  if (!refreshPromise) {
+    refreshPromise = apiClient
+      .post<ApiSuccessResponse<null>>(REFRESH_ENDPOINT)
+      .then(() => undefined)
+      .finally(() => {
+        refreshPromise = null
+      })
+  }
+
+  return refreshPromise
+}
 
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   // Keep the interface available for future auth token injection if needed.
@@ -49,7 +68,9 @@ apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 
 apiClient.interceptors.response.use(
   (response) => response,
-  (error: AxiosError<ApiErrorResponse>) => {
+  async (error: AxiosError<ApiErrorResponse>) => {
+    const originalRequest = error.config as RetriableRequestConfig | undefined
+
     if (error.response) {
       const status = error.response.status ?? 500
       const responseData = error.response.data
@@ -57,6 +78,42 @@ apiClient.interceptors.response.use(
         (responseData?.message && typeof responseData.message === "string" && responseData.message.trim()) ||
         error.message ||
         "Request failed"
+
+      const shouldAttemptRefresh =
+        status === 401 &&
+        originalRequest !== undefined &&
+        !originalRequest._retry &&
+        !originalRequest.url?.includes(REFRESH_ENDPOINT)
+
+      if (shouldAttemptRefresh) {
+        originalRequest._retry = true
+
+        try {
+          await refreshAccessToken()
+          return apiClient.request(originalRequest)
+        } catch (refreshError) {
+          if (refreshError instanceof ApiError) {
+            return Promise.reject(refreshError)
+          }
+
+          if (refreshError instanceof AxiosError && refreshError.response) {
+            const refreshStatus = refreshError.response.status ?? 500
+            const refreshData = refreshError.response.data
+            const refreshMessage =
+              (refreshData?.message && typeof refreshData.message === "string" && refreshData.message.trim()) ||
+              refreshError.message ||
+              "Request failed"
+
+            return Promise.reject(new ApiError(refreshStatus, refreshMessage, refreshData))
+          }
+
+          if (refreshError instanceof Error) {
+            return Promise.reject(new ApiError(status, refreshError.message))
+          }
+
+          return Promise.reject(new ApiError(status, message, responseData))
+        }
+      }
 
       return Promise.reject(new ApiError(status, message, responseData))
     }

@@ -11,7 +11,17 @@ const login = async (req: Request, res: Response) => {
 
     try {
         const user = await prisma.taiKhoan.findUnique({
-            where: { tenDangNhap }
+            where: { tenDangNhap },
+            select: {
+                tenDangNhap: true,
+                matKhau: true,
+                nhanVienId: true,
+                nhanVien: {
+                    select: {
+                        hoTen: true,
+                    }
+                }
+            }
         });
         if (!user) {
             return Send.error(res, null, "Invalid username or password.");
@@ -56,6 +66,7 @@ const login = async (req: Request, res: Response) => {
         return Send.success(res, {
             id: user.nhanVienId,
             tenDangNhap: user.tenDangNhap,
+            hoTen: user.nhanVien?.hoTen ?? "",
         })
     } catch (error) {
         console.error("Login failed:", error);

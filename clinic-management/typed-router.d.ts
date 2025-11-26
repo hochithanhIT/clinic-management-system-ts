@@ -30,6 +30,13 @@ declare module 'vue-router/auto-routes' {
       { catchAll: ParamValue<false> },
       | never
     >,
+    '/changePassword/': RouteRecordInfo<
+      '/changePassword/',
+      '/changePassword',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
     '/login/': RouteRecordInfo<
       '/login/',
       '/login',
@@ -60,6 +67,12 @@ declare module 'vue-router/auto-routes' {
     'src/pages/[...catchAll].vue': {
       routes:
         | '/PageNotFound/'
+      views:
+        | never
+    }
+    'src/pages/changePassword/index.vue': {
+      routes:
+        | '/changePassword/'
       views:
         | never
     }

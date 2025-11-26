@@ -16,13 +16,13 @@ router.beforeEach((to) => {
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     const redirect = to.fullPath && to.fullPath !== '/' ? { redirect: to.fullPath } : undefined
     return {
-      name: '/login/',
+      path: '/login/',
       query: redirect,
     }
   }
 
   if (to.name === '/login/' && authStore.isAuthenticated) {
-    return { name: '/' }
+    return { path: '/room-configuration/' }
   }
 
   return true

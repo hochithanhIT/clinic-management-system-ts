@@ -24,8 +24,13 @@ class AuthMiddleware {
             // 2. Verify the token using the secret from the auth config
             const decodedToken = jwt.verify(token, process.env.AUTH_SECRET!) as DecodedToken; // Type assertion for better type safety
 
+            // Ensure we have a mutable body object to attach contextual data
+            if (!req.body || typeof req.body !== "object") {
+                req.body = {} as typeof req.body;
+            }
+
             // If the token is valid, attach user information to the request object
-            req.body.nhanVienId = decodedToken.userId; // Attach userId to the request object
+            (req.body as Record<string, unknown>).nhanVienId = decodedToken.userId; // Attach userId to the request object
 
             // Proceed to the next middleware or route handler
             next();
@@ -49,8 +54,12 @@ class AuthMiddleware {
             // 2. Verify the refresh token using the secret from the auth config
             const decodedToken = jwt.verify(refreshToken, process.env.AUTH_REFRESH_SECRET!) as { userId: number };
 
+            if (!req.body || typeof req.body !== "object") {
+                req.body = {} as typeof req.body;
+            }
+
             // If the token is valid, attach user information to the request object
-            req.body.nhanVienId = decodedToken.userId;
+            (req.body as Record<string, unknown>).nhanVienId = decodedToken.userId;
 
             // Proceed to the next middleware or route handler
             next();

@@ -6,7 +6,7 @@ import { useAuthStore } from '@/stores/auth'
 import LoginForm from '@/components/LoginForm.vue'
 
 definePage({
-  name: '/login/',
+  alias: '/login/',
   meta: {
     requiresAuth: false,
     hideNavbar: true,
@@ -32,7 +32,7 @@ const generalError = ref<string | null>(null)
 
 const redirectTarget = computed(() => {
   const target = route.query.redirect
-  return typeof target === 'string' && target.length > 0 ? target : '/'
+  return typeof target === 'string' && target.length > 0 ? target : '/room-configuration/'
 })
 
 const updateForm = (field: keyof LoginPayload, value: string) => {

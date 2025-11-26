@@ -12,56 +12,99 @@ import {
 } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
-const frameworks = [
-  { value: 'next.js', label: 'Next.js' },
-  { value: 'sveltekit', label: 'SvelteKit' },
-  { value: 'nuxt.js', label: 'Nuxt.js' },
-  { value: 'remix', label: 'Remix' },
-  { value: 'astro', label: 'Astro' },
-]
+type OptionValue = string | number
+
+interface ComboOption {
+  value: OptionValue
+  label: string
+}
+
+const props = withDefaults(
+  defineProps<{
+    modelValue: OptionValue | null
+    options?: ComboOption[]
+    placeholder?: string
+    searchPlaceholder?: string
+    emptyMessage?: string
+    disabled?: boolean
+    loading?: boolean
+    align?: 'start' | 'center' | 'end'
+    allowClear?: boolean
+    id?: string
+    listMaxHeight?: string
+  }>(),
+  {
+    options: () => [],
+    placeholder: 'Select option...',
+    searchPlaceholder: 'Search...',
+    emptyMessage: 'No results found.',
+    disabled: false,
+    loading: false,
+    align: 'start',
+    allowClear: false,
+    listMaxHeight: '12rem',
+  },
+)
+
+const emit = defineEmits<{
+  (event: 'update:modelValue', value: OptionValue | null): void
+}>()
 
 const open = ref(false)
-const value = ref('')
+
+const selectedOption = computed(
+  () => props.options.find((option) => option.value === props.modelValue) ?? null,
+)
+
+const emptyLabel = computed(() => (props.loading ? 'Loading...' : props.emptyMessage))
+
+const displayLabel = computed(() => selectedOption.value?.label ?? props.placeholder)
+
+const handleSelect = (optionValue: OptionValue) => {
+  const nextValue = props.allowClear && props.modelValue === optionValue ? null : optionValue
+  emit('update:modelValue', nextValue)
+  open.value = false
+}
 </script>
 
 <template>
   <Popover v-model:open="open">
     <PopoverTrigger as-child>
       <Button
+        :id="props.id"
         variant="outline"
         role="combobox"
         :aria-expanded="open"
+        :disabled="props.disabled || props.loading"
         class="w-full justify-between"
       >
-        {{
-          value
-            ? frameworks.find((framework) => framework.value === value)?.label
-            : 'Select framework...'
-        }}
+        <span class="truncate text-left">
+          {{ displayLabel }}
+        </span>
         <ChevronsUpDownIcon class="ml-2 h-4 w-4 shrink-0 opacity-50" />
       </Button>
     </PopoverTrigger>
-    <PopoverContent align="start">
+    <PopoverContent :align="props.align" class="w-(--radix-popover-trigger-width) p-0">
       <Command>
-        <CommandInput placeholder="Search framework..." />
-        <CommandList>
-          <CommandEmpty>No framework found.</CommandEmpty>
-          <CommandGroup>
+        <CommandInput :placeholder="props.searchPlaceholder" />
+        <CommandList class="overflow-y-auto" :style="{ maxHeight: props.listMaxHeight }">
+          <CommandEmpty>{{ emptyLabel }}</CommandEmpty>
+          <CommandGroup v-if="props.options.length">
             <CommandItem
-              v-for="framework in frameworks"
-              :key="framework.value"
-              :value="framework.value"
-              @select="
-                () => {
-                  value = value === framework.value ? '' : framework.value
-                  open = false
-                }
-              "
+              v-for="option in props.options"
+              :key="option.value"
+              :value="String(option.value)"
+              @select="() => handleSelect(option.value)"
             >
               <CheckIcon
-                :class="cn('mr-2 h-4 w-4', value === framework.value ? 'opacity-100' : 'opacity-0')"
+                :class="
+                  cn(
+                    'mr-2 h-4 w-4',
+                    props.modelValue === option.value ? 'opacity-100' : 'opacity-0',
+                  )
+                "
               />
-              {{ framework.label }}
+              {{ option.label }}
             </CommandItem>
           </CommandGroup>
         </CommandList>

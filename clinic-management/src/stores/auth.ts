@@ -1,11 +1,27 @@
 import { computed, ref } from "vue"
 import { defineStore } from "pinia"
 
-import type { AuthUser, LoginPayload } from "@/services/auth"
-import { login as loginRequest, logout as logoutRequest } from "@/services/auth"
+import type { AuthUser, ChangePasswordPayload, LoginPayload } from "@/services/auth"
+import { changePassword as changePasswordRequest, login as loginRequest, logout as logoutRequest } from "@/services/auth"
 import { ApiError } from "@/services/http"
 
 const STORAGE_KEY = "clinic-auth-user"
+
+const normalizeUser = (value: Partial<AuthUser> | null): AuthUser | null => {
+  if (!value) {
+    return null
+  }
+
+  if (typeof value.id !== "number" || typeof value.tenDangNhap !== "string") {
+    return null
+  }
+
+  return {
+    id: value.id,
+    tenDangNhap: value.tenDangNhap,
+    hoTen: typeof value.hoTen === "string" ? value.hoTen : "",
+  }
+}
 
 const readStoredUser = (): AuthUser | null => {
   if (typeof window === "undefined") {
@@ -14,7 +30,8 @@ const readStoredUser = (): AuthUser | null => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return null
-    return JSON.parse(raw) as AuthUser
+    const parsed = JSON.parse(raw) as Partial<AuthUser>
+    return normalizeUser(parsed)
   } catch (error) {
     console.warn("Unable to read user info from localStorage", error)
     return null
@@ -46,8 +63,9 @@ export const useAuthStore = defineStore("auth", () => {
   const isAuthenticated = computed(() => user.value !== null)
 
   const setUser = (account: AuthUser | null) => {
-    user.value = account
-    writeStoredUser(account)
+    const normalized = normalizeUser(account)
+    user.value = normalized
+    writeStoredUser(normalized)
   }
 
   const login = async (credentials: LoginPayload): Promise<AuthUser> => {
@@ -81,6 +99,22 @@ export const useAuthStore = defineStore("auth", () => {
     }
   }
 
+  const changePassword = async (credentials: ChangePasswordPayload): Promise<void> => {
+    loading.value = true
+    errorMessage.value = null
+
+    try {
+      await changePasswordRequest(credentials)
+      setUser(null)
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : "Password update failed, please try again."
+      errorMessage.value = message
+      throw error
+    } finally {
+      loading.value = false
+    }
+  }
+
   const restoreSession = (): void => {
     if (hasRestoredSession.value) return
     setUser(readStoredUser())
@@ -94,6 +128,7 @@ export const useAuthStore = defineStore("auth", () => {
     isAuthenticated,
     login,
     logout,
+    changePassword,
     restoreSession,
     setUser,
   }
