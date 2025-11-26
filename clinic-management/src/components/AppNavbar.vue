@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
+import logoUrl from '@/assets/images/CTU_logo.png'
 
 import {
   NavigationMenu,
@@ -88,17 +87,22 @@ const diagnosticsMenu: MenuRouteItem[] = [
 <template>
   <nav>
     <div class="mx-auto flex max-w-6xl items-center gap-6 px-4 py-4">
-      <div class="title flex items-center gap-3 text-primary-foreground">
+      <router-link
+        to="/"
+        class="flex shrink-0 items-center gap-3 text-primary-foreground"
+      >
         <img
-          src="@/assets/images/CTU_logo.png"
+          :src="logoUrl"
           alt="Clinic logo"
           class="h-10 w-10 rounded-md bg-white p-1 object-contain"
         />
         <div class="hidden sm:block leading-tight">
-          <div class="text-sm font-semibold">CTU Clinic</div>
-          <div class="text-xs text-primary-foreground/80">Clinic Management</div>
+          <div class="text-sm font-semibold">Your Clinic</div>
+          <div class="text-xs text-primary-foreground/80">
+            Clinic Management
+          </div>
         </div>
-      </div>
+      </router-link>
 
       <NavigationMenu class="max-w-none!" :viewport="false">
         <NavigationMenuList class="gap-6">

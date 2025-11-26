@@ -22,7 +22,7 @@ router.beforeEach((to) => {
   }
 
   if (to.name === '/login/' && authStore.isAuthenticated) {
-    return { path: '/room-configuration/' }
+    return { path: '/' }
   }
 
   return true

@@ -32,7 +32,7 @@ const generalError = ref<string | null>(null)
 
 const redirectTarget = computed(() => {
   const target = route.query.redirect
-  return typeof target === 'string' && target.length > 0 ? target : '/room-configuration/'
+  return typeof target === 'string' && target.length > 0 ? target : '/'
 })
 
 const updateForm = (field: keyof LoginPayload, value: string) => {
