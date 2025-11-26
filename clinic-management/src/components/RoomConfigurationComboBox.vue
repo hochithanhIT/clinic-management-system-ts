@@ -76,7 +76,7 @@ const handleSelect = (optionValue: OptionValue) => {
         role="combobox"
         :aria-expanded="open"
         :disabled="props.disabled || props.loading"
-        class="w-full justify-between"
+        class="w-full justify-between hover:text-primary-foreground"
       >
         <span class="truncate text-left">
           {{ displayLabel }}

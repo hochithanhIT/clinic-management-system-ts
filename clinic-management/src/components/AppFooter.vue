@@ -49,24 +49,24 @@ const nowText = computed(() =>
 </script>
 
 <template>
-  <footer class="border-t backdrop-blur supports-backdrop-filter:bg-primary">
+  <footer class="border-t bg-primary text-primary-foreground">
     <div
       class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-2 text-sm"
     >
       <!-- Left: user -->
-      <div class="flex items-center gap-2 text-primary-foreground">
+      <div class="flex items-center gap-2">
         <span class="font-bold">{{ userDisplayName }}</span>
       </div>
 
       <!-- Middle: dept/room -->
-      <div v-if="hasRoomSelection" class="flex items-center gap-2 text-primary-foreground font-medium">
+      <div v-if="hasRoomSelection" class="flex items-center gap-2 font-medium">
         <span>{{ departmentDisplay }}</span>
         <span>•</span>
         <span>{{ roomDisplay }}</span>
       </div>
 
       <!-- Right: time -->
-      <div class="text-primary-foreground font-medium">
+      <div class="font-medium">
         {{ nowText }}
       </div>
     </div>

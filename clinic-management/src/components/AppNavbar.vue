@@ -87,20 +87,15 @@ const diagnosticsMenu: MenuRouteItem[] = [
 <template>
   <nav>
     <div class="mx-auto flex max-w-6xl items-center gap-6 px-4 py-4">
-      <router-link
-        to="/"
-        class="flex shrink-0 items-center gap-3 text-primary-foreground"
-      >
+      <router-link to="/" class="flex shrink-0 items-center gap-3 text-primary-foreground">
         <img
           :src="logoUrl"
           alt="Clinic logo"
           class="h-10 w-10 rounded-md bg-white p-1 object-contain"
         />
-        <div class="hidden sm:block leading-tight">
-          <div class="text-sm font-semibold">Your Clinic</div>
-          <div class="text-xs text-primary-foreground/80">
-            Clinic Management
-          </div>
+        <div class="hidden sm:block leading-tight text-primary-foreground">
+          <div class="text-sm font-semibold">CTU Clinic</div>
+          <div class="text-xs text-primary-foreground/80">Clinic Management</div>
         </div>
       </router-link>
 
@@ -114,7 +109,7 @@ const diagnosticsMenu: MenuRouteItem[] = [
                   <NavigationMenuLink v-if="!isActionItem(item)" as-child>
                     <router-link
                       :to="item.path"
-                      class="block rounded-md px-3 py-2 text-sm font-medium hover:bg-accent"
+                      class="block rounded-md px-3 py-2 text-sm font-medium hover:bg-primary/10"
                     >
                       {{ item.name }}
                     </router-link>
@@ -122,7 +117,7 @@ const diagnosticsMenu: MenuRouteItem[] = [
                   <NavigationMenuLink v-else as-child>
                     <button
                       type="button"
-                      class="block w-full rounded-md px-3 py-2 text-left text-sm font-medium hover:bg-accent disabled:opacity-60 cursor-pointer"
+                      class="block w-full rounded-md px-3 py-2 text-left text-sm font-medium hover:bg-primary/10 disabled:opacity-60 cursor-pointer"
                       :disabled="signingOut"
                       @click.prevent="handleMenuItemClick(item)"
                     >
@@ -142,7 +137,7 @@ const diagnosticsMenu: MenuRouteItem[] = [
                   <NavigationMenuLink as-child>
                     <router-link
                       :to="item.path"
-                      class="block rounded-md px-3 py-2 text-sm font-medium hover:bg-accent"
+                      class="block rounded-md px-3 py-2 text-sm font-medium hover:bg-primary/10"
                     >
                       {{ item.name }}
                     </router-link>
@@ -160,7 +155,7 @@ const diagnosticsMenu: MenuRouteItem[] = [
                   <NavigationMenuLink as-child>
                     <router-link
                       :to="item.path"
-                      class="block rounded-md px-3 py-2 text-sm font-medium hover:bg-accent"
+                      class="block rounded-md px-3 py-2 text-sm font-medium hover:bg-primary/10"
                     >
                       {{ item.name }}
                     </router-link>
@@ -178,7 +173,7 @@ const diagnosticsMenu: MenuRouteItem[] = [
                   <NavigationMenuLink as-child>
                     <router-link
                       :to="item.path"
-                      class="block rounded-md px-3 py-2 text-sm font-medium hover:bg-accent"
+                      class="block rounded-md px-3 py-2 text-sm font-medium hover:bg-primary/10"
                     >
                       {{ item.name }}
                     </router-link>
@@ -189,7 +184,7 @@ const diagnosticsMenu: MenuRouteItem[] = [
           </NavigationMenuItem>
 
           <NavigationMenuItem class="bg-white rounded-md">
-            <NavigationMenuLink as-child class="px-4">
+            <NavigationMenuLink as-child class="px-4 hover:rounded-md">
               <router-link to="/" class="font-medium">Billing</router-link>
             </NavigationMenuLink>
           </NavigationMenuItem>
