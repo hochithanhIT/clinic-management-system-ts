@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
-import { storeToRefs } from 'pinia'
 import { ApiError } from '@/services/http'
 import { getDepartments } from '@/services/department'
 import type { DepartmentSummary } from '@/services/department'
@@ -21,6 +20,7 @@ definePage({
 
 const workspaceStore = useWorkspaceStore()
 const { department: storedDepartment, room: storedRoom } = storeToRefs(workspaceStore)
+const router = useRouter()
 
 const departments = ref<DepartmentSummary[]>([])
 const rooms = ref<RoomSummary[]>([])
@@ -106,7 +106,11 @@ const loadRooms = async (departmentId: number) => {
         ? result.rooms.find((room) => room.id === storedRoomSelection.id)
         : null
 
-    if (storedRoomSelection && storedRoomSelection.departmentId === departmentId && !matchedStoredRoom) {
+    if (
+      storedRoomSelection &&
+      storedRoomSelection.departmentId === departmentId &&
+      !matchedStoredRoom
+    ) {
       workspaceStore.clear()
     }
 
@@ -125,7 +129,7 @@ const loadRooms = async (departmentId: number) => {
   }
 }
 
-const handleSubmit = () => {
+const handleSubmit = async () => {
   if (!selectedDepartmentId.value || !selectedRoomId.value) {
     toast.error('Please select both department and room before saving.')
     return
@@ -147,6 +151,7 @@ const handleSubmit = () => {
   })
 
   toast.success('Room configuration saved.')
+  await router.replace({ path: '/' })
 }
 
 onMounted(() => {
@@ -167,13 +172,13 @@ watch(selectedDepartmentId, (departmentId) => {
 
 <template>
   <div>
-    <div class="mx-auto flex h-full max-w-6xl items-center justify-center bg-primary-foreground">
-      <Card class="w-full max-w-sm">
+    <div class="mx-auto flex h-full max-w-full items-center justify-center bg-primary-foreground">
+      <Card class="w-full max-w-xl">
         <CardHeader class="text-center">
           <CardTitle>Room Configuration</CardTitle>
         </CardHeader>
         <CardContent>
-          <form id="room-config-form" class="grid w-full gap-4" @submit.prevent="handleSubmit">
+          <form id="room-config-form" class="grid w-full gap-8" @submit.prevent="handleSubmit">
             <div class="flex flex-col space-y-1.5">
               <Label for="department">Department</Label>
               <RoomConfigurationComboBox

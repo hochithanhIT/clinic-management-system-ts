@@ -32,6 +32,7 @@ const props = withDefaults(
     allowClear?: boolean
     id?: string
     listMaxHeight?: string
+    listMaxWidth?: string
   }>(),
   {
     options: () => [],
@@ -43,6 +44,7 @@ const props = withDefaults(
     align: 'start',
     allowClear: false,
     listMaxHeight: '12rem',
+    listMaxWidth: '20rem',
   },
 )
 
@@ -84,7 +86,14 @@ const handleSelect = (optionValue: OptionValue) => {
         <ChevronsUpDownIcon class="ml-2 h-4 w-4 shrink-0 opacity-50" />
       </Button>
     </PopoverTrigger>
-    <PopoverContent :align="props.align" class="w-(--radix-popover-trigger-width) p-0">
+    <PopoverContent
+      :align="props.align"
+      class="p-0"
+      :style="{
+        width: 'var(--radix-popover-trigger-width)',
+        maxWidth: props.listMaxWidth,
+      }"
+    >
       <Command>
         <CommandInput :placeholder="props.searchPlaceholder" />
         <CommandList class="overflow-y-auto" :style="{ maxHeight: props.listMaxHeight }">

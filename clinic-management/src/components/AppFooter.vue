@@ -51,18 +51,27 @@ const nowText = computed(() =>
 <template>
   <footer class="border-t bg-primary text-primary-foreground">
     <div
-      class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-2 text-sm"
+      class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-2"
     >
       <!-- Left: user -->
       <div class="flex items-center gap-2">
-        <span class="font-bold">{{ userDisplayName }}</span>
+        <span class="font-bold">
+          <span class="text-[#F5EE31]">User: </span>
+          {{ userDisplayName }}
+        </span>
       </div>
 
       <!-- Middle: dept/room -->
       <div v-if="hasRoomSelection" class="flex items-center gap-2 font-medium">
-        <span>{{ departmentDisplay }}</span>
+        <span>
+          <span class="text-[#F5EE31]">Department:</span>
+          {{ departmentDisplay }}
+        </span>
         <span>•</span>
-        <span>{{ roomDisplay }}</span>
+        <span>
+          <span class="text-[#F5EE31]">Room:</span>
+          {{ roomDisplay }}
+        </span>
       </div>
 
       <!-- Right: time -->

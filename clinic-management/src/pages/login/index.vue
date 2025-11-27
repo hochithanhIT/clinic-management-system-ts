@@ -32,7 +32,7 @@ const generalError = ref<string | null>(null)
 
 const redirectTarget = computed(() => {
   const target = route.query.redirect
-  return typeof target === 'string' && target.length > 0 ? target : '/'
+  return typeof target === 'string' && target.length > 0 ? target : '/room-configuration/'
 })
 
 const updateForm = (field: keyof LoginPayload, value: string) => {
@@ -85,7 +85,7 @@ const handleSubmit = async () => {
 
     <div class="absolute inset-0 bg-black/30"></div>
 
-    <div class="relative z-10 w-full max-w-sm md:max-w-4xl">
+    <div class="relative z-10 w-full max-w-md md:max-w-5xl">
       <LoginForm
         :form="form"
         :field-errors="fieldErrors"

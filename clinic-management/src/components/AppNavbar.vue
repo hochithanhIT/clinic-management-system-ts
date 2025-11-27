@@ -67,7 +67,7 @@ const systemMenu: MenuItem[] = [
   { name: 'Sign Out', action: handleSignOut },
 ]
 const receptionMenu: MenuRouteItem[] = [
-  { name: 'Patient Registration', path: '/' },
+  { name: 'Patient Registration', path: '/patientRegistration/' },
   { name: 'Follow-up Appointment', path: '/' },
   { name: 'Administrative Info', path: '/' },
 ]

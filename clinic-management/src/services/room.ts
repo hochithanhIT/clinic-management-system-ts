@@ -1,6 +1,6 @@
 import { apiFetch } from "./http"
 import type { ApiSuccessResponse } from "./http"
-import type { PaginationMeta } from "./department"
+import type { PaginationMeta } from "./types"
 
 export interface RoomSummary {
   id: number

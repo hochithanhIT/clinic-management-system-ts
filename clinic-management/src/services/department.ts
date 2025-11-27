@@ -1,17 +1,11 @@
 import { apiFetch } from "./http"
 import type { ApiSuccessResponse } from "./http"
+import type { PaginationMeta } from "./types"
 
 export interface DepartmentSummary {
   id: number
   name: string
   roomCount: number
-}
-
-export interface PaginationMeta {
-  page: number
-  limit: number
-  total: number
-  totalPages: number
 }
 
 interface DepartmentListResponse {

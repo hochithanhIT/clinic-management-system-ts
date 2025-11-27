@@ -145,9 +145,11 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <section class="w-full bg-primary-foreground">
-    <div class="mx-auto flex min-h-[60vh] max-w-3xl items-center justify-center px-4 py-10">
-      <Card class="w-full max-w-xl">
+  <section
+    class="flex min-h-full w-full items-center justify-center bg-primary-foreground px-4 py-10"
+  >
+    <div class="w-full max-w-xl">
+      <Card class="w-full">
         <CardHeader class="text-center">
           <CardTitle>Change Password</CardTitle>
         </CardHeader>

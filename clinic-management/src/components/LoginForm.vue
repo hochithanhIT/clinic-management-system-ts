@@ -39,11 +39,11 @@ const handleSubmit = (event: Event) => {
 <template>
   <div :class="cn('flex flex-col gap-6', props.class)">
     <Card class="overflow-hidden p-0">
-      <CardContent class="grid p-0 md:grid-cols-2">
-        <form class="flex flex-col gap-6 p-6 md:p-8" @submit="handleSubmit">
+      <CardContent class="grid min-h-[500px] p-0 md:grid-cols-[1.2fr_1fr]">
+        <form class="flex flex-col gap-6 p-8 md:p-10 justify-center items-center" @submit="handleSubmit">
           <FieldGroup class="gap-6">
             <div class="flex flex-col items-center gap-2 text-center">
-              <h1 class="text-2xl font-bold">CTU CLINIC</h1>
+              <h1 class="text-4xl font-bold">CTU CLINIC</h1>
               <p class="text-muted-foreground text-balance">Login to your CTU Clinic account</p>
             </div>
 
