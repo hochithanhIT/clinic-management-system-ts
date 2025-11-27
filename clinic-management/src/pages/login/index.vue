@@ -30,6 +30,48 @@ const fieldErrors = reactive<Record<keyof LoginPayload, string | null>>({
 
 const generalError = ref<string | null>(null)
 
+const fieldDomIdMap: Record<keyof LoginPayload, string> = {
+  tenDangNhap: 'username',
+  matKhau: 'password',
+}
+
+const focusField = (fieldId: string) => {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  requestAnimationFrame(() => {
+    const element = document.getElementById(fieldId)
+    if (!element || !(element instanceof HTMLElement)) {
+      return
+    }
+
+    if ('disabled' in element && element.disabled) {
+      return
+    }
+
+    element.focus()
+    if (typeof element.scrollIntoView === 'function') {
+      element.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      })
+    }
+  })
+}
+
+const focusFirstInvalidField = () => {
+  const invalidEntry = (Object.keys(fieldErrors) as Array<keyof LoginPayload>).find((field) =>
+    Boolean(fieldErrors[field]),
+  )
+
+  if (!invalidEntry) {
+    return
+  }
+
+  focusField(fieldDomIdMap[invalidEntry])
+}
+
 const redirectTarget = computed(() => {
   const target = route.query.redirect
   return typeof target === 'string' && target.length > 0 ? target : '/room-configuration/'
@@ -55,6 +97,7 @@ const clearFieldError = (field: keyof LoginPayload) => {
 const handleSubmit = async () => {
   if (!validate()) {
     generalError.value = 'Please correct the highlighted fields before continuing.'
+    focusFirstInvalidField()
     return
   }
 

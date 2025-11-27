@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed, ref, watch } from 'vue'
 import { CheckIcon, ChevronsUpDownIcon } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -28,6 +29,8 @@ const props = withDefaults(
     emptyMessage?: string
     disabled?: boolean
     loading?: boolean
+    loadingMore?: boolean
+    hasMore?: boolean
     align?: 'start' | 'center' | 'end'
     allowClear?: boolean
     id?: string
@@ -41,6 +44,8 @@ const props = withDefaults(
     emptyMessage: 'No results found.',
     disabled: false,
     loading: false,
+    loadingMore: false,
+    hasMore: false,
     align: 'start',
     allowClear: false,
     listMaxHeight: '12rem',
@@ -50,9 +55,15 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (event: 'update:modelValue', value: OptionValue | null): void
+  (event: 'search', value: string): void
+  (event: 'loadMore'): void
+  (event: 'open-change', value: boolean): void
 }>()
 
 const open = ref(false)
+const searchTerm = ref('')
+const listRef = ref<HTMLElement | null>(null)
+const loadMoreTriggered = ref(false)
 
 const selectedOption = computed(
   () => props.options.find((option) => option.value === props.modelValue) ?? null,
@@ -67,6 +78,50 @@ const handleSelect = (optionValue: OptionValue) => {
   emit('update:modelValue', nextValue)
   open.value = false
 }
+
+const handleSearchInput = (value: string) => {
+  searchTerm.value = value
+  emit('search', value)
+  loadMoreTriggered.value = false
+}
+
+const handleLoadMoreClick = () => {
+  if (props.loadingMore) {
+    return
+  }
+  emit('loadMore')
+}
+
+const handleScroll = () => {
+  if (!props.hasMore || props.loadingMore || !listRef.value) {
+    return
+  }
+
+  const { scrollTop, clientHeight, scrollHeight } = listRef.value
+  const isNearBottom = scrollTop + clientHeight >= scrollHeight - 24
+
+  if (isNearBottom && !loadMoreTriggered.value) {
+    loadMoreTriggered.value = true
+    emit('loadMore')
+  }
+}
+
+watch(open, (value) => {
+  emit('open-change', value)
+  if (!value) {
+    searchTerm.value = ''
+    loadMoreTriggered.value = false
+  }
+})
+
+watch(
+  () => props.loadingMore,
+  (loading) => {
+    if (!loading) {
+      loadMoreTriggered.value = false
+    }
+  },
+)
 </script>
 
 <template>
@@ -95,8 +150,16 @@ const handleSelect = (optionValue: OptionValue) => {
       }"
     >
       <Command>
-        <CommandInput :placeholder="props.searchPlaceholder" />
-        <CommandList class="overflow-y-auto" :style="{ maxHeight: props.listMaxHeight }">
+        <CommandInput
+          :placeholder="props.searchPlaceholder"
+          @update:modelValue="handleSearchInput"
+        />
+        <CommandList
+          ref="listRef"
+          class="overflow-y-auto"
+          :style="{ maxHeight: props.listMaxHeight }"
+          @scroll.passive="handleScroll"
+        >
           <CommandEmpty>{{ emptyLabel }}</CommandEmpty>
           <CommandGroup v-if="props.options.length">
             <CommandItem
@@ -117,6 +180,20 @@ const handleSelect = (optionValue: OptionValue) => {
             </CommandItem>
           </CommandGroup>
         </CommandList>
+        <div
+          v-if="props.hasMore"
+          class="border-t bg-muted/40 px-3 py-2 text-center text-xs text-muted-foreground"
+        >
+          <span v-if="props.loadingMore">Loading more…</span>
+          <button
+            v-else
+            type="button"
+            class="text-primary hover:underline"
+            @click.stop="handleLoadMoreClick"
+          >
+            Load more
+          </button>
+        </div>
       </Command>
     </PopoverContent>
   </Popover>

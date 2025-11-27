@@ -8,7 +8,7 @@ import type { RoomSummary } from '@/services/room'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import RoomConfigurationComboBox from '@/components/RoomConfigurationComboBox.vue'
+import RoomConfigurationComboBox from '@/components/UtilsComboBox.vue'
 import { useWorkspaceStore } from '@/stores/workspace'
 
 definePage({

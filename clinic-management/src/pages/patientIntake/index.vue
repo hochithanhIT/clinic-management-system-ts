@@ -10,7 +10,6 @@ import type { DateValue } from '@internationalized/date'
 import { getLocalTimeZone, today } from '@internationalized/date'
 import { AlertCircle, CalendarIcon, SearchIcon } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
-import { storeToRefs } from 'pinia'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -28,7 +27,7 @@ import {
 } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
-import BaseCombobox from '@/components/RoomConfigurationComboBox.vue'
+import BaseCombobox from '@/components/UtilsComboBox.vue'
 import {
   Table,
   TableBody,
@@ -48,7 +47,7 @@ import {
 } from '@/components/ui/pagination'
 
 import { ApiError } from '@/services/http'
-import { getAllOccupations } from '@/services/occupation'
+import { getOccupations } from '@/services/occupation'
 import { getCities, getProvinces } from '@/services/location'
 import { getRooms } from '@/services/room'
 import { createPatient } from '@/services/patient'
@@ -147,11 +146,16 @@ const cityOptions = ref<ComboboxOption[]>([])
 const wardOptions = ref<ComboboxOption[]>([])
 const roomOptions = ref<ComboboxOption[]>([])
 
+const occupationPagination = reactive({ page: 0, totalPages: 0 })
+const occupationSearchTerm = ref('')
 const loadingOccupations = ref(false)
+const loadingMoreOccupations = ref(false)
 const loadingCities = ref(false)
 const loadingWards = ref(false)
 const loadingRooms = ref(false)
 const isSubmitting = ref(false)
+
+let occupationRequestCounter = 0
 
 const hasBirthDate = computed(() => Boolean(birthDateRaw.value))
 
@@ -190,6 +194,7 @@ const handleLoadError = (message: string) => {
 }
 
 const FETCH_LIMIT = 100
+const OCCUPATION_PAGE_SIZE = 40
 
 const authStore = useAuthStore()
 const workspaceStore = useWorkspaceStore()
@@ -200,7 +205,8 @@ const genderValueMap: Record<GenderValue, number> = {
   female: 0,
 }
 
-const MEDICAL_RECORD_FETCH_LIMIT = 100
+const DEFAULT_MEDICAL_RECORD_PAGE_SIZE = 20
+const MEDICAL_RECORD_PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
 
 const medicalRecordStatusOptions = [
   { value: 'all', label: 'Tất cả trạng thái' },
@@ -227,6 +233,7 @@ const medicalRecords = ref<MedicalRecordSummary[]>([])
 const medicalRecordsLoading = ref(false)
 const medicalRecordsPagination = ref<PaginationMeta | null>(null)
 const recordsPage = ref(1)
+const recordsPageSize = ref(DEFAULT_MEDICAL_RECORD_PAGE_SIZE)
 
 const recordFilters = reactive({
   status: 'all' as MedicalRecordStatusFilterValue,
@@ -414,7 +421,7 @@ const loadMedicalRecords = async () => {
         : undefined
     const { medicalRecords: records, pagination } = await getMedicalRecords({
       page: recordsPage.value,
-      limit: MEDICAL_RECORD_FETCH_LIMIT,
+      limit: recordsPageSize.value,
       status: statusFilter,
       roomId: appliedRecordFilters.value.roomId ?? undefined,
       enteredFrom: appliedRecordFilters.value.from ?? undefined,
@@ -423,6 +430,7 @@ const loadMedicalRecords = async () => {
     medicalRecords.value = records
     medicalRecordsPagination.value = pagination
     recordsPage.value = pagination.page
+    recordsPageSize.value = pagination.limit
   } catch (error) {
     medicalRecords.value = []
     medicalRecordsPagination.value = null
@@ -489,6 +497,17 @@ const handleRecordsPageChange = async (page: number) => {
   }
 
   recordsPage.value = page
+  await loadMedicalRecords()
+}
+
+const handleRecordsPageSizeChange = async (value: string) => {
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed) || parsed <= 0 || parsed === recordsPageSize.value) {
+    return
+  }
+
+  recordsPageSize.value = parsed
+  recordsPage.value = 1
   await loadMedicalRecords()
 }
 
@@ -570,23 +589,123 @@ const ensureOptionRetained = (
   return exists ? currentValue : null
 }
 
-const loadOccupations = async () => {
-  loadingOccupations.value = true
+const occupationHasMore = computed(() => {
+  if (occupationPagination.totalPages === 0) {
+    return false
+  }
+
+  return occupationPagination.page < occupationPagination.totalPages
+})
+
+const updateOccupationOptions = (options: ComboboxOption[], reset: boolean) => {
+  if (reset) {
+    occupationOptions.value = options
+  } else {
+    const merged = [...occupationOptions.value]
+    for (const option of options) {
+      if (!merged.some((existing) => existing.value === option.value)) {
+        merged.push(option)
+      }
+    }
+    occupationOptions.value = merged
+  }
+
+  form.occupationId = ensureOptionRetained(occupationOptions.value, form.occupationId)
+}
+
+const fetchOccupations = async (
+  page: number,
+  searchTerm: string,
+  { reset }: { reset: boolean },
+) => {
+  occupationRequestCounter += 1
+  const requestId = occupationRequestCounter
+  const isResetRequest = reset
+  if (!isResetRequest && loadingMoreOccupations.value) {
+    return
+  }
+
+  if (isResetRequest) {
+    loadingOccupations.value = true
+  } else {
+    loadingMoreOccupations.value = true
+  }
   try {
-    const occupations = await getAllOccupations({ limit: FETCH_LIMIT })
+    const { occupations, pagination } = await getOccupations({
+      page,
+      limit: OCCUPATION_PAGE_SIZE,
+      search: searchTerm.trim() || undefined,
+    })
+
     const options = occupations.map((occupation) => ({
       value: occupation.id,
       label: occupation.name,
     }))
-    occupationOptions.value = options
-    form.occupationId = ensureOptionRetained(options, form.occupationId)
+
+    if (requestId === occupationRequestCounter) {
+      updateOccupationOptions(options, reset)
+      occupationPagination.page = pagination.page
+      occupationPagination.totalPages = pagination.totalPages
+    }
   } catch (error) {
     handleLoadError('Unable to load occupations.')
     console.error(error)
   } finally {
-    loadingOccupations.value = false
+    if (isResetRequest) {
+      if (requestId === occupationRequestCounter) {
+        loadingOccupations.value = false
+      }
+    } else {
+      loadingMoreOccupations.value = false
+    }
   }
 }
+
+const loadOccupations = async ({ reset }: { reset: boolean }) => {
+  if (reset) {
+    occupationPagination.page = 0
+    occupationPagination.totalPages = 0
+  }
+  const nextPage = reset ? 1 : occupationPagination.page + 1
+  await fetchOccupations(nextPage, occupationSearchTerm.value, { reset })
+}
+
+let occupationSearchTimeout: ReturnType<typeof setTimeout> | null = null
+
+const handleOccupationSearch = (value: string) => {
+  occupationSearchTerm.value = value
+  if (occupationSearchTimeout) {
+    clearTimeout(occupationSearchTimeout)
+  }
+
+  occupationSearchTimeout = setTimeout(() => {
+    void loadOccupations({ reset: true })
+  }, 200)
+}
+
+const handleOccupationLoadMore = () => {
+  if (!occupationHasMore.value) {
+    return
+  }
+
+  void loadOccupations({ reset: false })
+}
+
+const handleOccupationOpenChange = (isOpen: boolean) => {
+  if (!isOpen || occupationOptions.value.length > 0) {
+    return
+  }
+
+  occupationSearchTerm.value = ''
+  void loadOccupations({ reset: true })
+}
+
+onBeforeUnmount(() => {
+  if (occupationSearchTimeout) {
+    clearTimeout(occupationSearchTimeout)
+    occupationSearchTimeout = null
+  }
+})
 
 const loadCities = async () => {
   loadingCities.value = true
@@ -773,7 +892,7 @@ onMounted(() => {
     to: endOfDay(baseDate),
   }
   recordsPage.value = 1
-  void loadOccupations()
+  void loadOccupations({ reset: true })
   void loadCities()
   void loadRooms()
   void loadMedicalRecords()
@@ -797,7 +916,7 @@ onMounted(() => {
             <TabsContent value="intake" class="mt-6">
               <Alert v-if="formErrors.length" variant="destructive" class="mb-6">
                 <AlertCircle class="mr-2 h-5 w-5" />
-                <AlertTitle>Không thể lưu bệnh nhân</AlertTitle>
+                <AlertTitle>Failed to save patient</AlertTitle>
                 <AlertDescription>
                   <ul class="list-disc space-y-1 pl-5">
                     <li v-for="message in formErrors" :key="message">
@@ -885,6 +1004,11 @@ onMounted(() => {
                       placeholder="Select occupation"
                       search-placeholder="Search occupation..."
                       :loading="loadingOccupations"
+                      :loading-more="loadingMoreOccupations"
+                      :has-more="occupationHasMore"
+                      @search="handleOccupationSearch"
+                      @load-more="handleOccupationLoadMore"
+                      @open-change="handleOccupationOpenChange"
                     />
                   </Field>
 
@@ -1086,6 +1210,27 @@ onMounted(() => {
                     </Popover>
                   </Field>
 
+                  <Field>
+                    <FieldLabel>Records per page</FieldLabel>
+                    <Select
+                      :model-value="String(recordsPageSize)"
+                      @update:model-value="handleRecordsPageSizeChange"
+                    >
+                      <SelectTrigger class="w-full">
+                        <SelectValue placeholder="Select page size" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem
+                          v-for="option in MEDICAL_RECORD_PAGE_SIZE_OPTIONS"
+                          :key="option"
+                          :value="String(option)"
+                        >
+                          {{ option }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
+
                   <div class="flex flex-wrap items-end gap-3">
                     <Button
                       type="button"
@@ -1190,7 +1335,7 @@ onMounted(() => {
                 </div>
 
                 <Pagination
-                  v-if="medicalRecordsPagination && medicalRecordsPagination.totalPages > 1"
+                  v-if="medicalRecordsPagination && medicalRecordsPagination.total > 0"
                   :page="recordsPage"
                   :items-per-page="medicalRecordsPagination.limit"
                   :total="medicalRecordsPagination.total"

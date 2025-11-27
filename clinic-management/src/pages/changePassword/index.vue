@@ -42,6 +42,49 @@ const fieldErrors = reactive<Record<FieldKey, string | null>>({
 
 const generalError = ref<string | null>(null)
 
+const fieldDomIdMap: Record<FieldKey, string> = {
+  currentPassword: 'currentPassword',
+  newPassword: 'newPassword',
+  confirmPassword: 'confirmPassword',
+}
+
+const focusField = (fieldId: string) => {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  requestAnimationFrame(() => {
+    const element = document.getElementById(fieldId)
+    if (!element || !(element instanceof HTMLElement)) {
+      return
+    }
+
+    if ('disabled' in element && element.disabled) {
+      return
+    }
+
+    element.focus()
+    if (typeof element.scrollIntoView === 'function') {
+      element.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      })
+    }
+  })
+}
+
+const focusFirstInvalidField = () => {
+  const invalidField = (Object.keys(fieldErrors) as FieldKey[]).find((key) =>
+    Boolean(fieldErrors[key]),
+  )
+
+  if (!invalidField) {
+    return
+  }
+
+  focusField(fieldDomIdMap[invalidField])
+}
+
 const fieldErrorMessages = computed(() =>
   Object.values(fieldErrors).filter((message): message is string => Boolean(message)),
 )
@@ -126,6 +169,7 @@ const isSubmitting = computed(() => loading.value)
 const handleSubmit = async () => {
   if (!validateForm()) {
     generalError.value = 'Please review the highlighted inputs before continuing.'
+    focusFirstInvalidField()
     return
   }
 

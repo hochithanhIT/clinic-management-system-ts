@@ -23,10 +23,6 @@ const emit = defineEmits<{
   (e: 'clearFieldError', field: keyof LoginPayload): void
 }>()
 
-const handleFocus = (field: keyof LoginPayload) => {
-  emit('clearFieldError', field)
-}
-
 const handleModelUpdate = (field: keyof LoginPayload, value: string | number) => {
   emit('update:form', field, typeof value === 'string' ? value : String(value))
   emit('clearFieldError', field)
@@ -82,7 +78,6 @@ const handleSubmit = (event: Event) => {
                 placeholder="Enter your username"
                 :disabled="props.loading"
                 :model-value="props.form.tenDangNhap"
-                @focus="handleFocus('tenDangNhap')"
                 @update:modelValue="handleModelUpdate('tenDangNhap', $event)"
               />
             </Field>
@@ -96,7 +91,6 @@ const handleSubmit = (event: Event) => {
                 placeholder="Enter your password"
                 :disabled="props.loading"
                 :model-value="props.form.matKhau"
-                @focus="handleFocus('matKhau')"
                 @update:modelValue="handleModelUpdate('matKhau', $event)"
               />
             </Field>
