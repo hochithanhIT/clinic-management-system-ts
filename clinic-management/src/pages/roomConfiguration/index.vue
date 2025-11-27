@@ -8,7 +8,7 @@ import type { RoomSummary } from '@/services/room'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import RoomConfigurationComboBox from '@/components/UtilsComboBox.vue'
+import ComboBox from '@/components/ComboBox.vue'
 import { useWorkspaceStore } from '@/stores/workspace'
 
 definePage({
@@ -181,7 +181,7 @@ watch(selectedDepartmentId, (departmentId) => {
           <form id="room-config-form" class="grid w-full gap-8" @submit.prevent="handleSubmit">
             <div class="flex flex-col space-y-1.5">
               <Label for="department">Department</Label>
-              <RoomConfigurationComboBox
+              <ComboBox
                 id="department"
                 v-model="selectedDepartmentId"
                 :options="departmentOptions"
@@ -193,7 +193,7 @@ watch(selectedDepartmentId, (departmentId) => {
             </div>
             <div class="flex flex-col space-y-1.5">
               <Label for="room">Room</Label>
-              <RoomConfigurationComboBox
+              <ComboBox
                 id="room"
                 v-model="selectedRoomId"
                 :options="roomOptions"
