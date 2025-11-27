@@ -105,7 +105,7 @@ const handlePageSizeChange = (value: AcceptableValue) => {
     <Field>
       <FieldLabel>From Date</FieldLabel>
       <Popover v-model:open="recordsFromPopoverOpen">
-        <PopoverTrigger as-child>
+        <PopoverTrigger as-child  class="hover:text-primary-foreground">
           <Button variant="outline" class="w-full justify-start text-left font-normal">
             <CalendarIcon class="mr-2 h-4 w-4" />
             <span :class="!hasFromDate ? 'text-muted-foreground' : ''">
@@ -128,7 +128,7 @@ const handlePageSizeChange = (value: AcceptableValue) => {
     <Field>
       <FieldLabel>To Date</FieldLabel>
       <Popover v-model:open="recordsToPopoverOpen">
-        <PopoverTrigger as-child>
+        <PopoverTrigger as-child  class="hover:text-primary-foreground">
           <Button variant="outline" class="w-full justify-start text-left font-normal">
             <CalendarIcon class="mr-2 h-4 w-4" />
             <span :class="!hasToDate ? 'text-muted-foreground' : ''">

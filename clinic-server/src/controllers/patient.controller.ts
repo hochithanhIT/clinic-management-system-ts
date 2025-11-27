@@ -4,6 +4,7 @@ import { prisma } from "../db";
 import Send from "../utils/response.utils";
 import patientSchema from "../validations/patient.schema";
 import { z } from "zod";
+import clinicConstants from "../constants/clinic.constants";
 
 const PATIENT_CODE_PREFIX = "BN";
 const PATIENT_CODE_PAD = 6;
@@ -389,16 +390,36 @@ const deletePatient = async (
       return Send.notFound(res, null, "Không tìm thấy bệnh nhân");
     }
 
-    const [examinationCount, serviceOrderCount] = await Promise.all([
+    const [examinationCount, blockingServiceOrder] = await Promise.all([
       prisma.phieuKhamBenh.count({
         where: { benhAn: { benhNhanId: id } },
       }),
-      prisma.phieuChiDinh.count({
-        where: { benhAn: { benhNhanId: id } },
+      prisma.phieuChiDinh.findFirst({
+        where: {
+          benhAn: { benhNhanId: id },
+          OR: [
+            { chiTiet: { none: {} } },
+            {
+              chiTiet: {
+                some: {
+                  OR: [
+                    { trangThaiDongTien: true },
+                    {
+                      dichVu: {
+                        maDV: { not: clinicConstants.examServiceCode },
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          ],
+        },
+        select: { id: true },
       }),
     ]);
 
-    if (examinationCount > 0 || serviceOrderCount > 0) {
+    if (examinationCount > 0 || blockingServiceOrder) {
       return Send.badRequest(
         res,
         null,
@@ -406,8 +427,73 @@ const deletePatient = async (
       );
     }
 
-    await prisma.benhNhan.delete({
-      where: { id },
+
+    await prisma.$transaction(async (tx) => {
+      const medicalRecords = await tx.benhAn.findMany({
+        where: { benhNhanId: id },
+        select: { id: true },
+      });
+
+      if (medicalRecords.length > 0) {
+        const recordIds = medicalRecords.map((record) => record.id);
+
+        await tx.ketQuaChiTiet.deleteMany({
+          where: {
+            ketQua: {
+              chiTietPCD: {
+                phieuChiDinh: {
+                  benhAnId: { in: recordIds },
+                },
+              },
+            },
+          },
+        });
+
+        await tx.ketQua.deleteMany({
+          where: {
+            chiTietPCD: {
+              phieuChiDinh: {
+                benhAnId: { in: recordIds },
+              },
+            },
+          },
+        });
+
+        await tx.hoaDonChiTiet.deleteMany({
+          where: {
+            OR: [
+              { hoaDon: { benhAnId: { in: recordIds } } },
+              {
+                chiTietPCD: {
+                  phieuChiDinh: { benhAnId: { in: recordIds } },
+                },
+              },
+            ],
+          },
+        });
+
+        await tx.hoaDon.deleteMany({
+          where: { benhAnId: { in: recordIds } },
+        });
+
+        await tx.chiTietPhieuChiDinh.deleteMany({
+          where: {
+            phieuChiDinh: { benhAnId: { in: recordIds } },
+          },
+        });
+
+        await tx.phieuChiDinh.deleteMany({
+          where: { benhAnId: { in: recordIds } },
+        });
+
+        await tx.benhAn.deleteMany({
+          where: { id: { in: recordIds } },
+        });
+      }
+
+      await tx.benhNhan.delete({
+        where: { id },
+      });
     });
 
     return Send.success(res, null, "Xóa bệnh nhân thành công");

@@ -18,7 +18,7 @@ const showNavbar = computed(() => {
       <router-view class="flex-1" />
     </main>
 
-    <AppFooter v-if="showNavbar" class="shrink-0 sticky bottom-0 z-50"/>
+    <AppFooter v-if="showNavbar" class="shrink-0 sticky bottom-0 z-50" />
   </div>
   <Toaster position="top-right" richColors />
 </template>
