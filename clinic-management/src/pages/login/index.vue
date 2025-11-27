@@ -54,6 +54,7 @@ const clearFieldError = (field: keyof LoginPayload) => {
 
 const handleSubmit = async () => {
   if (!validate()) {
+    generalError.value = 'Please correct the highlighted fields before continuing.'
     return
   }
 
@@ -70,7 +71,6 @@ const handleSubmit = async () => {
     const message = error instanceof ApiError ? error.message : 'Sign in failed, please try again.'
 
     generalError.value = message
-    toast.error(message)
   }
 }
 </script>

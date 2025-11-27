@@ -8,10 +8,11 @@ definePage({
 
 import type { DateValue } from '@internationalized/date'
 import { getLocalTimeZone, today } from '@internationalized/date'
-import { CalendarIcon, SearchIcon } from 'lucide-vue-next'
+import { AlertCircle, CalendarIcon, SearchIcon } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 import { storeToRefs } from 'pinia'
 
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
@@ -96,6 +97,36 @@ const form = reactive<PatientFormState>({
   reason: '',
   roomId: null,
 })
+
+const formErrors = ref<string[]>([])
+
+const focusField = (fieldId: string) => {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  requestAnimationFrame(() => {
+    const element = document.getElementById(fieldId)
+    if (element instanceof HTMLElement) {
+      if (
+        (element instanceof HTMLButtonElement ||
+          element instanceof HTMLInputElement ||
+          element instanceof HTMLTextAreaElement ||
+          element instanceof HTMLSelectElement) &&
+        element.disabled
+      ) {
+        return
+      }
+      element.focus()
+      if (typeof element.scrollIntoView === 'function') {
+        element.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        })
+      }
+    }
+  })
+}
 
 const birthDateRaw = ref<unknown>(undefined)
 
@@ -201,6 +232,8 @@ const recordFilters = reactive({
   status: 'all' as MedicalRecordStatusFilterValue,
   roomId: null as number | null,
 })
+
+const recordErrors = ref<string[]>([])
 
 const appliedRecordFilters = ref<{
   status: MedicalRecordStatusFilterValue
@@ -401,11 +434,13 @@ const loadMedicalRecords = async () => {
 }
 
 const handleSearchRecords = async () => {
+  clearRecordErrors()
+
   const fromDate = resolveDateValue(recordsFromRaw.value)
   const toDate = resolveDateValue(recordsToRaw.value)
 
   if (fromDate && toDate && fromDate > toDate) {
-    toast.error('Ngày bắt đầu không thể sau ngày kết thúc.')
+    setRecordError('Ngày bắt đầu không thể sau ngày kết thúc.')
     return
   }
 
@@ -424,6 +459,8 @@ const handleSearchRecords = async () => {
 }
 
 const handleResetRecordFilters = async () => {
+  clearRecordErrors()
+
   const todayFrom = today(timeZone)
   const todayTo = today(timeZone)
   const baseDate = todayFrom.toDate(timeZone)
@@ -455,6 +492,25 @@ const handleRecordsPageChange = async (page: number) => {
   await loadMedicalRecords()
 }
 
+const setFormError = (message: string, focusId?: string) => {
+  formErrors.value = [message]
+  if (focusId) {
+    focusField(focusId)
+  }
+}
+
+const clearFormErrors = () => {
+  formErrors.value = []
+}
+
+const setRecordError = (message: string) => {
+  recordErrors.value = [message]
+}
+
+const clearRecordErrors = () => {
+  recordErrors.value = []
+}
+
 const resetForm = () => {
   activeTab.value = 'intake'
   form.code = null
@@ -469,6 +525,7 @@ const resetForm = () => {
   form.reason = ''
   form.roomId = storedRoom.value?.id ?? null
   birthDateRaw.value = undefined
+  clearFormErrors()
 }
 
 const handleNewEntry = () => {
@@ -608,9 +665,11 @@ const handleSave = async () => {
     return
   }
 
+  clearFormErrors()
+
   const staffId = authStore.user?.id ?? null
   if (!staffId) {
-    toast.error('You need to sign in before performing this action.')
+    setFormError('You need to sign in before performing this action.')
     return
   }
 
@@ -619,32 +678,32 @@ const handleSave = async () => {
   const birthDate = resolveBirthDate()
 
   if (!trimmedName) {
-    toast.error('Please enter patient full name.')
+    setFormError('Please enter patient full name.', 'patient-name')
     return
   }
 
   if (!birthDate) {
-    toast.error('Please select birth date.')
+    setFormError('Please select birth date.', 'patient-birthdate')
     return
   }
 
   if (!form.gender) {
-    toast.error('Please select gender.')
+    setFormError('Please select gender.', 'patient-gender')
     return
   }
 
   if (!form.occupationId) {
-    toast.error('Please select occupation.')
+    setFormError('Please select occupation.', 'patient-occupation')
     return
   }
 
   if (!form.wardId) {
-    toast.error('Please select ward/commune.')
+    setFormError('Please select ward/commune.', 'patient-ward')
     return
   }
 
   if (!trimmedReason) {
-    toast.error('Please enter admission reason.')
+    setFormError('Please enter admission reason.', 'reason')
     return
   }
 
@@ -682,7 +741,7 @@ const handleSave = async () => {
         ? (extractValidationMessage(error.details) ?? error.message)
         : 'Failed to save patient, please try again.'
 
-    toast.error(message)
+    setFormError(message)
   } finally {
     isSubmitting.value = false
   }
@@ -736,6 +795,18 @@ onMounted(() => {
             </TabsList>
 
             <TabsContent value="intake" class="mt-6">
+              <Alert v-if="formErrors.length" variant="destructive" class="mb-6">
+                <AlertCircle class="mr-2 h-5 w-5" />
+                <AlertTitle>Không thể lưu bệnh nhân</AlertTitle>
+                <AlertDescription>
+                  <ul class="list-disc space-y-1 pl-5">
+                    <li v-for="message in formErrors" :key="message">
+                      {{ message }}
+                    </li>
+                  </ul>
+                </AlertDescription>
+              </Alert>
+
               <form class="grid gap-6">
                 <FieldGroup class="grid gap-6 md:grid-cols-2">
                   <Field>
@@ -761,6 +832,7 @@ onMounted(() => {
                     <Popover>
                       <PopoverTrigger as-child>
                         <Button
+                          id="patient-birthdate"
                           variant="outline"
                           class="w-full justify-start text-left font-normal"
                         >
@@ -789,7 +861,7 @@ onMounted(() => {
                   <Field>
                     <FieldLabel> Gender <span class="text-destructive">*</span> </FieldLabel>
                     <Select v-model="form.gender">
-                      <SelectTrigger class="w-full">
+                      <SelectTrigger id="patient-gender" class="w-full">
                         <SelectValue placeholder="Select gender" />
                       </SelectTrigger>
                       <SelectContent>
@@ -809,6 +881,7 @@ onMounted(() => {
                     <BaseCombobox
                       v-model="form.occupationId"
                       :options="occupationOptions"
+                      id="patient-occupation"
                       placeholder="Select occupation"
                       search-placeholder="Search occupation..."
                       :loading="loadingOccupations"
@@ -820,6 +893,7 @@ onMounted(() => {
                     <BaseCombobox
                       v-model="form.cityId"
                       :options="cityOptions"
+                      id="patient-city"
                       placeholder="Select city/province"
                       search-placeholder="Search city/province..."
                       :loading="loadingCities"
@@ -831,6 +905,7 @@ onMounted(() => {
                     <BaseCombobox
                       v-model="form.wardId"
                       :options="wardOptions"
+                      id="patient-ward"
                       placeholder="Select ward/commune"
                       search-placeholder="Search ward/commune..."
                       :loading="loadingWards"
@@ -916,6 +991,18 @@ onMounted(() => {
 
             <TabsContent value="history" class="mt-6">
               <div class="space-y-6">
+                <Alert v-if="recordErrors.length" variant="destructive" class="mb-2">
+                  <AlertCircle class="mr-2 h-5 w-5" />
+                  <AlertTitle>Không thể áp dụng bộ lọc</AlertTitle>
+                  <AlertDescription>
+                    <ul class="list-disc space-y-1 pl-5">
+                      <li v-for="message in recordErrors" :key="`record-error-${message}`">
+                        {{ message }}
+                      </li>
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+
                 <div
                   class="grid gap-4 rounded-md border p-4 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(220px,1fr))]"
                 >

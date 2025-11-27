@@ -3,11 +3,13 @@ import { computed, reactive, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
+import { AlertCircle } from 'lucide-vue-next'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
+import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { ApiError } from '@/services/http'
 import { useAuthStore } from '@/stores/auth'
 import { useWorkspaceStore } from '@/stores/workspace'
@@ -39,6 +41,10 @@ const fieldErrors = reactive<Record<FieldKey, string | null>>({
 })
 
 const generalError = ref<string | null>(null)
+
+const fieldErrorMessages = computed(() =>
+  Object.values(fieldErrors).filter((message): message is string => Boolean(message)),
+)
 
 const passwordRules = [
   {
@@ -119,6 +125,7 @@ const isSubmitting = computed(() => loading.value)
 
 const handleSubmit = async () => {
   if (!validateForm()) {
+    generalError.value = 'Please review the highlighted inputs before continuing.'
     return
   }
 
@@ -139,7 +146,6 @@ const handleSubmit = async () => {
     const message =
       error instanceof ApiError ? error.message : 'Unable to update password, please try again.'
     generalError.value = message
-    toast.error(message)
   }
 }
 </script>
@@ -156,6 +162,23 @@ const handleSubmit = async () => {
         <CardContent>
           <form class="grid gap-6" @submit.prevent="handleSubmit">
             <FieldGroup class="gap-6">
+              <Alert
+                v-if="generalError || fieldErrorMessages.length"
+                variant="destructive"
+                class="w-full"
+              >
+                <AlertCircle class="h-5 w-5" aria-hidden="true" />
+                <AlertTitle>Unable to update password</AlertTitle>
+                <AlertDescription class="space-y-2">
+                  <p v-if="generalError">{{ generalError }}</p>
+                  <ul v-if="fieldErrorMessages.length" class="list-disc space-y-1 pl-5">
+                    <li v-for="message in fieldErrorMessages" :key="message">
+                      {{ message }}
+                    </li>
+                  </ul>
+                </AlertDescription>
+              </Alert>
+
               <Field :data-invalid="Boolean(fieldErrors.currentPassword)">
                 <FieldLabel for="currentPassword">Current Password</FieldLabel>
                 <Input
@@ -167,7 +190,6 @@ const handleSubmit = async () => {
                   :disabled="isSubmitting"
                   @update:modelValue="updateField('currentPassword', $event)"
                 />
-                <FieldError :errors="[fieldErrors.currentPassword ?? undefined]" />
               </Field>
 
               <Field :data-invalid="Boolean(fieldErrors.newPassword)">
@@ -187,7 +209,6 @@ const handleSubmit = async () => {
                     <li v-for="rule in passwordRules" :key="rule.message">{{ rule.message }}</li>
                   </ul>
                 </FieldDescription>
-                <FieldError :errors="[fieldErrors.newPassword ?? undefined]" />
               </Field>
 
               <Field :data-invalid="Boolean(fieldErrors.confirmPassword)">
@@ -201,11 +222,6 @@ const handleSubmit = async () => {
                   :disabled="isSubmitting"
                   @update:modelValue="updateField('confirmPassword', $event)"
                 />
-                <FieldError :errors="[fieldErrors.confirmPassword ?? undefined]" />
-              </Field>
-
-              <Field v-if="generalError">
-                <FieldError :errors="[generalError ?? undefined]" />
               </Field>
             </FieldGroup>
 

@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
+import { computed, type HTMLAttributes } from 'vue'
 import type { LoginPayload } from '@/services/auth'
+import { AlertCircle } from 'lucide-vue-next'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
+import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
 const props = defineProps<{
   class?: HTMLAttributes['class']
@@ -30,6 +32,10 @@ const handleModelUpdate = (field: keyof LoginPayload, value: string | number) =>
   emit('clearFieldError', field)
 }
 
+const fieldErrorMessages = computed(() =>
+  Object.values(props.fieldErrors).filter((message): message is string => Boolean(message)),
+)
+
 const handleSubmit = (event: Event) => {
   event.preventDefault()
   emit('submit')
@@ -40,12 +46,32 @@ const handleSubmit = (event: Event) => {
   <div :class="cn('flex flex-col gap-6', props.class)">
     <Card class="overflow-hidden p-0">
       <CardContent class="grid min-h-[500px] p-0 md:grid-cols-[1.2fr_1fr]">
-        <form class="flex flex-col gap-6 p-8 md:p-10 justify-center items-center" @submit="handleSubmit">
+        <form
+          class="flex flex-col gap-6 p-8 md:p-10 justify-center items-center"
+          @submit="handleSubmit"
+        >
           <FieldGroup class="gap-6">
             <div class="flex flex-col items-center gap-2 text-center">
               <h1 class="text-4xl font-bold">CTU CLINIC</h1>
               <p class="text-muted-foreground text-balance">Login to your CTU Clinic account</p>
             </div>
+
+            <Alert
+              v-if="props.generalError || fieldErrorMessages.length"
+              variant="destructive"
+              class="w-full"
+            >
+              <AlertCircle class="h-5 w-5" aria-hidden="true" />
+              <AlertTitle>Sign in failed</AlertTitle>
+              <AlertDescription class="space-y-2">
+                <p v-if="props.generalError">{{ props.generalError }}</p>
+                <ul v-if="fieldErrorMessages.length" class="list-disc space-y-1 pl-5">
+                  <li v-for="message in fieldErrorMessages" :key="message">
+                    {{ message }}
+                  </li>
+                </ul>
+              </AlertDescription>
+            </Alert>
 
             <Field :data-invalid="Boolean(props.fieldErrors.tenDangNhap)">
               <FieldLabel for="username"> Username </FieldLabel>
@@ -59,7 +85,6 @@ const handleSubmit = (event: Event) => {
                 @focus="handleFocus('tenDangNhap')"
                 @update:modelValue="handleModelUpdate('tenDangNhap', $event)"
               />
-              <FieldError :errors="[props.fieldErrors.tenDangNhap ?? undefined]" />
             </Field>
 
             <Field :data-invalid="Boolean(props.fieldErrors.matKhau)">
@@ -74,7 +99,6 @@ const handleSubmit = (event: Event) => {
                 @focus="handleFocus('matKhau')"
                 @update:modelValue="handleModelUpdate('matKhau', $event)"
               />
-              <FieldError :errors="[props.fieldErrors.matKhau ?? undefined]" />
             </Field>
 
             <Field>
