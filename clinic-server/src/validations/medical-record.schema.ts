@@ -29,6 +29,15 @@ const baseMedicalRecordBody = z.object({
       z.null(),
     ])
     .optional(),
+  phongId: z
+    .union([
+      z.coerce
+        .number()
+        .int("Phòng khám không hợp lệ")
+        .min(1, "Phòng khám không hợp lệ"),
+      z.null(),
+    ])
+    .optional(),
   thoiGianVao: z.coerce.date(),
   lyDoKhamBenh: z
     .string()
@@ -118,7 +127,27 @@ const getMedicalRecordsQuery = z.object({
     .int("Khoa không hợp lệ")
     .min(1, "Khoa không hợp lệ")
     .optional(),
-});
+  roomId: z.coerce
+    .number()
+    .int("Phòng khám không hợp lệ")
+    .min(1, "Phòng khám không hợp lệ")
+    .optional(),
+  enteredFrom: z.coerce.date().optional(),
+  enteredTo: z.coerce.date().optional(),
+})
+  .refine(
+    (value) => {
+      if (value.enteredFrom && value.enteredTo) {
+        return value.enteredFrom <= value.enteredTo;
+      }
+
+      return true;
+    },
+    {
+      message: "Khoảng thời gian không hợp lệ",
+      path: ["enteredTo"],
+    },
+  );
 
 const medicalRecordByPatientParam = z.object({
   patientId: z.coerce

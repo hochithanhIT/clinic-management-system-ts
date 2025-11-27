@@ -154,6 +154,8 @@ model Phong {
   khoa Khoa @relation(fields: [khoaId], references: [id])
   khoaId Int @map("Khoa_ID")
 
+  benhAns BenhAn[]
+
   @@map("Phong")
 }
 
@@ -173,6 +175,9 @@ model BenhAn {
 
   nvKham NhanVien? @relation("KhamBenh", fields: [nvKhamId], references: [id])
   nvKhamId Int? @map("NV_ID_Kham")
+
+  phong Phong? @relation(fields: [phongId], references: [id])
+  phongId Int? @map("Phong_ID")
 
   phieuKhamBenh PhieuKhamBenh?
   phieuChiDinhs PhieuChiDinh[]

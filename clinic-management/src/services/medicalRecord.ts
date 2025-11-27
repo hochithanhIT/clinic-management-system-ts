@@ -1,5 +1,6 @@
 import { apiFetch } from "./http"
 import type { ApiSuccessResponse } from "./http"
+import type { PaginationMeta } from "./types"
 
 export interface MedicalRecordPatient {
   id: number
@@ -7,12 +8,35 @@ export interface MedicalRecordPatient {
   fullName: string
   birthDate: string
   gender: number
+  phone: string | null
+  citizenId: string | null
+  ward:
+    | {
+        id: number
+        name: string
+      }
+    | null
+  city:
+    | {
+        id: number
+        name: string
+      }
+    | null
 }
 
 export interface MedicalStaffSummary {
   id: number
   name: string
   code: string
+  department?: {
+    id: number
+    name: string
+  } | null
+}
+
+export interface ClinicRoomSummary {
+  id: number
+  name: string
   department?: {
     id: number
     name: string
@@ -29,6 +53,7 @@ export interface MedicalRecordSummary {
   patient: MedicalRecordPatient
   receiver: MedicalStaffSummary | null
   doctor: MedicalStaffSummary | null
+  clinicRoom: ClinicRoomSummary | null
 }
 
 interface CreateMedicalRecordResponse {
@@ -45,6 +70,16 @@ interface CreateMedicalRecordResponse {
       hoTen: string
       ngaySinh: string
       gioiTinh: number
+      sdt: string | null
+      cccd: string | null
+      xaPhuong: {
+        id: number
+        tenXaPhuong: string
+        tinhTP: {
+          id: number
+          tenTinhTP: string
+        } | null
+      } | null
     }
     nvTiepNhan: {
       id: number
@@ -64,7 +99,39 @@ interface CreateMedicalRecordResponse {
         tenKhoa: string
       } | null
     } | null
+    phong: {
+      id: number
+      tenPhong: string
+      khoa: {
+        id: number
+        tenKhoa: string
+      } | null
+    } | null
   }
+}
+
+interface GetMedicalRecordsResponse {
+  medicalRecords: Array<
+    CreateMedicalRecordResponse["medicalRecord"] & {
+      benhNhan: CreateMedicalRecordResponse["medicalRecord"]["benhNhan"]
+      nvTiepNhan: CreateMedicalRecordResponse["medicalRecord"]["nvTiepNhan"]
+      nvKham: CreateMedicalRecordResponse["medicalRecord"]["nvKham"]
+      phong: CreateMedicalRecordResponse["medicalRecord"]["phong"]
+    }
+  >
+  pagination: PaginationMeta
+}
+
+export interface GetMedicalRecordsParams {
+  page?: number
+  limit?: number
+  status?: number
+  search?: string
+  departmentId?: number
+  patientId?: number
+  roomId?: number
+  enteredFrom?: string | Date
+  enteredTo?: string | Date
 }
 
 export interface CreateMedicalRecordPayload {
@@ -76,6 +143,7 @@ export interface CreateMedicalRecordPayload {
   nvKhamId?: number | null
   trangThai?: number
   thoiGianKetThuc?: string | Date | null
+  phongId?: number | null
 }
 
 const serializeDateInput = (value: string | Date | null | undefined): string | null | undefined => {
@@ -84,6 +152,33 @@ const serializeDateInput = (value: string | Date | null | undefined): string | n
   }
 
   return value ?? undefined
+}
+
+const serializeDateParam = (value: string | Date | null | undefined): string | undefined => {
+  if (value instanceof Date) {
+    return value.toISOString()
+  }
+
+  return value ?? undefined
+}
+
+const mapClinicRoom = (
+  room: CreateMedicalRecordResponse["medicalRecord"]["phong"] | null | undefined,
+): ClinicRoomSummary | null => {
+  if (!room) {
+    return null
+  }
+
+  return {
+    id: room.id,
+    name: room.tenPhong,
+    department: room.khoa
+      ? {
+          id: room.khoa.id,
+          name: room.khoa.tenKhoa,
+        }
+      : null,
+  }
 }
 
 export const createMedicalRecord = async (
@@ -110,6 +205,10 @@ export const createMedicalRecord = async (
 
   if (payload.thoiGianKetThuc !== undefined) {
     requestBody.thoiGianKetThuc = serializeDateInput(payload.thoiGianKetThuc)
+  }
+
+  if (payload.phongId !== undefined) {
+    requestBody.phongId = payload.phongId
   }
 
   const response = await apiFetch<ApiSuccessResponse<CreateMedicalRecordResponse>>("/medical-record", {
@@ -150,8 +249,116 @@ export const createMedicalRecord = async (
       fullName: medicalRecord.benhNhan.hoTen,
       birthDate: medicalRecord.benhNhan.ngaySinh,
       gender: medicalRecord.benhNhan.gioiTinh,
+      phone: medicalRecord.benhNhan.sdt ?? null,
+      citizenId: medicalRecord.benhNhan.cccd ?? null,
+      ward: medicalRecord.benhNhan.xaPhuong
+        ? {
+            id: medicalRecord.benhNhan.xaPhuong.id,
+            name: medicalRecord.benhNhan.xaPhuong.tenXaPhuong,
+          }
+        : null,
+      city: medicalRecord.benhNhan.xaPhuong?.tinhTP
+        ? {
+            id: medicalRecord.benhNhan.xaPhuong.tinhTP.id,
+            name: medicalRecord.benhNhan.xaPhuong.tinhTP.tenTinhTP,
+          }
+        : null,
     },
     receiver: mapStaff(medicalRecord.nvTiepNhan),
     doctor: mapStaff(medicalRecord.nvKham),
+    clinicRoom: mapClinicRoom(medicalRecord.phong),
+  }
+}
+
+const mapMedicalRecord = (record: GetMedicalRecordsResponse["medicalRecords"][number]): MedicalRecordSummary => {
+  const mapStaff = (
+    staff: CreateMedicalRecordResponse["medicalRecord"]["nvTiepNhan"],
+  ): MedicalStaffSummary | null => {
+    if (!staff) {
+      return null
+    }
+
+    return {
+      id: staff.id,
+      name: staff.hoTen,
+      code: staff.maNV,
+      department: staff.khoa
+        ? {
+            id: staff.khoa.id,
+            name: staff.khoa.tenKhoa,
+          }
+        : null,
+    }
+  }
+
+  return {
+    id: record.id,
+    code: record.maBA,
+    enteredAt: record.thoiGianVao,
+    reason: record.lyDoKhamBenh,
+    status: record.trangThai,
+    completedAt: record.thoiGianKetThuc,
+    patient: {
+      id: record.benhNhan.id,
+      code: record.benhNhan.maBenhNhan,
+      fullName: record.benhNhan.hoTen,
+      birthDate: record.benhNhan.ngaySinh,
+      gender: record.benhNhan.gioiTinh,
+      phone: record.benhNhan.sdt ?? null,
+      citizenId: record.benhNhan.cccd ?? null,
+      ward: record.benhNhan.xaPhuong
+        ? {
+            id: record.benhNhan.xaPhuong.id,
+            name: record.benhNhan.xaPhuong.tenXaPhuong,
+          }
+        : null,
+      city: record.benhNhan.xaPhuong?.tinhTP
+        ? {
+            id: record.benhNhan.xaPhuong.tinhTP.id,
+            name: record.benhNhan.xaPhuong.tinhTP.tenTinhTP,
+          }
+        : null,
+    },
+    receiver: mapStaff(record.nvTiepNhan),
+    doctor: mapStaff(record.nvKham),
+    clinicRoom: mapClinicRoom(record.phong),
+  }
+}
+
+export const getMedicalRecords = async (
+  params: GetMedicalRecordsParams = {},
+): Promise<{ medicalRecords: MedicalRecordSummary[]; pagination: PaginationMeta }> => {
+  const {
+    page = 1,
+    limit = 100,
+    status,
+    search,
+    departmentId,
+    patientId,
+    roomId,
+    enteredFrom,
+    enteredTo,
+  } = params
+
+  const response = await apiFetch<ApiSuccessResponse<GetMedicalRecordsResponse>>("/medical-record", {
+    method: "GET",
+    params: {
+      page,
+      limit,
+      status,
+      search,
+      departmentId,
+      patientId,
+      roomId,
+      enteredFrom: serializeDateParam(enteredFrom),
+      enteredTo: serializeDateParam(enteredTo),
+    },
+  })
+
+  const { medicalRecords, pagination } = response.data
+
+  return {
+    medicalRecords: medicalRecords.map(mapMedicalRecord),
+    pagination,
   }
 }

@@ -25,6 +25,20 @@ const medicalRecordSelect = {
       hoTen: true,
       ngaySinh: true,
       gioiTinh: true,
+      sdt: true,
+      cccd: true,
+      xaPhuong: {
+        select: {
+          id: true,
+          tenXaPhuong: true,
+          tinhTP: {
+            select: {
+              id: true,
+              tenTinhTP: true,
+            },
+          },
+        },
+      },
     },
   },
   nvTiepNhan: {
@@ -60,6 +74,18 @@ const medicalRecordSelect = {
       },
     },
   },
+  phong: {
+    select: {
+      id: true,
+      tenPhong: true,
+      khoa: {
+        select: {
+          id: true,
+          tenKhoa: true,
+        },
+      },
+    },
+  },
 } satisfies Prisma.BenhAnSelect;
 
 type CreateMedicalRecordBody = z.infer<
@@ -89,7 +115,29 @@ const mapMedicalRecord = (record: MedicalRecordResult) => ({
   lyDoKhamBenh: record.lyDoKhamBenh,
   trangThai: record.trangThai,
   thoiGianKetThuc: record.thoiGianKetThuc,
-  benhNhan: record.benhNhan,
+  benhNhan: record.benhNhan
+    ? {
+        id: record.benhNhan.id,
+        maBenhNhan: record.benhNhan.maBenhNhan,
+        hoTen: record.benhNhan.hoTen,
+        ngaySinh: record.benhNhan.ngaySinh,
+        gioiTinh: record.benhNhan.gioiTinh,
+        sdt: record.benhNhan.sdt ? record.benhNhan.sdt.trim() : null,
+        cccd: record.benhNhan.cccd,
+        xaPhuong: record.benhNhan.xaPhuong
+          ? {
+              id: record.benhNhan.xaPhuong.id,
+              tenXaPhuong: record.benhNhan.xaPhuong.tenXaPhuong,
+              tinhTP: record.benhNhan.xaPhuong.tinhTP
+                ? {
+                    id: record.benhNhan.xaPhuong.tinhTP.id,
+                    tenTinhTP: record.benhNhan.xaPhuong.tinhTP.tenTinhTP,
+                  }
+                : null,
+            }
+          : null,
+      }
+    : null,
   nvTiepNhan: record.nvTiepNhan
     ? {
         id: record.nvTiepNhan.id,
@@ -117,6 +165,18 @@ const mapMedicalRecord = (record: MedicalRecordResult) => ({
                   id: room.id,
                   tenPhong: room.tenPhong,
                 })) ?? [],
+            }
+          : null,
+      }
+    : null,
+  phong: record.phong
+    ? {
+        id: record.phong.id,
+        tenPhong: record.phong.tenPhong,
+        khoa: record.phong.khoa
+          ? {
+              id: record.phong.khoa.id,
+              tenKhoa: record.phong.khoa.tenKhoa,
             }
           : null,
       }
@@ -205,7 +265,17 @@ const getMedicalRecords = async (
   next: NextFunction,
 ) => {
   try {
-    const { page, limit, search, status, patientId, departmentId }:
+    const {
+      page,
+      limit,
+      search,
+      status,
+      patientId,
+      departmentId,
+      roomId,
+      enteredFrom,
+      enteredTo,
+    }:
       GetMedicalRecordsQuery = medicalRecordSchema.getMedicalRecordsQuery.parse(
         req.query,
       );
@@ -240,6 +310,17 @@ const getMedicalRecords = async (
         is: {
           khoaId: departmentId,
         },
+      };
+    }
+
+    if (roomId !== undefined) {
+      where.phongId = roomId;
+    }
+
+    if (enteredFrom || enteredTo) {
+      where.thoiGianVao = {
+        ...(enteredFrom ? { gte: enteredFrom } : {}),
+        ...(enteredTo ? { lte: enteredTo } : {}),
       };
     }
 
@@ -326,7 +407,7 @@ const createMedicalRecord = async (
     const doctorId =
       typeof payload.nvKhamId === "number" ? payload.nvKhamId : undefined;
 
-    const [existingCode, patient, staffReceiver, staffDoctor, examService] = await Promise.all([
+    const [existingCode, patient, staffReceiver, staffDoctor, clinicRoom, examService] = await Promise.all([
       prisma.benhAn.findUnique({
         where: { maBA },
         select: { id: true },
@@ -342,6 +423,12 @@ const createMedicalRecord = async (
       doctorId
         ? prisma.nhanVien.findUnique({
             where: { id: doctorId },
+            select: { id: true },
+          })
+        : Promise.resolve(null),
+      payload.phongId && payload.phongId !== null
+        ? prisma.phong.findUnique({
+            where: { id: payload.phongId },
             select: { id: true },
           })
         : Promise.resolve(null),
@@ -365,6 +452,10 @@ const createMedicalRecord = async (
 
     if (doctorId && !staffDoctor) {
       return Send.badRequest(res, null, "Nhân viên khám bệnh không tồn tại");
+    }
+
+    if (payload.phongId && !clinicRoom) {
+      return Send.badRequest(res, null, "Phòng khám không tồn tại");
     }
 
     if (!examService) {
@@ -398,6 +489,9 @@ const createMedicalRecord = async (
           benhNhan: { connect: { id: payload.benhNhanId } },
           nvTiepNhan: { connect: { id: payload.nvTiepNhanId } },
           ...(doctorId ? { nvKham: { connect: { id: doctorId } } } : {}),
+          ...(payload.phongId && payload.phongId !== null
+            ? { phong: { connect: { id: payload.phongId } } }
+            : {}),
         },
         select: { id: true },
       });
@@ -541,6 +635,23 @@ const updateMedicalRecord = async (
         }
 
         updateData.nvKham = { connect: { id: payload.nvKhamId } };
+      }
+    }
+
+    if (payload.phongId !== undefined) {
+      if (payload.phongId === null) {
+        updateData.phong = { disconnect: true };
+      } else {
+        const clinicRoom = await prisma.phong.findUnique({
+          where: { id: payload.phongId },
+          select: { id: true },
+        });
+
+        if (!clinicRoom) {
+          return Send.badRequest(res, null, "Phòng khám không tồn tại");
+        }
+
+        updateData.phong = { connect: { id: payload.phongId } };
       }
     }
 

@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "BenhAn" ADD COLUMN     "Phong_ID" INTEGER;
+
+-- AddForeignKey
+ALTER TABLE "BenhAn" ADD CONSTRAINT "BenhAn_Phong_ID_fkey" FOREIGN KEY ("Phong_ID") REFERENCES "Phong"("Phong_ID") ON DELETE SET NULL ON UPDATE CASCADE;

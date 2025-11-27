@@ -8,8 +8,9 @@ definePage({
 
 import type { DateValue } from '@internationalized/date'
 import { getLocalTimeZone, today } from '@internationalized/date'
-import { CalendarIcon } from 'lucide-vue-next'
+import { CalendarIcon, SearchIcon } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
+import { storeToRefs } from 'pinia'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -27,13 +28,32 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import BaseCombobox from '@/components/RoomConfigurationComboBox.vue'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableEmpty,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination'
 
 import { ApiError } from '@/services/http'
 import { getAllOccupations } from '@/services/occupation'
 import { getCities, getProvinces } from '@/services/location'
 import { getRooms } from '@/services/room'
 import { createPatient } from '@/services/patient'
-import { createMedicalRecord } from '@/services/medicalRecord'
+import { createMedicalRecord, getMedicalRecords } from '@/services/medicalRecord'
+import type { MedicalRecordSummary } from '@/services/medicalRecord'
+import type { PaginationMeta } from '@/services/types'
 import { useAuthStore } from '@/stores/auth'
 import { useWorkspaceStore } from '@/stores/workspace'
 
@@ -147,6 +167,292 @@ const { room: storedRoom } = storeToRefs(workspaceStore)
 const genderValueMap: Record<GenderValue, number> = {
   male: 1,
   female: 0,
+}
+
+const MEDICAL_RECORD_FETCH_LIMIT = 100
+
+const medicalRecordStatusOptions = [
+  { value: 'all', label: 'Tất cả trạng thái' },
+  { value: '0', label: 'Chờ khám' },
+  { value: '1', label: 'Đang khám' },
+  { value: '2', label: 'Kết thúc khám' },
+] as const
+
+const medicalRecordStatusLabelMap: Record<number, string> = {
+  0: 'Chờ khám',
+  1: 'Đang khám',
+  2: 'Kết thúc khám',
+}
+
+const medicalRecordStatusClassMap: Record<number, string> = {
+  0: 'bg-amber-100 text-amber-800',
+  1: 'bg-sky-100 text-sky-800',
+  2: 'bg-emerald-100 text-emerald-800',
+}
+
+type MedicalRecordStatusFilterValue = (typeof medicalRecordStatusOptions)[number]['value']
+
+const medicalRecords = ref<MedicalRecordSummary[]>([])
+const medicalRecordsLoading = ref(false)
+const medicalRecordsPagination = ref<PaginationMeta | null>(null)
+const recordsPage = ref(1)
+
+const recordFilters = reactive({
+  status: 'all' as MedicalRecordStatusFilterValue,
+  roomId: null as number | null,
+})
+
+const appliedRecordFilters = ref<{
+  status: MedicalRecordStatusFilterValue
+  roomId: number | null
+  from: Date | null
+  to: Date | null
+}>({
+  status: 'all',
+  roomId: null,
+  from: null,
+  to: null,
+})
+
+const recordsFromRaw = ref<unknown>(undefined)
+const recordsToRaw = ref<unknown>(undefined)
+
+const recordsFromModel = computed<DateValue | undefined>({
+  get: () => recordsFromRaw.value as DateValue | undefined,
+  set: (value: DateValue | undefined) => {
+    recordsFromRaw.value = value
+  },
+})
+
+const recordsToModel = computed<DateValue | undefined>({
+  get: () => recordsToRaw.value as DateValue | undefined,
+  set: (value: DateValue | undefined) => {
+    recordsToRaw.value = value
+  },
+})
+
+const recordsHasFromDate = computed(() => Boolean(recordsFromRaw.value))
+const recordsHasToDate = computed(() => Boolean(recordsToRaw.value))
+
+const dateFormatter = new Intl.DateTimeFormat('vi-VN', { dateStyle: 'medium' })
+const dateTimeFormatter = new Intl.DateTimeFormat('vi-VN', {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+})
+
+const recordsFromLabel = computed(() => {
+  const value = recordsFromRaw.value as DateValue | undefined
+  if (!value || typeof value.toDate !== 'function') {
+    return 'Chọn ngày'
+  }
+
+  return dateFormatter.format(value.toDate(timeZone))
+})
+
+const recordsToLabel = computed(() => {
+  const value = recordsToRaw.value as DateValue | undefined
+  if (!value || typeof value.toDate !== 'function') {
+    return 'Chọn ngày'
+  }
+
+  return dateFormatter.format(value.toDate(timeZone))
+})
+
+const startOfDay = (value: Date): Date => {
+  const result = new Date(value)
+  result.setHours(0, 0, 0, 0)
+  return result
+}
+
+const endOfDay = (value: Date): Date => {
+  const result = new Date(value)
+  result.setHours(23, 59, 59, 999)
+  return result
+}
+
+const getStatusLabel = (status: number): string => {
+  return medicalRecordStatusLabelMap[status] ?? 'Không xác định'
+}
+
+const getStatusClass = (status: number): string => {
+  return medicalRecordStatusClassMap[status] ?? 'bg-muted text-muted-foreground'
+}
+
+const getGenderLabel = (value: number): string => {
+  if (value === 1) {
+    return 'Nam'
+  }
+
+  if (value === 0) {
+    return 'Nữ'
+  }
+
+  return 'Khác'
+}
+
+const formatDate = (value: string | null | undefined): string => {
+  if (!value) {
+    return '—'
+  }
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return '—'
+  }
+
+  return dateFormatter.format(date)
+}
+
+const formatDateTime = (value: string | null | undefined): string => {
+  if (!value) {
+    return '—'
+  }
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return '—'
+  }
+
+  return dateTimeFormatter.format(date)
+}
+
+const filteredMedicalRecords = computed(() => {
+  const { status, roomId, from, to } = appliedRecordFilters.value
+
+  return medicalRecords.value.filter((record) => {
+    const recordDate = new Date(record.enteredAt)
+
+    if (!Number.isNaN(recordDate.getTime())) {
+      if (from && recordDate < from) {
+        return false
+      }
+
+      if (to && recordDate > to) {
+        return false
+      }
+    }
+
+    if (status !== 'all' && String(record.status) !== status) {
+      return false
+    }
+
+    if (roomId !== null) {
+      return record.clinicRoom?.id === roomId
+    }
+
+    return true
+  })
+})
+
+const recordsSummary = computed(() => {
+  const pagination = medicalRecordsPagination.value
+  if (!pagination) {
+    return ''
+  }
+
+  if (pagination.total === 0) {
+    return 'No medical records found.'
+  }
+
+  const start = (pagination.page - 1) * pagination.limit + 1
+  const end = Math.min(pagination.page * pagination.limit, pagination.total)
+  const filteredCount = filteredMedicalRecords.value.length
+
+  return `Showing ${filteredCount} of ${pagination.total} records (records ${start}-${end}).`
+})
+
+const recordsFromPopoverOpen = ref(false)
+const recordsToPopoverOpen = ref(false)
+
+const resolveDateValue = (value: unknown): Date | null => {
+  if (!value || typeof value !== 'object' || typeof (value as DateValue).toDate !== 'function') {
+    return null
+  }
+
+  return (value as DateValue).toDate(timeZone)
+}
+
+const loadMedicalRecords = async () => {
+  medicalRecordsLoading.value = true
+  try {
+    const statusFilter =
+      appliedRecordFilters.value.status !== 'all'
+        ? Number(appliedRecordFilters.value.status)
+        : undefined
+    const { medicalRecords: records, pagination } = await getMedicalRecords({
+      page: recordsPage.value,
+      limit: MEDICAL_RECORD_FETCH_LIMIT,
+      status: statusFilter,
+      roomId: appliedRecordFilters.value.roomId ?? undefined,
+      enteredFrom: appliedRecordFilters.value.from ?? undefined,
+      enteredTo: appliedRecordFilters.value.to ?? undefined,
+    })
+    medicalRecords.value = records
+    medicalRecordsPagination.value = pagination
+    recordsPage.value = pagination.page
+  } catch (error) {
+    medicalRecords.value = []
+    medicalRecordsPagination.value = null
+    console.error(error)
+    toast.error('Không thể tải danh sách bệnh nhân đã tiếp nhận.')
+  } finally {
+    medicalRecordsLoading.value = false
+  }
+}
+
+const handleSearchRecords = async () => {
+  const fromDate = resolveDateValue(recordsFromRaw.value)
+  const toDate = resolveDateValue(recordsToRaw.value)
+
+  if (fromDate && toDate && fromDate > toDate) {
+    toast.error('Ngày bắt đầu không thể sau ngày kết thúc.')
+    return
+  }
+
+  appliedRecordFilters.value = {
+    status: recordFilters.status,
+    roomId: recordFilters.roomId,
+    from: fromDate ? startOfDay(fromDate) : null,
+    to: toDate ? endOfDay(toDate) : null,
+  }
+
+  recordsFromPopoverOpen.value = false
+  recordsToPopoverOpen.value = false
+
+  recordsPage.value = 1
+  await loadMedicalRecords()
+}
+
+const handleResetRecordFilters = async () => {
+  const todayFrom = today(timeZone)
+  const todayTo = today(timeZone)
+  const baseDate = todayFrom.toDate(timeZone)
+
+  recordFilters.status = 'all'
+  recordFilters.roomId = null
+  recordsFromRaw.value = todayFrom
+  recordsToRaw.value = todayTo
+  appliedRecordFilters.value = {
+    status: 'all',
+    roomId: null,
+    from: startOfDay(baseDate),
+    to: endOfDay(baseDate),
+  }
+
+  recordsFromPopoverOpen.value = false
+  recordsToPopoverOpen.value = false
+
+  recordsPage.value = 1
+  await loadMedicalRecords()
+}
+
+const handleRecordsPageChange = async (page: number) => {
+  if (medicalRecordsLoading.value || page === recordsPage.value) {
+    return
+  }
+
+  recordsPage.value = page
+  await loadMedicalRecords()
 }
 
 const resetForm = () => {
@@ -275,6 +581,11 @@ const loadRooms = async () => {
     const preferredRoomId = form.roomId ?? storedRoomId
     const resolvedRoomId = ensureOptionRetained(options, preferredRoomId)
     form.roomId = resolvedRoomId
+    recordFilters.roomId = ensureOptionRetained(options, recordFilters.roomId)
+    appliedRecordFilters.value.roomId = ensureOptionRetained(
+      options,
+      appliedRecordFilters.value.roomId,
+    )
   } catch (error) {
     handleLoadError('Unable to load clinic rooms.')
     console.error(error)
@@ -356,11 +667,14 @@ const handleSave = async () => {
       nvTiepNhanId: staffId,
       thoiGianVao: new Date(),
       lyDoKhamBenh: trimmedReason,
+      ...(form.roomId !== null ? { phongId: form.roomId } : {}),
     })
 
     toast.success(
       `Patient saved successfully. Patient code: ${patient.code}, medical record: ${medicalRecord.code}.`,
     )
+    recordsPage.value = 1
+    await loadMedicalRecords()
     resetForm()
   } catch (error) {
     const message =
@@ -388,9 +702,22 @@ watch(
 
 onMounted(() => {
   form.roomId = storedRoom.value?.id ?? null
+  const todayFrom = today(timeZone)
+  const todayTo = today(timeZone)
+  const baseDate = todayFrom.toDate(timeZone)
+  recordsFromRaw.value = todayFrom
+  recordsToRaw.value = todayTo
+  appliedRecordFilters.value = {
+    status: 'all',
+    roomId: null,
+    from: startOfDay(baseDate),
+    to: endOfDay(baseDate),
+  }
+  recordsPage.value = 1
   void loadOccupations()
   void loadCities()
   void loadRooms()
+  void loadMedicalRecords()
 })
 </script>
 
@@ -405,7 +732,7 @@ onMounted(() => {
           <Tabs v-model="activeTab" class="w-full">
             <TabsList class="grid w-full grid-cols-2 gap-2">
               <TabsTrigger value="intake" class="w-full">Intake</TabsTrigger>
-              <TabsTrigger value="history" class="w-full">Other Info</TabsTrigger>
+              <TabsTrigger value="history" class="w-full">Received Patients</TabsTrigger>
             </TabsList>
 
             <TabsContent value="intake" class="mt-6">
@@ -588,10 +915,222 @@ onMounted(() => {
             </TabsContent>
 
             <TabsContent value="history" class="mt-6">
-              <div
-                class="flex min-h-32 items-center justify-center rounded-md border border-dashed p-6 text-sm text-muted-foreground"
-              >
-                Content will be added later.
+              <div class="space-y-6">
+                <div
+                  class="grid gap-4 rounded-md border p-4 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(220px,1fr))]"
+                >
+                  <Field>
+                    <FieldLabel>Status</FieldLabel>
+                    <Select v-model="recordFilters.status">
+                      <SelectTrigger class="w-full">
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem
+                          v-for="option in medicalRecordStatusOptions"
+                          :key="option.value"
+                          :value="option.value"
+                        >
+                          {{ option.label }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
+
+                  <Field>
+                    <FieldLabel>Clinic Room</FieldLabel>
+                    <BaseCombobox
+                      v-model="recordFilters.roomId"
+                      :options="roomOptions"
+                      placeholder="Select clinic room"
+                      search-placeholder="Search clinic room..."
+                      :loading="loadingRooms"
+                      :allow-clear="true"
+                    />
+                  </Field>
+
+                  <Field>
+                    <FieldLabel>From Date</FieldLabel>
+                    <Popover v-model:open="recordsFromPopoverOpen">
+                      <PopoverTrigger as-child>
+                        <Button
+                          variant="outline"
+                          class="w-full justify-start text-left font-normal"
+                        >
+                          <CalendarIcon class="mr-2 h-4 w-4" />
+                          <span :class="!recordsHasFromDate ? 'text-muted-foreground' : ''">
+                            {{ recordsFromLabel }}
+                          </span>
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent class="w-auto p-0" align="start">
+                        <Calendar
+                          v-model="recordsFromModel"
+                          :max-value="recordsToModel"
+                          layout="month-and-year"
+                          initial-focus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </Field>
+
+                  <Field>
+                    <FieldLabel>To Date</FieldLabel>
+                    <Popover v-model:open="recordsToPopoverOpen">
+                      <PopoverTrigger as-child>
+                        <Button
+                          variant="outline"
+                          class="w-full justify-start text-left font-normal"
+                        >
+                          <CalendarIcon class="mr-2 h-4 w-4" />
+                          <span :class="!recordsHasToDate ? 'text-muted-foreground' : ''">
+                            {{ recordsToLabel }}
+                          </span>
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent class="w-auto p-0" align="start">
+                        <Calendar
+                          v-model="recordsToModel"
+                          :min-value="recordsFromModel"
+                          layout="month-and-year"
+                          initial-focus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </Field>
+
+                  <div class="flex flex-wrap items-end gap-3">
+                    <Button
+                      type="button"
+                      class="flex items-center"
+                      :disabled="medicalRecordsLoading"
+                      @click="handleSearchRecords"
+                    >
+                      <SearchIcon class="mr-2 h-4 w-4" />
+                      Search
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      :disabled="medicalRecordsLoading"
+                      @click="handleResetRecordFilters"
+                    >
+                      Reset
+                    </Button>
+                  </div>
+                </div>
+
+                <div class="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead class="w-36">Medical Record</TableHead>
+                        <TableHead>Patient</TableHead>
+                        <TableHead class="min-w-40">Details</TableHead>
+                        <TableHead class="w-40">Clinic Room</TableHead>
+                        <TableHead class="w-44">Receiver</TableHead>
+                        <TableHead class="w-48">Received At</TableHead>
+                        <TableHead class="w-36">Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <template v-if="medicalRecordsLoading">
+                        <TableEmpty :colspan="7">Loading records...</TableEmpty>
+                      </template>
+                      <template v-else-if="filteredMedicalRecords.length === 0">
+                        <TableEmpty :colspan="7"
+                          >No patients found for the selected filters.</TableEmpty
+                        >
+                      </template>
+                      <template v-else>
+                        <TableRow v-for="record in filteredMedicalRecords" :key="record.id">
+                          <TableCell class="font-medium">
+                            <div class="flex flex-col">
+                              <span>{{ record.code }}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div class="flex flex-col gap-1">
+                              <span class="font-medium">{{ record.patient.fullName }}</span>
+                              <span class="text-xs text-muted-foreground">
+                                ID: {{ record.patient.code }}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div class="flex flex-col gap-1 text-sm">
+                              <span>{{ getGenderLabel(record.patient.gender) }}</span>
+                              <span>Birth: {{ formatDate(record.patient.birthDate) }}</span>
+                              <span>Phone: {{ record.patient.phone ?? '—' }}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div class="flex flex-col text-sm">
+                              <span class="font-medium">{{ record.clinicRoom?.name ?? '—' }}</span>
+                              <span
+                                v-if="record.clinicRoom?.department"
+                                class="text-xs text-muted-foreground"
+                              >
+                                {{ record.clinicRoom.department?.name }}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div class="flex flex-col text-sm">
+                              <span>{{ record.receiver?.name ?? '—' }}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div class="flex flex-col text-sm">
+                              <span>{{ formatDateTime(record.enteredAt) }}</span>
+                              <span v-if="record.completedAt" class="text-xs text-muted-foreground">
+                                Completed: {{ formatDateTime(record.completedAt) }}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span
+                              class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium"
+                              :class="getStatusClass(record.status)"
+                            >
+                              {{ getStatusLabel(record.status) }}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      </template>
+                    </TableBody>
+                  </Table>
+                </div>
+
+                <Pagination
+                  v-if="medicalRecordsPagination && medicalRecordsPagination.totalPages > 1"
+                  :page="recordsPage"
+                  :items-per-page="medicalRecordsPagination.limit"
+                  :total="medicalRecordsPagination.total"
+                  @update:page="handleRecordsPageChange"
+                >
+                  <PaginationContent v-slot="{ items }">
+                    <PaginationPrevious />
+                    <template
+                      v-for="(item, index) in items"
+                      :key="item.type === 'page' ? `page-${item.value}` : `ellipsis-${index}`"
+                    >
+                      <PaginationItem
+                        v-if="item.type === 'page'"
+                        :value="item.value"
+                        :is-active="item.value === recordsPage"
+                      >
+                        {{ item.value }}
+                      </PaginationItem>
+                      <PaginationEllipsis v-else />
+                    </template>
+                    <PaginationNext />
+                  </PaginationContent>
+                </Pagination>
+
+                <p v-if="recordsSummary" class="text-sm text-muted-foreground">
+                  {{ recordsSummary }}
+                </p>
               </div>
             </TabsContent>
           </Tabs>
