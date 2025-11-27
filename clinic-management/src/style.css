@@ -139,8 +139,7 @@
   }
 
   html {
-      overflow-y: scroll;
-      scrollbar-gutter: stable;
+    scrollbar-gutter: stable;
   }
 
   body,

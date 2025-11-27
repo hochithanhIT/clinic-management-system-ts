@@ -8,7 +8,8 @@ definePage({
 
 import type { DateValue } from '@internationalized/date'
 import { getLocalTimeZone, today } from '@internationalized/date'
-import { AlertCircle, CalendarIcon, SearchIcon } from 'lucide-vue-next'
+import { AlertCircle, CalendarIcon, SearchIcon, Trash2 } from 'lucide-vue-next'
+import type { AcceptableValue } from 'reka-ui'
 import { toast } from 'vue-sonner'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -28,6 +29,21 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import BaseCombobox from '@/components/UtilsComboBox.vue'
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu'
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import {
   Table,
   TableBody,
@@ -50,7 +66,7 @@ import { ApiError } from '@/services/http'
 import { getOccupations } from '@/services/occupation'
 import { getCities, getProvinces } from '@/services/location'
 import { getRooms } from '@/services/room'
-import { createPatient } from '@/services/patient'
+import { createPatient, deletePatient } from '@/services/patient'
 import { createMedicalRecord, getMedicalRecords } from '@/services/medicalRecord'
 import type { MedicalRecordSummary } from '@/services/medicalRecord'
 import type { PaginationMeta } from '@/services/types'
@@ -154,6 +170,22 @@ const loadingCities = ref(false)
 const loadingWards = ref(false)
 const loadingRooms = ref(false)
 const isSubmitting = ref(false)
+const deletingPatientId = ref<number | null>(null)
+const deleteDialogOpen = ref(false)
+const pendingDeleteRecord = ref<MedicalRecordSummary | null>(null)
+const isDeletingPatient = computed(() => deletingPatientId.value !== null)
+const pendingDeletePatientName = computed(() => pendingDeleteRecord.value?.patient.fullName ?? '')
+const pendingDeletePatientCode = computed(() => pendingDeleteRecord.value?.patient.code ?? '')
+const pendingDeletePatientDisplay = computed(() => {
+  const name = pendingDeletePatientName.value
+  const code = pendingDeletePatientCode.value
+
+  if (!name) {
+    return ''
+  }
+
+  return code ? `${name} (Code: ${code})` : name
+})
 
 let occupationRequestCounter = 0
 
@@ -500,8 +532,12 @@ const handleRecordsPageChange = async (page: number) => {
   await loadMedicalRecords()
 }
 
-const handleRecordsPageSizeChange = async (value: string) => {
-  const parsed = Number(value)
+const handleRecordsPageSizeChange = async (value: AcceptableValue) => {
+  if (value === null || typeof value === 'boolean') {
+    return
+  }
+
+  const parsed = typeof value === 'number' ? value : Number(value)
   if (!Number.isFinite(parsed) || parsed <= 0 || parsed === recordsPageSize.value) {
     return
   }
@@ -509,6 +545,53 @@ const handleRecordsPageSizeChange = async (value: string) => {
   recordsPageSize.value = parsed
   recordsPage.value = 1
   await loadMedicalRecords()
+}
+
+const requestDeletePatient = (record: MedicalRecordSummary) => {
+  if (isDeletingPatient.value || medicalRecordsLoading.value) {
+    return
+  }
+
+  pendingDeleteRecord.value = record
+  deleteDialogOpen.value = true
+}
+
+const confirmDeletePatient = async () => {
+  if (!pendingDeleteRecord.value || isDeletingPatient.value) {
+    return
+  }
+
+  const target = pendingDeleteRecord.value
+  deletingPatientId.value = target.patient.id
+  let shouldCloseDialog = false
+  try {
+    await deletePatient(target.patient.id)
+    toast.success('Patient deleted successfully.')
+    pendingDeleteRecord.value = null
+    shouldCloseDialog = true
+    await loadMedicalRecords()
+  } catch (error) {
+    const message =
+      error instanceof ApiError ? error.message : 'Unable to delete patient, please try again.'
+    toast.error(message)
+  } finally {
+    deletingPatientId.value = null
+    if (shouldCloseDialog) {
+      deleteDialogOpen.value = false
+    }
+  }
+}
+
+const handleDeleteDialogOpenChange = (open: boolean) => {
+  if (isDeletingPatient.value) {
+    deleteDialogOpen.value = true
+    return
+  }
+
+  deleteDialogOpen.value = open
+  if (!open) {
+    pendingDeleteRecord.value = null
+  }
 }
 
 const setFormError = (message: string, focusId?: string) => {
@@ -1275,60 +1358,87 @@ onMounted(() => {
                         >
                       </template>
                       <template v-else>
-                        <TableRow v-for="record in filteredMedicalRecords" :key="record.id">
-                          <TableCell class="font-medium">
-                            <div class="flex flex-col">
-                              <span>{{ record.code }}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div class="flex flex-col gap-1">
-                              <span class="font-medium">{{ record.patient.fullName }}</span>
-                              <span class="text-xs text-muted-foreground">
-                                ID: {{ record.patient.code }}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div class="flex flex-col gap-1 text-sm">
-                              <span>{{ getGenderLabel(record.patient.gender) }}</span>
-                              <span>Birth: {{ formatDate(record.patient.birthDate) }}</span>
-                              <span>Phone: {{ record.patient.phone ?? '—' }}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div class="flex flex-col text-sm">
-                              <span class="font-medium">{{ record.clinicRoom?.name ?? '—' }}</span>
-                              <span
-                                v-if="record.clinicRoom?.department"
-                                class="text-xs text-muted-foreground"
-                              >
-                                {{ record.clinicRoom.department?.name }}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div class="flex flex-col text-sm">
-                              <span>{{ record.receiver?.name ?? '—' }}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div class="flex flex-col text-sm">
-                              <span>{{ formatDateTime(record.enteredAt) }}</span>
-                              <span v-if="record.completedAt" class="text-xs text-muted-foreground">
-                                Completed: {{ formatDateTime(record.completedAt) }}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <span
-                              class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium"
-                              :class="getStatusClass(record.status)"
+                        <ContextMenu
+                          v-for="record in filteredMedicalRecords"
+                          :key="record.id"
+                          :modal="false"
+                        >
+                          <ContextMenuTrigger as-child>
+                            <TableRow
+                              :class="{
+                                'opacity-60': deletingPatientId === record.patient.id,
+                              }"
                             >
-                              {{ getStatusLabel(record.status) }}
-                            </span>
-                          </TableCell>
-                        </TableRow>
+                              <TableCell class="font-medium">
+                                <div class="flex flex-col">
+                                  <span>{{ record.code }}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div class="flex flex-col gap-1">
+                                  <span class="font-medium">{{ record.patient.fullName }}</span>
+                                  <span class="text-xs text-muted-foreground">
+                                    ID: {{ record.patient.code }}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div class="flex flex-col gap-1 text-sm">
+                                  <span>{{ getGenderLabel(record.patient.gender) }}</span>
+                                  <span>Birth: {{ formatDate(record.patient.birthDate) }}</span>
+                                  <span>Phone: {{ record.patient.phone ?? '—' }}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div class="flex flex-col text-sm">
+                                  <span class="font-medium">{{
+                                    record.clinicRoom?.name ?? '—'
+                                  }}</span>
+                                  <span
+                                    v-if="record.clinicRoom?.department"
+                                    class="text-xs text-muted-foreground"
+                                  >
+                                    {{ record.clinicRoom.department?.name }}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div class="flex flex-col text-sm">
+                                  <span>{{ record.receiver?.name ?? '—' }}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div class="flex flex-col text-sm">
+                                  <span>{{ formatDateTime(record.enteredAt) }}</span>
+                                  <span
+                                    v-if="record.completedAt"
+                                    class="text-xs text-muted-foreground"
+                                  >
+                                    Completed: {{ formatDateTime(record.completedAt) }}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <span
+                                  class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium"
+                                  :class="getStatusClass(record.status)"
+                                >
+                                  {{ getStatusLabel(record.status) }}
+                                </span>
+                              </TableCell>
+                            </TableRow>
+                          </ContextMenuTrigger>
+                          <ContextMenuContent class="w-52">
+                            <ContextMenuItem
+                              variant="destructive"
+                              :disabled="isDeletingPatient || medicalRecordsLoading"
+                              @select="requestDeletePatient(record)"
+                            >
+                              <Trash2 class="h-4 w-4" />
+                              Delete patient
+                            </ContextMenuItem>
+                          </ContextMenuContent>
+                        </ContextMenu>
                       </template>
                     </TableBody>
                   </Table>
@@ -1364,6 +1474,32 @@ onMounted(() => {
                   {{ recordsSummary }}
                 </p>
               </div>
+
+              <AlertDialog :open="deleteDialogOpen" @update:open="handleDeleteDialogOpenChange">
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete patient?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete
+                      <span v-if="pendingDeletePatientDisplay" class="font-medium">
+                        "{{ pendingDeletePatientDisplay }}"
+                      </span>
+                      <span v-else class="font-medium">this patient</span>
+                      ? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel :disabled="isDeletingPatient" class="hover:text-primary-foreground"> Cancel </AlertDialogCancel>
+                    <Button
+                      variant="destructive"
+                      :disabled="isDeletingPatient || !pendingDeleteRecord"
+                      @click="confirmDeletePatient"
+                    >
+                      {{ isDeletingPatient ? 'Deleting...' : 'Delete patient' }}
+                    </Button>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </TabsContent>
           </Tabs>
         </CardContent>

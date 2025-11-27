@@ -112,3 +112,9 @@ export const createPatient = async (payload: CreatePatientPayload): Promise<Pati
       : null,
   }
 }
+
+export const deletePatient = async (patientId: number): Promise<void> => {
+  await apiFetch<ApiSuccessResponse<null>>(`/patient/${patientId}`, {
+    method: "DELETE",
+  })
+}
