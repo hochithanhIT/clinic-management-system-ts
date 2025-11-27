@@ -1,6 +1,6 @@
 <script setup lang="ts">
 definePage({
-  alias: '/patient-registration/',
+  alias: '/patient-intake/',
   meta: {
     requiresAuth: true,
   },
@@ -28,19 +28,26 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import BaseCombobox from '@/components/RoomConfigurationComboBox.vue'
 
-import { getOccupations } from '@/services/occupation'
+import { ApiError } from '@/services/http'
+import { getAllOccupations } from '@/services/occupation'
 import { getCities, getProvinces } from '@/services/location'
 import { getRooms } from '@/services/room'
+import { createPatient } from '@/services/patient'
+import { createMedicalRecord } from '@/services/medicalRecord'
+import { useAuthStore } from '@/stores/auth'
+import { useWorkspaceStore } from '@/stores/workspace'
 
 type ComboboxOption = {
   value: number
   label: string
 }
 
+type GenderValue = 'male' | 'female'
+
 interface PatientFormState {
   code: string | null
   fullName: string
-  gender: string | undefined
+  gender: GenderValue | undefined
   occupationId: number | null
   cityId: number | null
   wardId: number | null
@@ -79,10 +86,9 @@ const birthDateModel = computed<DateValue | undefined>({
   },
 })
 
-const genderOptions = [
+const genderOptions: Array<{ value: GenderValue; label: string }> = [
   { value: 'male', label: 'Male' },
   { value: 'female', label: 'Female' },
-  { value: 'other', label: 'Other' },
 ]
 
 const occupationOptions = ref<ComboboxOption[]>([])
@@ -94,6 +100,7 @@ const loadingOccupations = ref(false)
 const loadingCities = ref(false)
 const loadingWards = ref(false)
 const loadingRooms = ref(false)
+const isSubmitting = ref(false)
 
 const hasBirthDate = computed(() => Boolean(birthDateRaw.value))
 
@@ -133,14 +140,83 @@ const handleLoadError = (message: string) => {
 
 const FETCH_LIMIT = 100
 
+const authStore = useAuthStore()
+const workspaceStore = useWorkspaceStore()
+const { room: storedRoom } = storeToRefs(workspaceStore)
+
+const genderValueMap: Record<GenderValue, number> = {
+  male: 1,
+  female: 0,
+}
+
+const resetForm = () => {
+  activeTab.value = 'intake'
+  form.code = null
+  form.fullName = ''
+  form.gender = undefined
+  form.occupationId = null
+  form.cityId = null
+  form.wardId = null
+  form.phone = ''
+  form.relativeName = ''
+  form.relativePhone = ''
+  form.reason = ''
+  form.roomId = storedRoom.value?.id ?? null
+  birthDateRaw.value = undefined
+}
+
+const handleNewEntry = () => {
+  if (isSubmitting.value) {
+    return
+  }
+
+  resetForm()
+}
+
+const extractValidationMessage = (details: unknown): string | null => {
+  if (!details || typeof details !== 'object') {
+    return null
+  }
+
+  const payload = details as { errors?: Record<string, unknown> }
+  if (!payload.errors || typeof payload.errors !== 'object') {
+    return null
+  }
+
+  for (const raw of Object.values(payload.errors)) {
+    if (Array.isArray(raw)) {
+      const message = raw.find((item): item is string => typeof item === 'string')
+      if (message) {
+        return message
+      }
+    }
+  }
+
+  return null
+}
+
+const ensureOptionRetained = (
+  options: ComboboxOption[],
+  currentValue: number | null,
+): number | null => {
+  if (currentValue === null) {
+    return null
+  }
+
+  const exists = options.some((option) => option.value === currentValue)
+  return exists ? currentValue : null
+}
+
 const loadOccupations = async () => {
   loadingOccupations.value = true
   try {
-    const { occupations } = await getOccupations({ limit: FETCH_LIMIT })
-    occupationOptions.value = occupations.map((occupation) => ({
+    const occupations = await getAllOccupations({ limit: FETCH_LIMIT })
+    const options = occupations.map((occupation) => ({
       value: occupation.id,
       label: occupation.name,
     }))
+    occupationOptions.value = options
+    form.occupationId = ensureOptionRetained(options, form.occupationId)
   } catch (error) {
     handleLoadError('Unable to load occupations.')
     console.error(error)
@@ -153,10 +229,12 @@ const loadCities = async () => {
   loadingCities.value = true
   try {
     const { cities } = await getCities({ limit: FETCH_LIMIT })
-    cityOptions.value = cities.map((city) => ({
+    const options = cities.map((city) => ({
       value: city.id,
       label: city.name,
     }))
+    cityOptions.value = options
+    form.cityId = ensureOptionRetained(options, form.cityId)
   } catch (error) {
     handleLoadError('Unable to load cities.')
     console.error(error)
@@ -169,10 +247,12 @@ const loadWards = async (cityId: number) => {
   loadingWards.value = true
   try {
     const { provinces } = await getProvinces({ cityId, limit: FETCH_LIMIT })
-    wardOptions.value = provinces.map((province) => ({
+    const options = provinces.map((province) => ({
       value: province.id,
       label: province.name,
     }))
+    wardOptions.value = options
+    form.wardId = ensureOptionRetained(options, form.wardId)
   } catch (error) {
     handleLoadError('Unable to load wards.')
     console.error(error)
@@ -185,15 +265,112 @@ const loadRooms = async () => {
   loadingRooms.value = true
   try {
     const { rooms } = await getRooms({ limit: FETCH_LIMIT })
-    roomOptions.value = rooms.map((room) => ({
+    const options = rooms.map((room) => ({
       value: room.id,
       label: `${room.name} · ${room.departmentName}`,
     }))
+    roomOptions.value = options
+
+    const storedRoomId = storedRoom.value?.id ?? null
+    const preferredRoomId = form.roomId ?? storedRoomId
+    const resolvedRoomId = ensureOptionRetained(options, preferredRoomId)
+    form.roomId = resolvedRoomId
   } catch (error) {
     handleLoadError('Unable to load clinic rooms.')
     console.error(error)
   } finally {
     loadingRooms.value = false
+  }
+}
+
+const resolveBirthDate = (): Date | null => {
+  const value = birthDateRaw.value as DateValue | undefined
+  if (!value || typeof value.toDate !== 'function') {
+    return null
+  }
+
+  return value.toDate(timeZone)
+}
+
+const handleSave = async () => {
+  if (isSubmitting.value) {
+    return
+  }
+
+  const staffId = authStore.user?.id ?? null
+  if (!staffId) {
+    toast.error('You need to sign in before performing this action.')
+    return
+  }
+
+  const trimmedName = form.fullName.trim()
+  const trimmedReason = form.reason.trim()
+  const birthDate = resolveBirthDate()
+
+  if (!trimmedName) {
+    toast.error('Please enter patient full name.')
+    return
+  }
+
+  if (!birthDate) {
+    toast.error('Please select birth date.')
+    return
+  }
+
+  if (!form.gender) {
+    toast.error('Please select gender.')
+    return
+  }
+
+  if (!form.occupationId) {
+    toast.error('Please select occupation.')
+    return
+  }
+
+  if (!form.wardId) {
+    toast.error('Please select ward/commune.')
+    return
+  }
+
+  if (!trimmedReason) {
+    toast.error('Please enter admission reason.')
+    return
+  }
+
+  isSubmitting.value = true
+
+  try {
+    const patient = await createPatient({
+      hoTen: trimmedName,
+      ngaySinh: birthDate.toISOString(),
+      gioiTinh: genderValueMap[form.gender],
+      ngheNghiepId: form.occupationId,
+      xaPhuongId: form.wardId,
+      ...(form.phone.trim() ? { sdt: form.phone.trim() } : {}),
+      ...(form.relativeName.trim() ? { hoTenNguoiNha: form.relativeName.trim() } : {}),
+      ...(form.relativePhone.trim() ? { sdtNguoiNha: form.relativePhone.trim() } : {}),
+    })
+
+    const medicalRecord = await createMedicalRecord({
+      benhNhanId: patient.id,
+      nvTiepNhanId: staffId,
+      thoiGianVao: new Date(),
+      lyDoKhamBenh: trimmedReason,
+    })
+
+    toast.success(
+      `Patient saved successfully. Patient code: ${patient.code}, medical record: ${medicalRecord.code}.`,
+    )
+    resetForm()
+  } catch (error) {
+    const message =
+      error instanceof ApiError
+        ? (extractValidationMessage(error.details) ?? error.message)
+        : 'Failed to save patient, please try again.'
+
+    toast.error(message)
+  } finally {
+    isSubmitting.value = false
   }
 }
 
@@ -210,6 +387,7 @@ watch(
 )
 
 onMounted(() => {
+  form.roomId = storedRoom.value?.id ?? null
   void loadOccupations()
   void loadCities()
   void loadRooms()
@@ -235,15 +413,13 @@ onMounted(() => {
                 <FieldGroup class="grid gap-6 md:grid-cols-2">
                   <Field>
                     <FieldLabel for="patient-code">Patient ID</FieldLabel>
-                    <Input
-                      id="patient-code"
-                      :model-value="form.code ?? 'Patient ID'"
-                      disabled
-                    />
+                    <Input id="patient-code" :model-value="form.code ?? 'Patient ID'" disabled />
                   </Field>
 
                   <Field>
-                    <FieldLabel for="patient-name">Full Name</FieldLabel>
+                    <FieldLabel for="patient-name">
+                      Full Name <span class="text-destructive">*</span>
+                    </FieldLabel>
                     <Input
                       id="patient-name"
                       v-model="form.fullName"
@@ -254,7 +430,7 @@ onMounted(() => {
                   </Field>
 
                   <Field>
-                    <FieldLabel>Birth Date</FieldLabel>
+                    <FieldLabel> Birth Date <span class="text-destructive">*</span> </FieldLabel>
                     <Popover>
                       <PopoverTrigger as-child>
                         <Button
@@ -271,6 +447,7 @@ onMounted(() => {
                         <Calendar
                           v-model="birthDateModel"
                           :max-value="maxBirthDate"
+                          layout="month-and-year"
                           initial-focus
                         />
                       </PopoverContent>
@@ -283,7 +460,7 @@ onMounted(() => {
                   </Field>
 
                   <Field>
-                    <FieldLabel>Gender</FieldLabel>
+                    <FieldLabel> Gender <span class="text-destructive">*</span> </FieldLabel>
                     <Select v-model="form.gender">
                       <SelectTrigger class="w-full">
                         <SelectValue placeholder="Select gender" />
@@ -301,7 +478,7 @@ onMounted(() => {
                   </Field>
 
                   <Field>
-                    <FieldLabel>Occupation</FieldLabel>
+                    <FieldLabel> Occupation <span class="text-destructive">*</span> </FieldLabel>
                     <BaseCombobox
                       v-model="form.occupationId"
                       :options="occupationOptions"
@@ -312,7 +489,7 @@ onMounted(() => {
                   </Field>
 
                   <Field>
-                    <FieldLabel>City/Province</FieldLabel>
+                    <FieldLabel> City/Province <span class="text-destructive">*</span> </FieldLabel>
                     <BaseCombobox
                       v-model="form.cityId"
                       :options="cityOptions"
@@ -323,7 +500,7 @@ onMounted(() => {
                   </Field>
 
                   <Field>
-                    <FieldLabel>Ward/Commune</FieldLabel>
+                    <FieldLabel> Ward/Commune <span class="text-destructive">*</span> </FieldLabel>
                     <BaseCombobox
                       v-model="form.wardId"
                       :options="wardOptions"
@@ -367,7 +544,9 @@ onMounted(() => {
                   </Field>
 
                   <Field class="md:col-span-2">
-                    <FieldLabel for="reason">Admission Reason</FieldLabel>
+                    <FieldLabel for="reason">
+                      Admission Reason <span class="text-destructive">*</span>
+                    </FieldLabel>
                     <Textarea
                       id="reason"
                       v-model="form.reason"
@@ -393,9 +572,17 @@ onMounted(() => {
                     type="button"
                     variant="outline"
                     class="cursor-pointer hover:text-primary-foreground"
+                    :disabled="isSubmitting"
+                    @click="handleNewEntry"
                     >New Entry</Button
                   >
-                  <Button type="button" class="cursor-pointer">Save</Button>
+                  <Button
+                    type="button"
+                    class="cursor-pointer"
+                    :disabled="isSubmitting"
+                    @click="handleSave"
+                    >Save</Button
+                  >
                 </div>
               </form>
             </TabsContent>

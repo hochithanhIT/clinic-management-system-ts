@@ -48,3 +48,28 @@ export const getOccupations = async (
     pagination,
   }
 }
+
+export const getAllOccupations = async (
+  params: Omit<GetOccupationsParams, "page"> = {},
+): Promise<OccupationSummary[]> => {
+  const limit = params.limit ?? 100
+  const search = params.search
+
+  const allOccupations: OccupationSummary[] = []
+  let currentPage = 1
+  let totalPages = 1
+
+  do {
+    const { occupations, pagination } = await getOccupations({
+      page: currentPage,
+      limit,
+      search,
+    })
+
+    allOccupations.push(...occupations)
+    totalPages = pagination.totalPages ?? 0
+    currentPage += 1
+  } while (currentPage <= totalPages && totalPages !== 0)
+
+  return allOccupations
+}

@@ -117,6 +117,7 @@
   }
   body {
     @apply bg-background text-foreground font-sans;
+    scrollbar-gutter: stable;
   }
 }
 
@@ -134,8 +135,13 @@
   h3,
   h4,
   h5,
-  h6 {
+  h6{
     font-family: var(--font-heading);
+  }
+
+  html {
+      overflow-y: scroll;
+      scrollbar-gutter: stable;
   }
 
   body,
@@ -145,6 +151,7 @@
     font-family: var(--font-body);
   }
 }
+
 
 :root {
   --primary-500: #1f5ca9;
