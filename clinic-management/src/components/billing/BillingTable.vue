@@ -28,12 +28,15 @@ const props = defineProps<{
   pagination: PaginationMeta | null
   currentPage: number
   recordsSummary: string
+  selectedRecordId: number | null
 }>()
 
-const { records, isLoading, pagination, currentPage, recordsSummary } = toRefs(props)
+const { records, isLoading, pagination, currentPage, recordsSummary, selectedRecordId } =
+  toRefs(props)
 
 const emit = defineEmits<{
   (e: 'page-change', page: number): void
+  (e: 'select', recordId: number): void
 }>()
 
 const getPaymentStatusLabel = (status: BillingRecord['paymentStatus']): string => {
@@ -71,10 +74,8 @@ const formatAddress = (record: BillingRecord): string => {
         <TableHeader>
           <TableRow>
             <TableHead class="w-40">Medical Record</TableHead>
-            <TableHead class="w-36">Patient Code</TableHead>
             <TableHead class="min-w-56">Patient Name</TableHead>
             <TableHead class="min-w-56">Address</TableHead>
-            <TableHead class="w-36">Payment Status</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -85,26 +86,37 @@ const formatAddress = (record: BillingRecord): string => {
             <TableEmpty :colspan="4">No billing records found for the selected filters.</TableEmpty>
           </template>
           <template v-else>
-            <TableRow v-for="record in records" :key="record.id">
+            <TableRow
+              v-for="record in records"
+              :key="record.id"
+              class="cursor-pointer transition-colors"
+              :class="
+                record.id === selectedRecordId
+                  ? 'bg-muted/60 hover:bg-muted/60'
+                  : 'hover:bg-muted/50'
+              "
+              :aria-selected="record.id === selectedRecordId"
+              @click="emit('select', record.id)"
+            >
               <TableCell class="font-medium">
-                <span>{{ record.medicalRecordCode }}</span>
+                <div class="flex flex-col">
+                  <span>{{ record.medicalRecordCode }}</span>
+                  <span
+                    class="inline-flex w-fit items-center rounded-full px-2 py-1 text-xs font-medium"
+                    :class="getPaymentStatusClass(record.paymentStatus)"
+                  >
+                    {{ getPaymentStatusLabel(record.paymentStatus) }}
+                  </span>
+                </div>
               </TableCell>
               <TableCell>
-                <span>{{ record.patientCode || '—' }}</span>
-              </TableCell>
-              <TableCell>
-                <span>{{ record.patientName || '—' }}</span>
+                <div class="flex flex-col gap-1">
+                  <span class="font-medium">{{ record.patientName }}</span>
+                  <span class="text-xs text-muted-foreground"> ID: {{ record.patientCode }} </span>
+                </div>
               </TableCell>
               <TableCell>
                 <span>{{ formatAddress(record) }}</span>
-              </TableCell>
-              <TableCell>
-                <span
-                  class="inline-flex w-fit items-center rounded-full px-2 py-1 text-xs font-medium"
-                  :class="getPaymentStatusClass(record.paymentStatus)"
-                >
-                  {{ getPaymentStatusLabel(record.paymentStatus) }}
-                </span>
               </TableCell>
             </TableRow>
           </template>

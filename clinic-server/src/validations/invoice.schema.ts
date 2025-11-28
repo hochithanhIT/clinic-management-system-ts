@@ -53,6 +53,32 @@ const invoiceDetailParam = z.object({
     .min(1, "Chi tiết hóa đơn không hợp lệ"),
 });
 
+const getInvoicesQuery = z.object({
+  page: z.coerce
+    .number()
+    .int("Trang phải là số nguyên")
+    .min(1, "Trang phải từ 1 trở lên")
+    .max(1000, "Trang không được vượt quá 1000")
+    .default(1),
+  limit: z.coerce
+    .number()
+    .int("Giới hạn phải là số nguyên")
+    .min(1, "Giới hạn phải từ 1 trở lên")
+    .max(100, "Giới hạn không được vượt quá 100")
+    .default(10),
+  search: z
+    .string()
+    .trim()
+    .max(100, "Từ khóa tìm kiếm không được vượt quá 100 ký tự")
+    .optional()
+    .transform((value) => (value ? value : undefined)),
+  medicalRecordId: z.coerce
+    .number()
+    .int("Bệnh án không hợp lệ")
+    .min(1, "Bệnh án không hợp lệ")
+    .optional(),
+});
+
 const baseInvoiceDetailBody = z.object({
   hoaDonId: z.coerce
     .number()
@@ -84,6 +110,7 @@ const invoiceSchema = {
   addInvoiceBody,
   updateInvoiceBody,
   invoiceParam,
+  getInvoicesQuery,
   addInvoiceDetailBody,
   updateInvoiceDetailBody,
   invoiceDetailParam,

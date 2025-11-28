@@ -8,17 +8,23 @@ definePage({
 
 import type { DateValue } from '@internationalized/date'
 import { getLocalTimeZone } from '@internationalized/date'
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
 import BillingFilters from '@/components/billing/BillingFilters.vue'
+import BillingInvoicesTable from '@/components/billing/BillingInvoicesTable.vue'
 import BillingTable from '@/components/billing/BillingTable.vue'
-import type { BillingRecord, PaymentStatusFilterValue } from '@/components/billing/types'
+import type {
+  BillingInvoice,
+  BillingRecord,
+  PaymentStatusFilterValue,
+} from '@/components/billing/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ApiError } from '@/services/http'
 import { getMedicalRecords } from '@/services/medicalRecord'
 import type { MedicalRecordSummary } from '@/services/medicalRecord'
 import { getServiceOrderDetails, getServiceOrders } from '@/services/serviceOrder'
+import { INVOICE_STATUS, getInvoices } from '@/services/invoice'
 import type { PaginationMeta } from '@/services/types'
 import type { AcceptableValue } from 'reka-ui'
 
@@ -69,6 +75,16 @@ const billingPage = ref(1)
 const billingPagination = ref<PaginationMeta | null>(null)
 const billingPageSize = ref(20)
 const billingPageSizeOptions = [10, 20, 50, 100]
+
+const selectedRecordId = ref<number | null>(null)
+
+const billingInvoices = ref<BillingInvoice[]>([])
+const billingInvoicesLoading = ref(false)
+const billingInvoicesPagination = ref<PaginationMeta | null>(null)
+const billingInvoicesPage = ref(1)
+const billingInvoicesPageSize = 10
+
+const activeInvoiceRequestId = ref(0)
 
 const activeRequestId = ref(0)
 
@@ -250,6 +266,128 @@ const filteredRecords = computed(() => {
   })
 })
 
+const selectedRecord = computed(() => {
+  const recordId = selectedRecordId.value
+
+  if (!recordId) {
+    return null
+  }
+
+  return filteredRecords.value.find((record) => record.id === recordId) ?? null
+})
+
+const resetInvoicesState = () => {
+  billingInvoices.value = []
+  billingInvoicesPagination.value = null
+}
+
+watch(
+  filteredRecords,
+  (records) => {
+    if (records.length === 0) {
+      if (selectedRecordId.value !== null) {
+        selectedRecordId.value = null
+      }
+      billingInvoicesPage.value = 1
+      resetInvoicesState()
+      billingInvoicesLoading.value = false
+      return
+    }
+
+    const exists = records.some((record) => record.id === selectedRecordId.value)
+    const firstRecord = records[0]
+
+    if (!exists && firstRecord) {
+      billingInvoicesPage.value = 1
+      selectedRecordId.value = firstRecord.id
+    }
+  },
+  { immediate: true },
+)
+
+const loadInvoices = async () => {
+  const recordId = selectedRecordId.value
+
+  if (!recordId) {
+    billingInvoicesLoading.value = false
+    resetInvoicesState()
+    return
+  }
+
+  const requestId = activeInvoiceRequestId.value + 1
+  activeInvoiceRequestId.value = requestId
+  billingInvoicesLoading.value = true
+
+  try {
+    const { invoices, pagination } = await getInvoices({
+      page: billingInvoicesPage.value,
+      limit: billingInvoicesPageSize,
+      medicalRecordId: recordId,
+    })
+
+    if (activeInvoiceRequestId.value !== requestId) {
+      return
+    }
+
+    billingInvoicesPagination.value = pagination
+    billingInvoices.value = invoices.map((invoice) => ({
+      id: invoice.id,
+      code: invoice.code,
+      amount: invoice.amount,
+      paidAt: invoice.paidAt,
+      collectorName: invoice.collector?.name ?? '',
+      collectorCode: invoice.collector?.code ?? '',
+      isCancelled: invoice.status === INVOICE_STATUS.cancelled,
+    }))
+  } catch (error) {
+    if (activeInvoiceRequestId.value !== requestId) {
+      return
+    }
+
+    const message = error instanceof ApiError ? error.message : 'Unable to load invoices.'
+    toast.error(message)
+    resetInvoicesState()
+  } finally {
+    if (activeInvoiceRequestId.value === requestId) {
+      billingInvoicesLoading.value = false
+    }
+  }
+}
+
+watch(
+  () => ({ recordId: selectedRecordId.value, page: billingInvoicesPage.value }),
+  async ({ recordId }) => {
+    if (!recordId) {
+      billingInvoicesLoading.value = false
+      resetInvoicesState()
+      return
+    }
+
+    await loadInvoices()
+  },
+)
+
+const handleRecordSelect = (recordId: number) => {
+  if (recordsLoading.value) {
+    return
+  }
+
+  if (selectedRecordId.value === recordId) {
+    return
+  }
+
+  billingInvoicesPage.value = 1
+  selectedRecordId.value = recordId
+}
+
+const handleInvoicePageChange = (page: number) => {
+  if (billingInvoicesLoading.value || page === billingInvoicesPage.value) {
+    return
+  }
+
+  billingInvoicesPage.value = page
+}
+
 const recordsSummary = computed(() => {
   if (recordsLoading.value) {
     return ''
@@ -279,6 +417,37 @@ const recordsSummary = computed(() => {
   }
 
   return `Showing ${filtered} of ${pagination.total} billing records (records ${start}-${end}).`
+})
+
+const invoicesSummary = computed(() => {
+  if (billingInvoicesLoading.value || !selectedRecordId.value) {
+    return ''
+  }
+
+  const pagination = billingInvoicesPagination.value
+
+  if (!pagination) {
+    const total = billingInvoices.value.length
+    if (total === 0) {
+      return 'No invoices available for the selected medical record.'
+    }
+
+    return `Showing ${total} invoices.`
+  }
+
+  if (pagination.total === 0) {
+    return 'No invoices available for the selected medical record.'
+  }
+
+  const start = (pagination.page - 1) * pagination.limit + 1
+  const end = Math.min(pagination.page * pagination.limit, pagination.total)
+  const totalOnPage = billingInvoices.value.length
+
+  if (totalOnPage === 0) {
+    return `No invoices match the selected filters on this page (invoices ${start}-${end} of ${pagination.total}).`
+  }
+
+  return `Showing ${totalOnPage} of ${pagination.total} invoices (invoices ${start}-${end}).`
 })
 
 const applyFilters = async () => {
@@ -350,7 +519,7 @@ onMounted(async () => {
 
 <template>
   <section class="w-full bg-primary-foreground py-8">
-    <div class="space-y-6 mx-auto max-w-6xl px-4">
+    <div class="space-y-6 mx-auto max-w-7xl px-4">
       <Card>
         <CardContent>
           <BillingFilters
@@ -377,21 +546,46 @@ onMounted(async () => {
           />
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Patients List</CardTitle>
-        </CardHeader>
-      <CardContent class="space-y-4">
-        <BillingTable
-          :records="filteredRecords"
-          :is-loading="recordsLoading"
-          :pagination="billingPagination"
-          :current-page="billingPage"
-          :records-summary="recordsSummary"
-          @page-change="handlePageChange"
-        />
-      </CardContent>
-      </Card>
+      <div class="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Patients List</CardTitle>
+          </CardHeader>
+          <CardContent class="space-y-4">
+            <BillingTable
+              :records="filteredRecords"
+              :is-loading="recordsLoading"
+              :pagination="billingPagination"
+              :current-page="billingPage"
+              :records-summary="recordsSummary"
+              :selected-record-id="selectedRecordId"
+              @page-change="handlePageChange"
+              @select="handleRecordSelect"
+            />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              Paid Invoices
+              <span v-if="selectedRecord" class="ml-2 text-sm font-normal text-muted-foreground">
+                · {{ selectedRecord.medicalRecordCode }}
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <BillingInvoicesTable
+              :invoices="billingInvoices"
+              :is-loading="billingInvoicesLoading"
+              :pagination="billingInvoicesPagination"
+              :current-page="billingInvoicesPage"
+              :summary="invoicesSummary"
+              :has-selection="Boolean(selectedRecord)"
+              @page-change="handleInvoicePageChange"
+            />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   </section>
 </template>

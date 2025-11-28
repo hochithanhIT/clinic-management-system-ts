@@ -6,6 +6,12 @@ import invoiceController from "../controllers/invoice.controller";
 
 const router = Router();
 
+router.get(
+  "/",
+  authMiddleware.authenticateUser,
+  invoiceController.getInvoices,
+);
+
 router.post(
   "/",
   authMiddleware.authenticateUser,

@@ -14,3 +14,13 @@ export interface BillingRecord {
   totalServiceDetails: number
   unpaidServiceDetails: number
 }
+
+export interface BillingInvoice {
+  id: number
+  code: string
+  amount: number
+  paidAt: string
+  collectorName: string
+  collectorCode: string
+  isCancelled: boolean
+}

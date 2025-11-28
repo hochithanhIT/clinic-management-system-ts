@@ -64,6 +64,7 @@ type InvoiceParam = z.infer<typeof invoiceSchema.invoiceParam>;
 type AddInvoiceDetailBody = z.infer<typeof invoiceSchema.addInvoiceDetailBody>;
 type UpdateInvoiceDetailBody = z.infer<typeof invoiceSchema.updateInvoiceDetailBody>;
 type InvoiceDetailParam = z.infer<typeof invoiceSchema.invoiceDetailParam>;
+type GetInvoicesQuery = z.infer<typeof invoiceSchema.getInvoicesQuery>;
 
 const mapInvoice = (invoice: InvoicePayload) => ({
   id: invoice.id,
@@ -82,6 +83,57 @@ const mapInvoiceDetail = (detail: InvoiceDetailPayload) => ({
   hoaDon: detail.hoaDon,
   chiTietPCD: detail.chiTietPCD,
 });
+
+const getInvoices = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { page, limit, search, medicalRecordId }: GetInvoicesQuery =
+      invoiceSchema.getInvoicesQuery.parse(req.query);
+
+    const skip = (page - 1) * limit;
+    const where: Prisma.HoaDonWhereInput = {};
+
+    if (search) {
+      where.maHD = { contains: search, mode: "insensitive" };
+    }
+
+    if (medicalRecordId !== undefined) {
+      where.benhAnId = medicalRecordId;
+    }
+
+    const [invoices, total] = await Promise.all([
+      prisma.hoaDon.findMany({
+        where,
+        select: invoiceSelect,
+        skip,
+        take: limit,
+        orderBy: { ngayLap: "desc" },
+      }),
+      prisma.hoaDon.count({ where }),
+    ]);
+
+    const totalPages = total === 0 ? 0 : Math.ceil(total / limit);
+
+    return Send.success(res, {
+      invoices: invoices.map(mapInvoice),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return Send.validationErrors(res, error.flatten().fieldErrors);
+    }
+
+    return next(error);
+  }
+};
 
 const addInvoice = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -449,6 +501,7 @@ const updateInvoiceDetail = async (
 };
 
 export default {
+  getInvoices,
   addInvoice,
   updateInvoice,
   deleteInvoice,
