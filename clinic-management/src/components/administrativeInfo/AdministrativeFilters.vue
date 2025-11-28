@@ -1,21 +1,27 @@
 <script setup lang="ts">
 import type { DateValue } from '@internationalized/date'
 import { CalendarIcon, SearchIcon } from 'lucide-vue-next'
-import { ref, toRefs } from 'vue'
 import type { AcceptableValue } from 'reka-ui'
+import { ref, toRefs } from 'vue'
 
-import { Button } from '../ui/button'
-import { Field, FieldLabel } from '../ui/field'
-import { Input } from '../ui/input'
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
-import { Calendar } from '../ui/calendar'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
-import BaseCombobox from '../ComboBox.vue'
+import { Button } from '@/components/ui/button'
+import { Field, FieldLabel } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Calendar } from '@/components/ui/calendar'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import BaseCombobox from '@/components/ComboBox.vue'
 import type {
   ComboboxOption,
   MedicalRecordStatusFilterValue,
   MedicalRecordStatusOption,
-} from './types'
+} from '../patientIntake/types'
 
 const props = defineProps<{
   patientCode: string
@@ -80,9 +86,9 @@ const handlePageSizeChange = (value: AcceptableValue) => {
     class="grid gap-4 rounded-md border p-4 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(220px,1fr))]"
   >
     <Field>
-      <FieldLabel for="received-filter-patient-code">Patient Code</FieldLabel>
+      <FieldLabel for="filter-patient-code">Patient Code</FieldLabel>
       <Input
-        id="received-filter-patient-code"
+        id="filter-patient-code"
         :model-value="patientCode"
         :disabled="isLoading"
         autocomplete="off"
@@ -92,9 +98,9 @@ const handlePageSizeChange = (value: AcceptableValue) => {
     </Field>
 
     <Field>
-      <FieldLabel for="received-filter-patient-name">Patient Name</FieldLabel>
+      <FieldLabel for="filter-patient-name">Patient Name</FieldLabel>
       <Input
-        id="received-filter-patient-name"
+        id="filter-patient-name"
         :model-value="patientName"
         :disabled="isLoading"
         autocomplete="off"

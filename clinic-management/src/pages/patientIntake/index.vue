@@ -185,16 +185,16 @@ const DEFAULT_MEDICAL_RECORD_PAGE_SIZE = 20
 const MEDICAL_RECORD_PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
 
 const medicalRecordStatusOptions: MedicalRecordStatusOption[] = [
-  { value: 'all', label: 'Tất cả trạng thái' },
-  { value: '0', label: 'Chờ khám' },
-  { value: '1', label: 'Đang khám' },
-  { value: '2', label: 'Kết thúc khám' },
+  { value: 'all', label: 'All statuses' },
+  { value: '0', label: 'Pending' },
+  { value: '1', label: 'In progress' },
+  { value: '2', label: 'Completed' },
 ]
 
 const medicalRecordStatusLabelMap: Record<number, string> = {
-  0: 'Chờ khám',
-  1: 'Đang khám',
-  2: 'Kết thúc khám',
+  0: 'Pending',
+  1: 'In progress',
+  2: 'Completed',
 }
 
 const medicalRecordStatusClassMap: Record<number, string> = {
@@ -210,6 +210,8 @@ const recordsPage = ref(1)
 const recordsPageSize = ref(DEFAULT_MEDICAL_RECORD_PAGE_SIZE)
 
 const recordFilters = reactive({
+  patientCode: '',
+  patientName: '',
   status: 'all' as MedicalRecordStatusFilterValue,
   roomId: null as number | null,
 })
@@ -217,11 +219,15 @@ const recordFilters = reactive({
 const recordErrors = ref<string[]>([])
 
 const appliedRecordFilters = ref<{
+  patientCode: string
+  patientName: string
   status: MedicalRecordStatusFilterValue
   roomId: number | null
   from: Date | null
   to: Date | null
 }>({
+  patientCode: '',
+  patientName: '',
   status: 'all',
   roomId: null,
   from: null,
@@ -248,8 +254,8 @@ const recordsToModel = computed<DateValue | undefined>({
 const recordsHasFromDate = computed(() => Boolean(recordsFromRaw.value))
 const recordsHasToDate = computed(() => Boolean(recordsToRaw.value))
 
-const dateFormatter = new Intl.DateTimeFormat('vi-VN', { dateStyle: 'medium' })
-const dateTimeFormatter = new Intl.DateTimeFormat('vi-VN', {
+const dateFormatter = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' })
+const dateTimeFormatter = new Intl.DateTimeFormat('en-US', {
   dateStyle: 'medium',
   timeStyle: 'short',
 })
@@ -257,7 +263,7 @@ const dateTimeFormatter = new Intl.DateTimeFormat('vi-VN', {
 const recordsFromLabel = computed(() => {
   const value = recordsFromRaw.value as DateValue | undefined
   if (!value || typeof value.toDate !== 'function') {
-    return 'Chọn ngày'
+    return 'Select date'
   }
 
   return dateFormatter.format(value.toDate(timeZone))
@@ -266,7 +272,7 @@ const recordsFromLabel = computed(() => {
 const recordsToLabel = computed(() => {
   const value = recordsToRaw.value as DateValue | undefined
   if (!value || typeof value.toDate !== 'function') {
-    return 'Chọn ngày'
+    return 'Select date'
   }
 
   return dateFormatter.format(value.toDate(timeZone))
@@ -285,7 +291,7 @@ const endOfDay = (value: Date): Date => {
 }
 
 const getStatusLabel = (status: number): string => {
-  return medicalRecordStatusLabelMap[status] ?? 'Không xác định'
+  return medicalRecordStatusLabelMap[status] ?? 'Unknown'
 }
 
 const getStatusClass = (status: number): string => {
@@ -294,14 +300,14 @@ const getStatusClass = (status: number): string => {
 
 const getGenderLabel = (value: number): string => {
   if (value === 1) {
-    return 'Nam'
+    return 'Male'
   }
 
   if (value === 0) {
-    return 'Nữ'
+    return 'Female'
   }
 
-  return 'Khác'
+  return 'Other'
 }
 
 const formatDate = (value: string | null | undefined): string => {
@@ -331,7 +337,9 @@ const formatDateTime = (value: string | null | undefined): string => {
 }
 
 const filteredMedicalRecords = computed(() => {
-  const { status, roomId, from, to } = appliedRecordFilters.value
+  const { patientCode, patientName, status, roomId, from, to } = appliedRecordFilters.value
+  const codeFilter = patientCode.trim().toLowerCase()
+  const nameFilter = patientName.trim().toLowerCase()
 
   return medicalRecords.value.filter((record) => {
     const recordDate = new Date(record.enteredAt)
@@ -350,8 +358,16 @@ const filteredMedicalRecords = computed(() => {
       return false
     }
 
-    if (roomId !== null) {
-      return record.clinicRoom?.id === roomId
+    if (roomId !== null && record.clinicRoom?.id !== roomId) {
+      return false
+    }
+
+    if (codeFilter && !(record.patient.code ?? '').toLowerCase().includes(codeFilter)) {
+      return false
+    }
+
+    if (nameFilter && !(record.patient.fullName ?? '').toLowerCase().includes(nameFilter)) {
+      return false
     }
 
     return true
@@ -390,6 +406,10 @@ const loadMedicalRecords = async () => {
       appliedRecordFilters.value.status !== 'all'
         ? Number(appliedRecordFilters.value.status)
         : undefined
+    const searchTerm =
+      appliedRecordFilters.value.patientCode.trim() ||
+      appliedRecordFilters.value.patientName.trim() ||
+      undefined
     const { medicalRecords: records, pagination } = await getMedicalRecords({
       page: recordsPage.value,
       limit: recordsPageSize.value,
@@ -397,6 +417,7 @@ const loadMedicalRecords = async () => {
       roomId: appliedRecordFilters.value.roomId ?? undefined,
       enteredFrom: appliedRecordFilters.value.from ?? undefined,
       enteredTo: appliedRecordFilters.value.to ?? undefined,
+      search: searchTerm,
     })
     medicalRecords.value = records
     medicalRecordsPagination.value = pagination
@@ -406,7 +427,7 @@ const loadMedicalRecords = async () => {
     medicalRecords.value = []
     medicalRecordsPagination.value = null
     console.error(error)
-    toast.error('Không thể tải danh sách bệnh nhân đã tiếp nhận.')
+    toast.error('Unable to load received patients.')
   } finally {
     medicalRecordsLoading.value = false
   }
@@ -419,11 +440,13 @@ const handleSearchRecords = async () => {
   const toDate = resolveDateValue(recordsToRaw.value)
 
   if (fromDate && toDate && fromDate > toDate) {
-    setRecordError('Ngày bắt đầu không thể sau ngày kết thúc.')
+    setRecordError('Start date cannot be after end date.')
     return
   }
 
   appliedRecordFilters.value = {
+    patientCode: recordFilters.patientCode.trim(),
+    patientName: recordFilters.patientName.trim(),
     status: recordFilters.status,
     roomId: recordFilters.roomId,
     from: fromDate ? startOfDay(fromDate) : null,
@@ -453,11 +476,15 @@ const handleResetRecordFilters = async () => {
   const todayTo = today(timeZone)
   const baseDate = todayFrom.toDate(timeZone)
 
+  recordFilters.patientCode = ''
+  recordFilters.patientName = ''
   recordFilters.status = 'all'
   recordFilters.roomId = null
   recordsFromRaw.value = todayFrom
   recordsToRaw.value = todayTo
   appliedRecordFilters.value = {
+    patientCode: '',
+    patientName: '',
     status: 'all',
     roomId: null,
     from: startOfDay(baseDate),
@@ -914,6 +941,8 @@ onMounted(() => {
   recordsFromRaw.value = todayFrom
   recordsToRaw.value = todayTo
   appliedRecordFilters.value = {
+    patientCode: '',
+    patientName: '',
     status: 'all',
     roomId: null,
     from: startOfDay(baseDate),
@@ -975,7 +1004,7 @@ onMounted(() => {
               <div class="space-y-6">
                 <Alert v-if="recordErrors.length" variant="destructive" class="mb-2">
                   <AlertCircle class="mr-2 h-5 w-5" />
-                  <AlertTitle>Không thể áp dụng bộ lọc</AlertTitle>
+                  <AlertTitle>Unable to apply filters</AlertTitle>
                   <AlertDescription>
                     <ul class="list-disc space-y-1 pl-5">
                       <li v-for="message in recordErrors" :key="`record-error-${message}`">
@@ -986,6 +1015,8 @@ onMounted(() => {
                 </Alert>
 
                 <MedicalRecordsFilters
+                  :patient-code="recordFilters.patientCode"
+                  :patient-name="recordFilters.patientName"
                   :status="recordFilters.status"
                   :room-id="recordFilters.roomId"
                   :status-options="medicalRecordStatusOptions"
@@ -1000,6 +1031,8 @@ onMounted(() => {
                   :to-label="recordsToLabel"
                   :has-from-date="recordsHasFromDate"
                   :has-to-date="recordsHasToDate"
+                  @update:patient-code="recordFilters.patientCode = $event"
+                  @update:patient-name="recordFilters.patientName = $event"
                   @update:status="recordFilters.status = $event"
                   @update:room-id="recordFilters.roomId = $event"
                   @update:from="handleRecordsFromUpdate"

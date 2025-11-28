@@ -59,28 +59,13 @@ interface CreatePatientResponse {
   }
 }
 
-export interface CreatePatientPayload {
-  hoTen: string
-  ngaySinh: string
-  gioiTinh: number
-  ngheNghiepId: number
-  xaPhuongId: number
-  maBenhNhan?: string
-  sdt?: string
-  cccd?: string
-  hoTenNguoiNha?: string
-  sdtNguoiNha?: string
-  quanHe?: string
+type PatientResponseData = CreatePatientResponse["patient"]
+
+interface PatientResponse {
+  patient: PatientResponseData
 }
 
-export const createPatient = async (payload: CreatePatientPayload): Promise<PatientSummary> => {
-  const response = await apiFetch<ApiSuccessResponse<CreatePatientResponse>>("/patient", {
-    method: "POST",
-    json: payload,
-  })
-
-  const { patient } = response.data
-
+const mapPatient = (patient: PatientResponseData): PatientSummary => {
   return {
     id: patient.id,
     code: patient.maBenhNhan,
@@ -113,8 +98,65 @@ export const createPatient = async (payload: CreatePatientPayload): Promise<Pati
   }
 }
 
+export interface CreatePatientPayload {
+  hoTen: string
+  ngaySinh: string
+  gioiTinh: number
+  ngheNghiepId: number
+  xaPhuongId: number
+  maBenhNhan?: string
+  sdt?: string
+  cccd?: string
+  hoTenNguoiNha?: string
+  sdtNguoiNha?: string
+  quanHe?: string
+}
+
+export const createPatient = async (payload: CreatePatientPayload): Promise<PatientSummary> => {
+  const response = await apiFetch<ApiSuccessResponse<CreatePatientResponse>>("/patient", {
+    method: "POST",
+    json: payload,
+  })
+
+  return mapPatient(response.data.patient)
+}
+
 export const deletePatient = async (patientId: number): Promise<void> => {
   await apiFetch<ApiSuccessResponse<null>>(`/patient/${patientId}`, {
     method: "DELETE",
   })
+}
+
+export const getPatient = async (patientId: number): Promise<PatientSummary> => {
+  const response = await apiFetch<ApiSuccessResponse<PatientResponse>>(`/patient/${patientId}`, {
+    method: "GET",
+  })
+
+  return mapPatient(response.data.patient)
+}
+
+export interface UpdatePatientPayload {
+  maBenhNhan?: string
+  hoTen?: string
+  ngaySinh?: string
+  gioiTinh?: number
+  ngheNghiepId?: number
+  xaPhuongId?: number
+  sdt?: string
+  cccd?: string
+  hoTenNguoiNha?: string
+  sdtNguoiNha?: string
+  quanHe?: string
+}
+
+export const updatePatient = async (
+  patientId: number,
+  payload: UpdatePatientPayload,
+): Promise<PatientSummary> => {
+  const response = await apiFetch<ApiSuccessResponse<PatientResponse>>(`/patient/${patientId}`, {
+    method: "PUT",
+    json: payload,
+  })
+
+  return mapPatient(response.data.patient)
 }
