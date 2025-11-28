@@ -39,6 +39,25 @@ const emit = defineEmits<{
   (e: 'page-change', page: number): void
   (e: 'edit', record: MedicalRecordSummary): void
 }>()
+
+const formatPatientAddress = (patient: MedicalRecordSummary['patient']): string => {
+  const ward = patient.ward?.name?.trim()
+  const city = patient.city?.name?.trim()
+
+  if (ward && city) {
+    return `${ward} - ${city}`
+  }
+
+  if (ward) {
+    return ward
+  }
+
+  if (city) {
+    return city
+  }
+
+  return '—'
+}
 </script>
 
 <template>
@@ -82,6 +101,7 @@ const emit = defineEmits<{
                   <span>{{ getGenderLabel(record.patient.gender) }}</span>
                   <span>Birth: {{ formatDate(record.patient.birthDate) }}</span>
                   <span>Phone: {{ record.patient.phone ?? '—' }}</span>
+                  <span>Address: {{ formatPatientAddress(record.patient) }}</span>
                 </div>
               </TableCell>
               <TableCell>
