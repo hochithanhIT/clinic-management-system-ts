@@ -23,4 +23,7 @@ export interface BillingInvoice {
   collectorName: string
   collectorCode: string
   isCancelled: boolean
+  status: number
+  medicalRecordId: number
+  medicalRecordCode: string
 }

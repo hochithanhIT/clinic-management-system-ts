@@ -4,6 +4,10 @@ import { z } from "zod";
 import { prisma } from "../db";
 import Send from "../utils/response.utils";
 import invoiceSchema from "../validations/invoice.schema";
+import clinicConstants from "../constants/clinic.constants";
+
+const INVOICE_CODE_PREFIX = "HD";
+const INVOICE_CODE_PAD = 6;
 
 const invoiceSelect = {
   id: true,
@@ -50,12 +54,36 @@ const invoiceDetailSelect = {
           tenDV: true,
         },
       },
+      phieuChiDinh: {
+        select: {
+          id: true,
+          maPhieuCD: true,
+        },
+      },
     },
   },
 } satisfies Prisma.HoaDonChiTietSelect;
 
 type InvoiceDetailPayload = Prisma.HoaDonChiTietGetPayload<{
   select: typeof invoiceDetailSelect;
+}>;
+
+const paymentDetailSelect = {
+  id: true,
+  soLuong: true,
+  tongTien: true,
+  trangThaiDongTien: true,
+  pcdId: true,
+  phieuChiDinh: {
+    select: {
+      id: true,
+      benhAnId: true,
+    },
+  },
+} satisfies Prisma.ChiTietPhieuChiDinhSelect;
+
+type PaymentDetailPayload = Prisma.ChiTietPhieuChiDinhGetPayload<{
+  select: typeof paymentDetailSelect;
 }>;
 
 type AddInvoiceBody = z.infer<typeof invoiceSchema.addInvoiceBody>;
@@ -65,6 +93,40 @@ type AddInvoiceDetailBody = z.infer<typeof invoiceSchema.addInvoiceDetailBody>;
 type UpdateInvoiceDetailBody = z.infer<typeof invoiceSchema.updateInvoiceDetailBody>;
 type InvoiceDetailParam = z.infer<typeof invoiceSchema.invoiceDetailParam>;
 type GetInvoicesQuery = z.infer<typeof invoiceSchema.getInvoicesQuery>;
+type SettleInvoiceBody = z.infer<typeof invoiceSchema.settleInvoiceBody>;
+
+const generateNextInvoiceCode = async (): Promise<string> => {
+  const latestInvoice = await prisma.hoaDon.findFirst({
+    select: { maHD: true },
+    orderBy: { id: "desc" },
+  });
+
+  let nextSequence = 1;
+  if (latestInvoice?.maHD) {
+    const match = latestInvoice.maHD.match(/(\d+)$/);
+    if (match) {
+      nextSequence = Number.parseInt(match[1], 10) + 1;
+    }
+  }
+
+  while (true) {
+    const candidate = `${INVOICE_CODE_PREFIX}${String(nextSequence).padStart(
+      INVOICE_CODE_PAD,
+      "0",
+    )}`;
+
+    const exists = await prisma.hoaDon.findUnique({
+      where: { maHD: candidate },
+      select: { id: true },
+    });
+
+    if (!exists) {
+      return candidate;
+    }
+
+    nextSequence += 1;
+  }
+};
 
 const mapInvoice = (invoice: InvoicePayload) => ({
   id: invoice.id,
@@ -129,6 +191,210 @@ const getInvoices = async (
   } catch (error) {
     if (error instanceof z.ZodError) {
       return Send.validationErrors(res, error.flatten().fieldErrors);
+    }
+
+    return next(error);
+  }
+};
+
+const settleInvoice = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const payload: SettleInvoiceBody = invoiceSchema.settleInvoiceBody.parse(req.body);
+    const detailIds = Array.from(new Set(payload.serviceDetailIds.map((id) => Number(id))));
+
+    if (detailIds.length === 0) {
+      return Send.badRequest(res, null, "Danh sách dịch vụ thanh toán không hợp lệ");
+    }
+
+    const [medicalRecord, employee, details] = await Promise.all([
+      prisma.benhAn.findUnique({
+        where: { id: payload.medicalRecordId },
+        select: { id: true },
+      }),
+      prisma.nhanVien.findUnique({
+        where: { id: payload.employeeId },
+        select: { id: true },
+      }),
+      prisma.chiTietPhieuChiDinh.findMany({
+        where: { id: { in: detailIds } },
+        select: paymentDetailSelect,
+      }),
+    ]);
+
+    if (!medicalRecord) {
+      return Send.badRequest(res, null, "Bệnh án không tồn tại");
+    }
+
+    if (!employee) {
+      return Send.badRequest(res, null, "Nhân viên không tồn tại");
+    }
+
+    if (details.length !== detailIds.length) {
+      return Send.badRequest(
+        res,
+        null,
+        "Một số dịch vụ không hợp lệ hoặc đã được xóa",
+      );
+    }
+
+    const invalidDetail = details.find(
+      (detail) => detail.phieuChiDinh.benhAnId !== payload.medicalRecordId,
+    );
+
+    if (invalidDetail) {
+      return Send.badRequest(
+        res,
+        null,
+        "Chi tiết phiếu chỉ định không thuộc bệnh án này",
+      );
+    }
+
+    const alreadyPaid = details.find((detail) => detail.trangThaiDongTien);
+
+    if (alreadyPaid) {
+      return Send.badRequest(res, null, "Một số dịch vụ đã được thanh toán");
+    }
+
+    const totalAmountDecimal = details.reduce(
+      (sum, detail) => sum.add(detail.tongTien),
+      new Prisma.Decimal(0),
+    );
+
+    const totalAmount = Number(totalAmountDecimal);
+
+    if (!Number.isFinite(totalAmount) || totalAmount <= 0) {
+      return Send.badRequest(res, null, "Tổng tiền không hợp lệ");
+    }
+
+    if (payload.amountReceived < totalAmount) {
+      return Send.badRequest(res, null, "Số tiền nhận được không đủ để thanh toán");
+    }
+
+    const invoiceCode = await generateNextInvoiceCode();
+
+    const invoice = await prisma.$transaction(async (tx) => {
+      const createdInvoice = await tx.hoaDon.create({
+        data: {
+          maHD: invoiceCode,
+          ngayLap: payload.invoiceDate,
+          tongTien: totalAmountDecimal,
+          trangThai: 0,
+          benhAn: { connect: { id: payload.medicalRecordId } },
+          nhanVien: { connect: { id: payload.employeeId } },
+        },
+        select: invoiceSelect,
+      });
+
+      await tx.hoaDonChiTiet.createMany({
+        data: details.map((detail) => ({
+          hoaDonId: createdInvoice.id,
+          ctpcdId: detail.id,
+          soLuong: detail.soLuong,
+          thanhTien: detail.tongTien,
+        })),
+      });
+
+      await tx.chiTietPhieuChiDinh.updateMany({
+        where: { id: { in: detailIds } },
+        data: { trangThaiDongTien: true },
+      });
+
+      const serviceOrderIds = Array.from(new Set(details.map((detail) => detail.pcdId)));
+
+      await Promise.all(
+        serviceOrderIds.map(async (serviceOrderId) => {
+          const remainingUnpaid = await tx.chiTietPhieuChiDinh.count({
+            where: {
+              pcdId: serviceOrderId,
+              trangThaiDongTien: false,
+            },
+          });
+
+          if (remainingUnpaid === 0) {
+            await tx.phieuChiDinh.update({
+              where: { id: serviceOrderId },
+              data: { trangThai: clinicConstants.serviceOrderStatus.paid },
+            });
+          }
+        }),
+      );
+
+      return mapInvoice(createdInvoice);
+    });
+
+    const change = Math.max(payload.amountReceived - totalAmount, 0);
+
+    return Send.success(
+      res,
+      {
+        invoice,
+        payment: {
+          total: totalAmount,
+          received: payload.amountReceived,
+          change,
+        },
+      },
+      "Thanh toán thành công",
+    );
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return Send.validationErrors(res, error.flatten().fieldErrors);
+    }
+
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2002") {
+        return Send.badRequest(res, null, "Hóa đơn đã tồn tại");
+      }
+
+      if (error.code === "P2003") {
+        return Send.badRequest(res, null, "Thông tin liên kết không hợp lệ");
+      }
+    }
+
+    return next(error);
+  }
+};
+
+const getInvoice = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { id }: InvoiceParam = invoiceSchema.invoiceParam.parse(req.params);
+
+    const invoice = await prisma.hoaDon.findUnique({
+      where: { id },
+      select: invoiceSelect,
+    });
+
+    if (!invoice) {
+      return Send.notFound(res, null, "Không tìm thấy hóa đơn");
+    }
+
+    const details = await prisma.hoaDonChiTiet.findMany({
+      where: { hoaDonId: id },
+      select: invoiceDetailSelect,
+      orderBy: { id: "asc" },
+    });
+
+    return Send.success(res, {
+      invoice: mapInvoice(invoice),
+      details: details.map(mapInvoiceDetail),
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return Send.validationErrors(res, error.flatten().fieldErrors);
+    }
+
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2025") {
+        return Send.notFound(res, null, "Không tìm thấy hóa đơn");
+      }
     }
 
     return next(error);
@@ -502,6 +768,8 @@ const updateInvoiceDetail = async (
 
 export default {
   getInvoices,
+  getInvoice,
+  settleInvoice,
   addInvoice,
   updateInvoice,
   deleteInvoice,

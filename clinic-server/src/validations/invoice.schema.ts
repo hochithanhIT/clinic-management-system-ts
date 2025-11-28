@@ -106,6 +106,33 @@ const updateInvoiceDetailBody = baseInvoiceDetailBody
     path: ["global"],
   });
 
+const settleInvoiceBody = z.object({
+  medicalRecordId: z.coerce
+    .number()
+    .int("Bệnh án không hợp lệ")
+    .min(1, "Bệnh án không hợp lệ"),
+  employeeId: z.coerce
+    .number()
+    .int("Nhân viên không hợp lệ")
+    .min(1, "Nhân viên không hợp lệ"),
+  invoiceDate: z.coerce.date(),
+  amountReceived: z.coerce
+    .number()
+    .min(0, "Số tiền nhận không hợp lệ"),
+  serviceDetailIds: z
+    .array(
+      z.coerce
+        .number()
+        .int("Chi tiết phiếu chỉ định không hợp lệ")
+        .min(1, "Chi tiết phiếu chỉ định không hợp lệ"),
+    )
+    .min(1, "Vui lòng chọn ít nhất một dịch vụ để thanh toán")
+    .refine((ids) => new Set(ids).size === ids.length, {
+      message: "Danh sách chi tiết phiếu chỉ định không hợp lệ",
+      path: ["serviceDetailIds"],
+    }),
+});
+
 const invoiceSchema = {
   addInvoiceBody,
   updateInvoiceBody,
@@ -114,6 +141,7 @@ const invoiceSchema = {
   addInvoiceDetailBody,
   updateInvoiceDetailBody,
   invoiceDetailParam,
+  settleInvoiceBody,
 };
 
 export default invoiceSchema;

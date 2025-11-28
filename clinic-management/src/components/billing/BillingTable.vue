@@ -37,6 +37,7 @@ const { records, isLoading, pagination, currentPage, recordsSummary, selectedRec
 const emit = defineEmits<{
   (e: 'page-change', page: number): void
   (e: 'select', recordId: number): void
+  (e: 'row-dblclick', record: BillingRecord): void
 }>()
 
 const getPaymentStatusLabel = (status: BillingRecord['paymentStatus']): string => {
@@ -97,16 +98,17 @@ const formatAddress = (record: BillingRecord): string => {
               "
               :aria-selected="record.id === selectedRecordId"
               @click="emit('select', record.id)"
+              @dblclick="emit('row-dblclick', record)"
             >
               <TableCell class="font-medium">
-                <div class="flex flex-col">
+                <div class="flex flex-col gap-1">
                   <span>{{ record.medicalRecordCode }}</span>
                   <span
-                    class="inline-flex w-fit items-center rounded-full px-2 py-1 text-xs font-medium"
-                    :class="getPaymentStatusClass(record.paymentStatus)"
-                  >
-                    {{ getPaymentStatusLabel(record.paymentStatus) }}
-                  </span>
+                  class="inline-flex w-fit items-center rounded-full px-2 py-1 text-xs font-medium"
+                  :class="getPaymentStatusClass(record.paymentStatus)"
+                >
+                  {{ getPaymentStatusLabel(record.paymentStatus) }}
+                </span>
                 </div>
               </TableCell>
               <TableCell>

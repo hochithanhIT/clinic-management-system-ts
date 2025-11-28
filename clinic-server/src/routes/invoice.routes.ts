@@ -12,11 +12,24 @@ router.get(
   invoiceController.getInvoices,
 );
 
+router.get(
+  "/:id",
+  authMiddleware.authenticateUser,
+  invoiceController.getInvoice,
+);
+
 router.post(
   "/",
   authMiddleware.authenticateUser,
   ValidationMiddleware.validateBody(invoiceSchema.addInvoiceBody),
   invoiceController.addInvoice,
+);
+
+router.post(
+  "/pay",
+  authMiddleware.authenticateUser,
+  ValidationMiddleware.validateBody(invoiceSchema.settleInvoiceBody),
+  invoiceController.settleInvoice,
 );
 
 router.post(

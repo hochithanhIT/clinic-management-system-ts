@@ -34,6 +34,7 @@ const { invoices, isLoading, pagination, currentPage, summary, hasSelection } = 
 
 const emit = defineEmits<{
   (e: 'page-change', page: number): void
+  (e: 'row-dblclick', invoice: BillingInvoice): void
 }>()
 
 const currencyFormatter = new Intl.NumberFormat('vi-VN', {
@@ -78,25 +79,30 @@ const getCollectorDisplay = (invoice: BillingInvoice): string => {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead class="w-36">Mã hóa đơn</TableHead>
-            <TableHead class="w-36 text-right">Số tiền</TableHead>
-            <TableHead class="w-40">Ngày thanh toán</TableHead>
-            <TableHead class="min-w-48">Người thu</TableHead>
-            <TableHead class="w-28">Trạng thái</TableHead>
+            <TableHead class="w-36">Invoice Code</TableHead>
+            <TableHead class="w-36 text-right">Amount</TableHead>
+            <TableHead class="w-40">Payment Date</TableHead>
+            <TableHead class="min-w-48">Collector</TableHead>
+            <TableHead class="w-28">Status</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           <template v-if="!hasSelection">
-            <TableEmpty :colspan="5">Chọn một bệnh án để xem hóa đơn.</TableEmpty>
+            <TableEmpty :colspan="5">Select a medical record to view invoices.</TableEmpty>
           </template>
           <template v-else-if="isLoading">
-            <TableEmpty :colspan="5">Đang tải danh sách hóa đơn...</TableEmpty>
+            <TableEmpty :colspan="5">Loading invoices...</TableEmpty>
           </template>
           <template v-else-if="invoices.length === 0">
-            <TableEmpty :colspan="5">Không có hóa đơn nào cho bệnh án này.</TableEmpty>
+            <TableEmpty :colspan="5">No invoices for this medical record.</TableEmpty>
           </template>
           <template v-else>
-            <TableRow v-for="invoice in invoices" :key="invoice.id">
+            <TableRow
+              v-for="invoice in invoices"
+              :key="invoice.id"
+              class="cursor-pointer"
+              @dblclick="emit('row-dblclick', invoice)"
+            >
               <TableCell class="font-medium">
                 <span>{{ invoice.code }}</span>
               </TableCell>
@@ -110,7 +116,7 @@ const getCollectorDisplay = (invoice: BillingInvoice): string => {
                 <span>{{ getCollectorDisplay(invoice) }}</span>
               </TableCell>
               <TableCell>
-                <span v-if="invoice.isCancelled">Đã hủy</span>
+                <span v-if="invoice.isCancelled">Cancelled</span>
               </TableCell>
             </TableRow>
           </template>
