@@ -6,6 +6,7 @@ import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuSeparator,
   ContextMenuTrigger,
 } from '../ui/context-menu'
 import {
@@ -25,7 +26,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '../ui/pagination'
-import { Trash2 } from 'lucide-vue-next'
+import { ArrowLeftRight, Trash2 } from 'lucide-vue-next'
 defineProps<{
   filteredRecords: MedicalRecordSummary[]
   isLoading: boolean
@@ -44,6 +45,7 @@ defineProps<{
 const emit = defineEmits<{
   (e: 'page-change', page: number): void
   (e: 'delete', record: MedicalRecordSummary): void
+  (e: 'change-room', record: MedicalRecordSummary): void
 }>()
 
 const formatPatientAddress = (patient: MedicalRecordSummary['patient']): string => {
@@ -148,6 +150,11 @@ const formatPatientAddress = (patient: MedicalRecordSummary['patient']): string 
                 </TableRow>
               </ContextMenuTrigger>
               <ContextMenuContent class="w-52">
+                <ContextMenuItem :disabled="actionDisabled" @select="emit('change-room', record)">
+                  <ArrowLeftRight class="h-4 w-4" />
+                  Change room
+                </ContextMenuItem>
+                <ContextMenuSeparator />
                 <ContextMenuItem
                   variant="destructive"
                   :disabled="actionDisabled"

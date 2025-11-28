@@ -13,8 +13,19 @@ import type { AcceptableValue } from 'reka-ui'
 import { toast } from 'vue-sonner'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import ComboBox from '@/components/ComboBox.vue'
 import PatientIntakeForm from '../../components/patientIntake/PatientIntakeForm.vue'
 import MedicalRecordsFilters from '../../components/patientIntake/MedicalRecordsFilters.vue'
 import MedicalRecordsTable from '../../components/patientIntake/MedicalRecordsTable.vue'
@@ -32,7 +43,11 @@ import { getOccupations } from '@/services/occupation'
 import { getCities, getProvinces } from '@/services/location'
 import { getRooms } from '@/services/room'
 import { createPatient, deletePatient } from '@/services/patient'
-import { createMedicalRecord, getMedicalRecords } from '@/services/medicalRecord'
+import {
+  createMedicalRecord,
+  getMedicalRecords,
+  updateMedicalRecord,
+} from '@/services/medicalRecord'
 import type { MedicalRecordSummary } from '@/services/medicalRecord'
 import type { PaginationMeta } from '@/services/types'
 import { useAuthStore } from '@/stores/auth'
@@ -129,6 +144,44 @@ const pendingDeletePatientDisplay = computed(() => {
   }
 
   return code ? `${name} (Code: ${code})` : name
+})
+
+const changeRoomDialogOpen = ref(false)
+const changeRoomDialogRecord = ref<MedicalRecordSummary | null>(null)
+const changeRoomSelectedRoomId = ref<number | null>(null)
+const changeRoomSubmitting = ref(false)
+
+const changeRoomOriginalRoomId = computed(
+  () => changeRoomDialogRecord.value?.clinicRoom?.id ?? null,
+)
+
+const changeRoomCurrentRoomLabel = computed(() => {
+  const room = changeRoomDialogRecord.value?.clinicRoom
+  if (!room) {
+    return 'Not assigned'
+  }
+
+  return room.department?.name ? `${room.name} · ${room.department.name}` : room.name
+})
+
+const changeRoomShowSameRoomAlert = computed(() => {
+  const selected = changeRoomSelectedRoomId.value
+  const original = changeRoomOriginalRoomId.value
+
+  return selected !== null && selected === original
+})
+
+const changeRoomSubmitDisabled = computed(() => {
+  if (changeRoomSubmitting.value) {
+    return true
+  }
+
+  const selected = changeRoomSelectedRoomId.value
+  if (selected === null) {
+    return true
+  }
+
+  return selected === changeRoomOriginalRoomId.value
 })
 
 let occupationRequestCounter = 0
@@ -566,6 +619,79 @@ const handleDeleteDialogOpenChange = (open: boolean) => {
   }
 }
 
+const handleChangeRoom = (record: MedicalRecordSummary) => {
+  if (medicalRecordsLoading.value || isDeletingPatient.value) {
+    return
+  }
+
+  changeRoomDialogRecord.value = record
+  changeRoomSelectedRoomId.value = record.clinicRoom?.id ?? null
+  changeRoomDialogOpen.value = true
+}
+
+const handleChangeRoomDialogOpenChange = (open: boolean) => {
+  if (changeRoomSubmitting.value) {
+    changeRoomDialogOpen.value = true
+    return
+  }
+
+  changeRoomDialogOpen.value = open
+
+  if (!open) {
+    changeRoomDialogRecord.value = null
+    changeRoomSelectedRoomId.value = null
+  }
+}
+
+const handleChangeRoomDialogCancel = () => {
+  handleChangeRoomDialogOpenChange(false)
+}
+
+const handleChangeRoomDialogConfirm = async () => {
+  if (changeRoomSubmitting.value) {
+    return
+  }
+
+  const record = changeRoomDialogRecord.value
+  const selectedRoomId = changeRoomSelectedRoomId.value
+
+  if (!record) {
+    toast.error('No medical record selected.')
+    return
+  }
+
+  if (selectedRoomId === null) {
+    toast.error('Please select a clinic room.')
+    return
+  }
+
+  if (selectedRoomId === changeRoomOriginalRoomId.value) {
+    return
+  }
+
+  changeRoomSubmitting.value = true
+
+  try {
+    await updateMedicalRecord(record.id, { phongId: selectedRoomId })
+
+    const selectedLabel = roomOptions.value.find((room) => room.value === selectedRoomId)?.label
+    toast.success(
+      selectedLabel
+        ? `Clinic room updated to ${selectedLabel}.`
+        : 'Clinic room updated successfully.',
+    )
+
+    await loadMedicalRecords()
+    handleChangeRoomDialogOpenChange(false)
+  } catch (error) {
+    const message =
+      error instanceof ApiError ? error.message : 'Unable to update clinic room, please try again.'
+    toast.error(message)
+  } finally {
+    changeRoomSubmitting.value = false
+  }
+}
+
 const setFormError = (message: string, focusId?: string) => {
   formErrors.value = [message]
   if (focusId) {
@@ -817,6 +943,7 @@ const loadRooms = async () => {
       options,
       appliedRecordFilters.value.roomId,
     )
+    changeRoomSelectedRoomId.value = ensureOptionRetained(options, changeRoomSelectedRoomId.value)
   } catch (error) {
     handleLoadError('Unable to load clinic rooms.')
     console.error(error)
@@ -1056,6 +1183,7 @@ onMounted(() => {
                   :get-status-label="getStatusLabel"
                   :get-status-class="getStatusClass"
                   @page-change="handleRecordsPageChange"
+                  @change-room="handleChangeRoom"
                   @delete="requestDeletePatient"
                 />
               </div>
@@ -1067,6 +1195,65 @@ onMounted(() => {
                 @update:open="handleDeleteDialogOpenChange"
                 @confirm="confirmDeletePatient"
               />
+              <Dialog :open="changeRoomDialogOpen" @update:open="handleChangeRoomDialogOpenChange">
+                <DialogContent class="max-w-lg">
+                  <DialogHeader>
+                    <DialogTitle>Change clinic room</DialogTitle>
+                    <DialogDescription v-if="changeRoomDialogRecord">
+                      Select a new clinic room for
+                      {{ changeRoomDialogRecord.patient.fullName }} (Record
+                      {{ changeRoomDialogRecord.code }}).
+                    </DialogDescription>
+                    <DialogDescription v-else> Select a new clinic room. </DialogDescription>
+                  </DialogHeader>
+
+                  <div class="space-y-5">
+                    <div class="space-y-1.5">
+                      <span class="text-sm font-medium text-muted-foreground">Current room</span>
+                      <p class="text-base font-semibold">{{ changeRoomCurrentRoomLabel }}</p>
+                    </div>
+
+                    <div class="space-y-2">
+                      <Label for="patient-change-room">New room</Label>
+                      <ComboBox
+                        id="patient-change-room"
+                        v-model="changeRoomSelectedRoomId"
+                        :options="roomOptions"
+                        placeholder="Select room..."
+                        search-placeholder="Search room..."
+                        empty-message="No rooms available."
+                        :loading="loadingRooms"
+                      />
+                    </div>
+
+                    <Alert v-if="changeRoomShowSameRoomAlert" variant="destructive">
+                      <AlertCircle class="mr-2 h-4 w-4" />
+                      <AlertTitle>Same room selected</AlertTitle>
+                      <AlertDescription>
+                        Please choose a different clinic room before saving the change.
+                      </AlertDescription>
+                    </Alert>
+                  </div>
+
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      :disabled="changeRoomSubmitting"
+                      @click="handleChangeRoomDialogCancel"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      :disabled="changeRoomSubmitDisabled"
+                      @click="handleChangeRoomDialogConfirm"
+                    >
+                      {{ changeRoomSubmitting ? 'Saving...' : 'Save' }}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </TabsContent>
           </Tabs>
         </CardContent>

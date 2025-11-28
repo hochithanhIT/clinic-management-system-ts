@@ -146,6 +146,18 @@ export interface CreateMedicalRecordPayload {
   phongId?: number | null
 }
 
+export interface UpdateMedicalRecordPayload {
+  maBA?: string
+  benhNhanId?: number
+  nvTiepNhanId?: number
+  nvKhamId?: number | null
+  phongId?: number | null
+  thoiGianVao?: string | Date
+  lyDoKhamBenh?: string
+  trangThai?: number
+  thoiGianKetThuc?: string | Date | null
+}
+
 const serializeDateInput = (value: string | Date | null | undefined): string | null | undefined => {
   if (value instanceof Date) {
     return value.toISOString()
@@ -268,6 +280,61 @@ export const createMedicalRecord = async (
     doctor: mapStaff(medicalRecord.nvKham),
     clinicRoom: mapClinicRoom(medicalRecord.phong),
   }
+}
+
+export const updateMedicalRecord = async (
+  medicalRecordId: number,
+  payload: UpdateMedicalRecordPayload,
+): Promise<MedicalRecordSummary> => {
+  const requestBody: Record<string, unknown> = {}
+
+  if (payload.maBA !== undefined) {
+    requestBody.maBA = payload.maBA
+  }
+
+  if (payload.benhNhanId !== undefined) {
+    requestBody.benhNhanId = payload.benhNhanId
+  }
+
+  if (payload.nvTiepNhanId !== undefined) {
+    requestBody.nvTiepNhanId = payload.nvTiepNhanId
+  }
+
+  if (payload.nvKhamId !== undefined) {
+    requestBody.nvKhamId = payload.nvKhamId
+  }
+
+  if (payload.phongId !== undefined) {
+    requestBody.phongId = payload.phongId
+  }
+
+  if (payload.thoiGianVao !== undefined) {
+    requestBody.thoiGianVao = serializeDateInput(payload.thoiGianVao)
+  }
+
+  if (payload.lyDoKhamBenh !== undefined) {
+    requestBody.lyDoKhamBenh = payload.lyDoKhamBenh.trim()
+  }
+
+  if (payload.trangThai !== undefined) {
+    requestBody.trangThai = payload.trangThai
+  }
+
+  if (payload.thoiGianKetThuc !== undefined) {
+    requestBody.thoiGianKetThuc = serializeDateInput(payload.thoiGianKetThuc)
+  }
+
+  const response = await apiFetch<ApiSuccessResponse<{ medicalRecord: GetMedicalRecordsResponse["medicalRecords"][number] }>>(
+    `/medical-record/${medicalRecordId}`,
+    {
+      method: "PUT",
+      json: requestBody,
+    },
+  )
+
+  const { medicalRecord } = response.data
+
+  return mapMedicalRecord(medicalRecord)
 }
 
 const mapMedicalRecord = (record: GetMedicalRecordsResponse["medicalRecords"][number]): MedicalRecordSummary => {
