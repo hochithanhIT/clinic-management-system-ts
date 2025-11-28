@@ -184,8 +184,8 @@ const diagnosticsMenu: MenuRouteItem[] = [
           </NavigationMenuItem>
 
           <NavigationMenuItem class="bg-white rounded-md">
-            <NavigationMenuLink as-child class="px-4 hover:rounded-md">
-              <router-link to="/" class="font-medium">Billing</router-link>
+            <NavigationMenuLink as-child class="px-4 hover:rounded-md hover:text-primary-foreground">
+              <router-link to="/billing" class="font-medium">Billing</router-link>
             </NavigationMenuLink>
           </NavigationMenuItem>
         </NavigationMenuList>
