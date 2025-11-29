@@ -49,8 +49,8 @@ const hasWorkspaceSelection = computed(() =>
 )
 
 const statusLabelMap: Record<number, string> = {
-  0: 'Waiting',
-  1: 'In Progress',
+  0: 'Pending',
+  1: 'In progress',
   2: 'Completed',
 }
 
@@ -324,7 +324,7 @@ const loadRecords = async () => {
     } else {
       const response = await getMedicalRecords({
         ...baseParams,
-        departmentId: departmentId ?? undefined,
+        departmentId: roomId ? undefined : (departmentId ?? undefined),
       })
       medicalRecords = response.medicalRecords
     }
@@ -499,108 +499,112 @@ watch(filteredRecords, (list) => {
         <Button variant="outline" :disabled="secondaryActionsDisabled">Disposition</Button>
       </div>
 
-      <Tabs v-model="activeTab" class="mt-6 w-full">
-        <TabsList class="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-          <TabsTrigger value="patients">Patient List</TabsTrigger>
-          <TabsTrigger value="medical-record">Medical Record</TabsTrigger>
-          <TabsTrigger value="lab">Laboratory</TabsTrigger>
-          <TabsTrigger value="imaging">Imaging</TabsTrigger>
-          <TabsTrigger value="procedure">Procedures</TabsTrigger>
-        </TabsList>
+      <Card class="mt-6 border-none shadow-sm">
+        <CardContent class="p-0">
+          <Tabs v-model="activeTab" class="w-full px-6">
+            <TabsList class="grid w-full grid-cols-1 gap-2 border-b sm:grid-cols-3 lg:grid-cols-5">
+              <TabsTrigger value="patients">Patient List</TabsTrigger>
+              <TabsTrigger value="medical-record">Medical Record</TabsTrigger>
+              <TabsTrigger value="lab">Laboratory</TabsTrigger>
+              <TabsTrigger value="imaging">Imaging</TabsTrigger>
+              <TabsTrigger value="procedure">Procedures</TabsTrigger>
+            </TabsList>
 
-        <TabsContent value="patients" class="mt-6 space-y-4">
-          <Alert v-if="!hasWorkspaceSelection">
-            <AlertCircle class="mr-2 h-5 w-5" />
-            <AlertTitle>Workspace not configured</AlertTitle>
-            <AlertDescription>
-              Please select a department and clinic room to view the patient queue.
-            </AlertDescription>
-          </Alert>
+            <TabsContent value="patients" class="space-y-4 py-6">
+              <Alert v-if="!hasWorkspaceSelection">
+                <AlertCircle class="mr-2 h-5 w-5" />
+                <AlertTitle>Workspace not configured</AlertTitle>
+                <AlertDescription>
+                  Please select a department and clinic room to view the patient queue.
+                </AlertDescription>
+              </Alert>
 
-          <Alert v-else-if="recordsError" variant="destructive">
-            <AlertCircle class="mr-2 h-5 w-5" />
-            <AlertTitle>Unable to load data</AlertTitle>
-            <AlertDescription>
-              {{ recordsError }}
-            </AlertDescription>
-          </Alert>
+              <Alert v-else-if="recordsError" variant="destructive">
+                <AlertCircle class="mr-2 h-5 w-5" />
+                <AlertTitle>Unable to load data</AlertTitle>
+                <AlertDescription>
+                  {{ recordsError }}
+                </AlertDescription>
+              </Alert>
 
-          <div v-else class="space-y-4">
-            <MedicalExaminationFilters
-              v-model:code="filters.code"
-              v-model:name="filters.name"
-              v-model:from="filters.from"
-              v-model:to="filters.to"
-              :loading="recordsLoading"
-              :records-page-size="pageSize"
-              :page-size-options="pageSizeOptions"
-              @update:page-size="handlePageSizeChange"
-              @search="handleApplyFilters"
-              @reset="handleResetFilters"
-            />
+              <div v-else class="space-y-4">
+                <MedicalExaminationFilters
+                  v-model:code="filters.code"
+                  v-model:name="filters.name"
+                  v-model:from="filters.from"
+                  v-model:to="filters.to"
+                  :loading="recordsLoading"
+                  :records-page-size="pageSize"
+                  :page-size-options="pageSizeOptions"
+                  @update:page-size="handlePageSizeChange"
+                  @search="handleApplyFilters"
+                  @reset="handleResetFilters"
+                />
 
-            <div class="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-              <MedicalExaminationPatientTable
-                :records="paginatedRecords"
-                :total-count="records.length"
-                :filtered-count="totalFilteredRecords"
-                :loading="recordsLoading"
-                :selected-record-id="selectedRecordId"
-                :page="currentPage"
-                :page-size="pageSize"
-                :get-status-label="getStatusLabel"
-                :get-status-class="getStatusClass"
-                :format-birth-year="formatBirthYear"
-                :get-disposition-label="getDispositionLabel"
-                :format-date-time="formatDateTime"
-                @select="handleRowSelect"
-                @page-change="handlePageChange"
-              />
+                <div class="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+                  <MedicalExaminationPatientTable
+                    :records="paginatedRecords"
+                    :total-count="records.length"
+                    :filtered-count="totalFilteredRecords"
+                    :loading="recordsLoading"
+                    :selected-record-id="selectedRecordId"
+                    :page="currentPage"
+                    :page-size="pageSize"
+                    :get-status-label="getStatusLabel"
+                    :get-status-class="getStatusClass"
+                    :format-birth-year="formatBirthYear"
+                    :get-disposition-label="getDispositionLabel"
+                    :format-date-time="formatDateTime"
+                    @select="handleRowSelect"
+                    @page-change="handlePageChange"
+                  />
 
-              <MedicalExaminationDetailCard
-                :record="selectedRecord"
-                :doctor-display="selectedDoctorDisplay"
-                :patient-birth-date="selectedPatientBirthDate"
-                :patient-address="selectedPatientAddress"
-                :patient-phone="selectedPatientPhone"
-                :exam-time-range="selectedExamTimeRange"
-              />
-            </div>
-          </div>
-        </TabsContent>
+                  <MedicalExaminationDetailCard
+                    :record="selectedRecord"
+                    :doctor-display="selectedDoctorDisplay"
+                    :patient-birth-date="selectedPatientBirthDate"
+                    :patient-address="selectedPatientAddress"
+                    :patient-phone="selectedPatientPhone"
+                    :exam-time-range="selectedExamTimeRange"
+                  />
+                </div>
+              </div>
+            </TabsContent>
 
-        <TabsContent value="medical-record" class="mt-6">
-          <Card>
-            <CardContent class="py-12 text-center text-sm text-muted-foreground">
-              Content will be added later.
-            </CardContent>
-          </Card>
-        </TabsContent>
+            <TabsContent value="medical-record" class="px-6 py-6">
+              <Card>
+                <CardContent class="py-12 text-center text-sm text-muted-foreground">
+                  Content will be added later.
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-        <TabsContent value="lab" class="mt-6">
-          <Card>
-            <CardContent class="py-12 text-center text-sm text-muted-foreground">
-              Content will be added later.
-            </CardContent>
-          </Card>
-        </TabsContent>
+            <TabsContent value="lab" class="px-6 py-6">
+              <Card>
+                <CardContent class="py-12 text-center text-sm text-muted-foreground">
+                  Content will be added later.
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-        <TabsContent value="imaging" class="mt-6">
-          <Card>
-            <CardContent class="py-12 text-center text-sm text-muted-foreground">
-              Content will be added later.
-            </CardContent>
-          </Card>
-        </TabsContent>
+            <TabsContent value="imaging" class="px-6 py-6">
+              <Card>
+                <CardContent class="py-12 text-center text-sm text-muted-foreground">
+                  Content will be added later.
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-        <TabsContent value="procedure" class="mt-6">
-          <Card>
-            <CardContent class="py-12 text-center text-sm text-muted-foreground">
-              Content will be added later.
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            <TabsContent value="procedure" class="px-6 py-6">
+              <Card>
+                <CardContent class="py-12 text-center text-sm text-muted-foreground">
+                  Content will be added later.
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   </section>
 </template>

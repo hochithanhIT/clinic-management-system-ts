@@ -2,7 +2,6 @@
 import { computed } from 'vue'
 import type { MedicalRecordSummary } from '@/services/medicalRecord'
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
   TableBody,
@@ -49,7 +48,11 @@ const handlePageChange = (page: number) => {
   emit('page-change', page)
 }
 
-const showPagination = computed(() => props.filteredCount > props.pageSize)
+const totalPages = computed(() =>
+  props.filteredCount > 0 ? Math.ceil(props.filteredCount / props.pageSize) : 0,
+)
+
+const showPagination = computed(() => totalPages.value > 0)
 
 const paginationSummary = computed(() => {
   if (!props.filteredCount || props.records.length === 0) {
@@ -63,12 +66,10 @@ const paginationSummary = computed(() => {
 </script>
 
 <template>
-  <Card class="overflow-hidden">
-    <CardHeader>
-      <CardTitle>Patient List</CardTitle>
-    </CardHeader>
-    <CardContent class="p-0">
-      <Table>
+  <div class="space-y-4">
+    <h3 class="text-base font-semibold text-foreground">Patient List</h3>
+    <div class="rounded-md border overflow-hidden">
+      <Table class="min-w-full">
         <TableHeader>
           <TableRow>
             <TableHead class="w-32">Status</TableHead>
@@ -116,10 +117,19 @@ const paginationSummary = computed(() => {
           </template>
         </TableBody>
       </Table>
-    </CardContent>
-    <CardContent v-if="showPagination || paginationSummary" class="border-t px-6 py-4 space-y-3">
+    </div>
+
+    <div
+      v-if="showPagination || paginationSummary"
+      class="flex flex-col gap-3 md:flex-row md:items-center"
+    >
+      <p v-if="paginationSummary" class="text-sm text-muted-foreground whitespace-nowrap">
+        {{ paginationSummary }}
+      </p>
+
       <Pagination
         v-if="showPagination"
+        class="md:ml-auto"
         :page="props.page"
         :items-per-page="props.pageSize"
         :total="props.filteredCount"
@@ -143,10 +153,6 @@ const paginationSummary = computed(() => {
           <PaginationNext />
         </PaginationContent>
       </Pagination>
-
-      <p v-if="paginationSummary" class="text-sm text-muted-foreground">
-        {{ paginationSummary }}
-      </p>
-    </CardContent>
-  </Card>
+    </div>
+  </div>
 </template>
