@@ -72,7 +72,7 @@ const receptionMenu: MenuRouteItem[] = [
   { name: 'Administrative Info', path: '/administrative-info/' },
 ]
 const medicalExaminationMenu: MenuRouteItem[] = [
-  { name: 'Medical Examination', path: '/' },
+  { name: 'Medical Examination', path: '/medical-examination/' },
   { name: 'Off-schedule Examination', path: '/' },
 ]
 const diagnosticsMenu: MenuRouteItem[] = [
