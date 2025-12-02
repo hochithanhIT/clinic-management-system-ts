@@ -8,10 +8,10 @@ const router = createRouter({
   routes,
 })
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const authStore = useAuthStore()
 
-  authStore.restoreSession()
+  await authStore.restoreSession()
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     const redirect = to.fullPath && to.fullPath !== '/' ? { redirect: to.fullPath } : undefined
@@ -21,7 +21,7 @@ router.beforeEach((to) => {
     }
   }
 
-  if (to.name === '/login/' && authStore.isAuthenticated) {
+  if (to.path === '/login/' && authStore.isAuthenticated && authStore.sessionVerified) {
     return { path: '/' }
   }
 

@@ -73,6 +73,16 @@ const recordsToPopoverOpen = ref(false)
 const handlePageSizeChange = (value: AcceptableValue) => {
   emit('update:pageSize', value)
 }
+
+const handleFromDateUpdate = (value: DateValue | undefined) => {
+  emit('update:from', value)
+  recordsFromPopoverOpen.value = false
+}
+
+const handleToDateUpdate = (value: DateValue | undefined) => {
+  emit('update:to', value)
+  recordsToPopoverOpen.value = false
+}
 </script>
 
 <template>
@@ -150,7 +160,7 @@ const handlePageSizeChange = (value: AcceptableValue) => {
             :max-value="toDate"
             layout="month-and-year"
             initial-focus
-            @update:model-value="emit('update:from', $event as DateValue | undefined)"
+            @update:model-value="handleFromDateUpdate"
           />
         </PopoverContent>
       </Popover>
@@ -173,7 +183,7 @@ const handlePageSizeChange = (value: AcceptableValue) => {
             :min-value="fromDate"
             layout="month-and-year"
             initial-focus
-            @update:model-value="emit('update:to', $event as DateValue | undefined)"
+            @update:model-value="handleToDateUpdate"
           />
         </PopoverContent>
       </Popover>

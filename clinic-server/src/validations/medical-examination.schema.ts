@@ -91,6 +91,7 @@ const baseMedicalExaminationBody = z.object({
   huyetApTThu: optionalInt("Huyết áp tâm thu", 400),
   huyetApTTr: optionalInt("Huyết áp tâm trương", 300),
   bmi: optionalFloat("BMI", 0, 150),
+  chanDoanBanDau: optionalLargeText("Chẩn đoán ban đầu"),
   phuongPhapDieuTri: optionalLargeText("Phương pháp điều trị"),
   xuTri: optionalLargeText("Xử trí"),
 });
@@ -109,6 +110,13 @@ const medicalExaminationParam = z.object({
     .number()
     .int("Phiếu khám bệnh không hợp lệ")
     .min(1, "Phiếu khám bệnh không hợp lệ"),
+});
+
+const medicalExaminationByMedicalRecordParam = z.object({
+  medicalRecordId: z.coerce
+    .number()
+    .int("Bệnh án không hợp lệ")
+    .min(1, "Bệnh án không hợp lệ"),
 });
 
 const updateDiagnosisBody = z
@@ -155,6 +163,7 @@ const medicalExaminationSchema = {
   createMedicalExaminationBody,
   updateMedicalExaminationBody,
   medicalExaminationParam,
+  medicalExaminationByMedicalRecordParam,
   updateDiagnosisBody,
 };
 

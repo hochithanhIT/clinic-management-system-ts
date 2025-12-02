@@ -1,6 +1,8 @@
 import axios, { AxiosError } from "axios"
 import type { AxiosInstance, AxiosRequestConfig, InternalAxiosRequestConfig } from "axios"
 
+import { emitUnauthorizedEvent } from "@/lib/auth-events"
+
 const DEFAULT_API_BASE_URL = "http://localhost:3000/api"
 
 export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? DEFAULT_API_BASE_URL).replace(/\/$/, "")
@@ -61,6 +63,14 @@ const refreshAccessToken = async (): Promise<void> => {
   return refreshPromise
 }
 
+const rejectWithApiError = <T>(status: number, message: string, details?: T) => {
+  if (status === 401) {
+    emitUnauthorizedEvent()
+  }
+
+  return Promise.reject(new ApiError(status, message, details))
+}
+
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   // Keep the interface available for future auth token injection if needed.
   return config
@@ -93,6 +103,9 @@ apiClient.interceptors.response.use(
           return apiClient.request(originalRequest)
         } catch (refreshError) {
           if (refreshError instanceof ApiError) {
+            if (refreshError.status === 401) {
+              emitUnauthorizedEvent()
+            }
             return Promise.reject(refreshError)
           }
 
@@ -104,18 +117,18 @@ apiClient.interceptors.response.use(
               refreshError.message ||
               "Request failed"
 
-            return Promise.reject(new ApiError(refreshStatus, refreshMessage, refreshData))
+            return rejectWithApiError(refreshStatus, refreshMessage, refreshData)
           }
 
           if (refreshError instanceof Error) {
-            return Promise.reject(new ApiError(status, refreshError.message))
+            return rejectWithApiError(status, refreshError.message)
           }
 
-          return Promise.reject(new ApiError(status, message, responseData))
+          return rejectWithApiError(status, message, responseData)
         }
       }
 
-      return Promise.reject(new ApiError(status, message, responseData))
+      return rejectWithApiError(status, message, responseData)
     }
 
     if (error.code === "ECONNABORTED") {

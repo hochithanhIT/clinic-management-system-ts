@@ -7,6 +7,12 @@ import medicalExaminationSchema from "../validations/medical-examination.schema"
 const router = express.Router();
 
 router.get(
+  "/medical-record/:medicalRecordId",
+  authMiddleware.authenticateUser,
+  medicalExaminationController.getMedicalExaminationByMedicalRecord,
+);
+
+router.get(
   "/:id",
   authMiddleware.authenticateUser,
   medicalExaminationController.getMedicalExamination,

@@ -108,10 +108,12 @@ const handleReset = () => {
 
 const handleFromUpdate = (value: DateValue | undefined) => {
   emit('update:from', value ? value.toString() : '')
+  fromPopoverOpen.value = false
 }
 
 const handleToUpdate = (value: DateValue | undefined) => {
   emit('update:to', value ? value.toString() : '')
+  toPopoverOpen.value = false
 }
 
 const handlePageSizeChange = (value: AcceptableValue) => {

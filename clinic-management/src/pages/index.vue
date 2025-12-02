@@ -1,5 +1,11 @@
 <script setup lang="ts">
 import logoCtu from '@/assets/images/CTU_logo.png'
+definePage({
+  alias: '/',
+  meta: {
+    requiresAuth: true,
+  },
+})
 </script>
 
 <template>

@@ -203,6 +203,7 @@ model PhieuKhamBenh {
   huyetApTThu Int? @map("PKB_HuyetApTThu")
   huyetApTTr Int? @map("PKB_HuyetApTTr")
   bmi Float? @map("PKB_BMI")
+  chanDoanBanDau String? @map("PKB_ChanDoanBanDau")
   phuongPhapDieuTri String? @map("PKB_PhuongPhapDieuTri")
   xuTri String? @map("PKB_XuTri")
 

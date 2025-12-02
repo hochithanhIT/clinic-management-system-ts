@@ -3,7 +3,7 @@ import { defineStore } from "pinia"
 
 import type { AuthUser, ChangePasswordPayload, LoginPayload } from "@/services/auth"
 import { changePassword as changePasswordRequest, login as loginRequest, logout as logoutRequest } from "@/services/auth"
-import { ApiError } from "@/services/http"
+import { ApiError, apiClient } from "@/services/http"
 
 const STORAGE_KEY = "clinic-auth-user"
 
@@ -59,13 +59,16 @@ export const useAuthStore = defineStore("auth", () => {
   const loading = ref(false)
   const errorMessage = ref<string | null>(null)
   const hasRestoredSession = ref(false)
+  const sessionVerified = ref(false)
+  let sessionVerificationPromise: Promise<void> | null = null
 
   const isAuthenticated = computed(() => user.value !== null)
 
-  const setUser = (account: AuthUser | null) => {
+  const setUser = (account: AuthUser | null, verified = true) => {
     const normalized = normalizeUser(account)
     user.value = normalized
     writeStoredUser(normalized)
+    sessionVerified.value = normalized !== null && verified
   }
 
   const login = async (credentials: LoginPayload): Promise<AuthUser> => {
@@ -115,10 +118,52 @@ export const useAuthStore = defineStore("auth", () => {
     }
   }
 
-  const restoreSession = (): void => {
-    if (hasRestoredSession.value) return
-    setUser(readStoredUser())
-    hasRestoredSession.value = true
+  const verifyStoredSession = async (): Promise<void> => {
+    if (!user.value) {
+      sessionVerified.value = false
+      return
+    }
+
+    if (sessionVerified.value && !sessionVerificationPromise) {
+      return
+    }
+
+    if (sessionVerificationPromise) {
+      return sessionVerificationPromise
+    }
+
+    sessionVerificationPromise = apiClient
+      .post("/auth/refresh-token")
+      .then(() => {
+        sessionVerified.value = true
+      })
+      .catch((error) => {
+        sessionVerified.value = false
+
+        if (error instanceof ApiError && error.status === 401) {
+          // Unauthorized errors emit an event that clears the session elsewhere.
+          return
+        }
+
+        console.warn("Session verification failed", error)
+      })
+      .finally(() => {
+        sessionVerificationPromise = null
+      })
+
+    return sessionVerificationPromise
+  }
+
+  const restoreSession = async (): Promise<void> => {
+    if (!hasRestoredSession.value) {
+      hasRestoredSession.value = true
+      const stored = readStoredUser()
+      setUser(stored, false)
+    }
+
+    if (user.value && !sessionVerified.value) {
+      await verifyStoredSession()
+    }
   }
 
   return {
@@ -126,10 +171,12 @@ export const useAuthStore = defineStore("auth", () => {
     loading,
     errorMessage,
     isAuthenticated,
+    sessionVerified,
     login,
     logout,
     changePassword,
     restoreSession,
     setUser,
+    verifyStoredSession,
   }
 })

@@ -26,6 +26,7 @@ const medicalExaminationSelect = {
   huyetApTThu: true,
   huyetApTTr: true,
   bmi: true,
+  chanDoanBanDau: true,
   phuongPhapDieuTri: true,
   xuTri: true,
   chanDoans: {
@@ -91,6 +92,7 @@ const mapMedicalExamination = (exam: MedicalExaminationResult) => ({
   huyetApTThu: exam.huyetApTThu,
   huyetApTTr: exam.huyetApTTr,
   bmi: exam.bmi,
+  chanDoanBanDau: exam.chanDoanBanDau,
   phuongPhapDieuTri: exam.phuongPhapDieuTri,
   xuTri: exam.xuTri,
   chanDoans:
@@ -295,6 +297,10 @@ const createMedicalExamination = async (
       createData.bmi = payload.bmi;
     }
 
+    if (payload.chanDoanBanDau !== undefined) {
+      createData.chanDoanBanDau = payload.chanDoanBanDau;
+    }
+
     if (payload.phuongPhapDieuTri !== undefined) {
       createData.phuongPhapDieuTri = payload.phuongPhapDieuTri;
     }
@@ -326,6 +332,38 @@ const createMedicalExamination = async (
       if (error.code === "P2003") {
         return Send.badRequest(res, null, "Thông tin liên kết không hợp lệ");
       }
+    }
+
+    return next(error);
+  }
+};
+
+const getMedicalExaminationByMedicalRecord = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { medicalRecordId } =
+      medicalExaminationSchema.medicalExaminationByMedicalRecordParam.parse(
+        req.params,
+      );
+
+    const examination = await prisma.phieuKhamBenh.findUnique({
+      where: { benhAnId: medicalRecordId },
+      select: medicalExaminationSelect,
+    });
+
+    if (!examination) {
+      return Send.success(res, { medicalExamination: null });
+    }
+
+    return Send.success(res, {
+      medicalExamination: mapMedicalExamination(examination),
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return Send.validationErrors(res, error.flatten().fieldErrors);
     }
 
     return next(error);
@@ -455,6 +493,10 @@ const updateMedicalExamination = async (
 
     if (payload.bmi !== undefined) {
       updateData.bmi = payload.bmi;
+    }
+
+    if (payload.chanDoanBanDau !== undefined) {
+      updateData.chanDoanBanDau = payload.chanDoanBanDau;
     }
 
     if (payload.phuongPhapDieuTri !== undefined) {
@@ -615,6 +657,7 @@ const deleteMedicalExamination = async (
 
 export default {
   getMedicalExamination,
+  getMedicalExaminationByMedicalRecord,
   createMedicalExamination,
   updateMedicalExamination,
   updateDiagnosis,

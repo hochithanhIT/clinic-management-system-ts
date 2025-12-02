@@ -6,7 +6,6 @@ definePage({
   },
 })
 
-import { computed, reactive, ref, watch } from 'vue'
 import type { AcceptableValue } from 'reka-ui'
 import { storeToRefs } from 'pinia'
 import { AlertCircle, Loader2 } from 'lucide-vue-next'
@@ -19,12 +18,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import MedicalExaminationDetailCard from '@/components/medicalExamination/MedicalExaminationDetailCard.vue'
 import MedicalExaminationFilters from '@/components/medicalExamination/MedicalExaminationFilters.vue'
 import MedicalExaminationPatientTable from '@/components/medicalExamination/MedicalExaminationPatientTable.vue'
-import type { MedicalRecordSummary } from '@/services/medicalRecord'
+import MedicalExaminationDialog, {
+  type MedicalExaminationDialogSavePayload,
+} from '@/components/medicalExamination/MedicalExaminationDialog.vue'
+import type { GetMedicalRecordsParams, MedicalRecordSummary } from '@/services/medicalRecord'
 import { getMedicalRecords, updateMedicalRecord } from '@/services/medicalRecord'
+import {
+  createMedicalExamination,
+  updateMedicalExamination,
+  updateMedicalExaminationDiagnoses,
+} from '@/services/medicalExamination'
 import { ApiError } from '@/services/http'
+import { getServiceOrderDetails, getServiceOrders } from '@/services/serviceOrder'
 import { useWorkspaceStore } from '@/stores/workspace'
 
 const activeTab = ref('patients')
+
+const EXAM_SERVICE_CODE =
+  (import.meta.env.VITE_EXAM_SERVICE_CODE as string | undefined)?.trim().toUpperCase() ||
+  'CK-KB-001'
 
 const workspaceStore = useWorkspaceStore()
 const { department: selectedDepartment, room: selectedRoom } = storeToRefs(workspaceStore)
@@ -280,6 +292,185 @@ const selectedExamTimeRange = computed(() => {
   return formatExamTimeRange(selectedRecord.value)
 })
 
+const examinationDialogOpen = ref(false)
+const examinationSaving = ref(false)
+
+type ExamServicePaymentStatus = 'paid' | 'unpaid' | 'error'
+
+const checkExamServicePaymentStatus = async (
+  medicalRecordId: number,
+): Promise<ExamServicePaymentStatus> => {
+  try {
+    const { serviceOrders } = await getServiceOrders({ medicalRecordId, limit: 30 })
+
+    if (!serviceOrders.length) {
+      return 'paid'
+    }
+
+    for (const order of serviceOrders) {
+      // Skip paid orders early when possible
+      if (order.status !== 0) {
+        continue
+      }
+
+      const { serviceOrderDetails } = await getServiceOrderDetails(order.id)
+      const hasUnpaidExamDetail = serviceOrderDetails.some((detail) => {
+        const detailCode = detail.service.code.trim().toUpperCase()
+        return detailCode === EXAM_SERVICE_CODE && !detail.isPaid
+      })
+
+      if (hasUnpaidExamDetail) {
+        return 'unpaid'
+      }
+    }
+
+    return 'paid'
+  } catch (error) {
+    const message =
+      error instanceof ApiError
+        ? error.message
+        : 'Unable to verify payment status. Please try again.'
+    toast.error(message)
+    return 'error'
+  }
+}
+
+const openExaminationDialog = () => {
+  if (!selectedRecord.value) {
+    return
+  }
+
+  examinationDialogOpen.value = true
+}
+
+const toNullableString = (value: string): string | null => {
+  const trimmed = value.trim()
+  return trimmed.length ? trimmed : null
+}
+
+const toNullableNumber = (value: string): number | null => {
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return null
+  }
+
+  const parsed = Number(trimmed)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+const parseBloodPressure = (
+  value: string,
+): { systolic: number | null; diastolic: number | null } => {
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return { systolic: null, diastolic: null }
+  }
+
+  const normalized = trimmed.replace(/\s+/g, '')
+  const match = normalized.match(/^(\d{1,3})(?:\/|\-)(\d{1,3})$/)
+
+  if (!match) {
+    return { systolic: null, diastolic: null }
+  }
+
+  const systolic = Number(match[1])
+  const diastolic = Number(match[2])
+
+  return {
+    systolic: Number.isFinite(systolic) ? systolic : null,
+    diastolic: Number.isFinite(diastolic) ? diastolic : null,
+  }
+}
+
+const handleSaveExamination = async (payload: MedicalExaminationDialogSavePayload) => {
+  if (!selectedRecord.value) {
+    return
+  }
+
+  examinationSaving.value = true
+
+  try {
+    const { form, secondaryDiseaseIds, medicalRecordId } = payload
+    const reason = form.reasonForAdmission.trim()
+
+    const updatedRecord = await updateMedicalRecord(medicalRecordId, {
+      lyDoKhamBenh: reason,
+    })
+
+    records.value = records.value.map((record) => {
+      return record.id === updatedRecord.id ? updatedRecord : record
+    })
+
+    selectedRecordId.value = updatedRecord.id
+
+    const weight = Number(form.weight)
+    const height = Number(form.height)
+    const bmi = toNullableNumber(form.bmi)
+    const { systolic, diastolic } = parseBloodPressure(form.bloodPressure)
+
+    const examinationPayload = {
+      quaTrinhBenhLy: form.medicalHistory.trim(),
+      tienSuBanThan: toNullableString(form.personalHistory),
+      tienSuGiaDinh: toNullableString(form.familyHistory),
+      khamToanThan: toNullableString(form.generalAssessment),
+      khamBoPhan: toNullableString(form.systemAssessment),
+      mach: toNullableNumber(form.pulse),
+      nhietDo: toNullableNumber(form.temperature),
+      nhipTho: toNullableNumber(form.heartRate),
+      canNang: Number.isFinite(weight) ? weight : null,
+      chieuCao: Number.isFinite(height) ? height : null,
+      bmi,
+      huyetApTThu: systolic,
+      huyetApTTr: diastolic,
+      chanDoanBanDau: form.initialDiagnosis.trim(),
+    }
+
+    let examinationId = payload.examinationId ?? null
+
+    if (examinationId) {
+      await updateMedicalExamination(examinationId, examinationPayload)
+    } else {
+      const created = await createMedicalExamination({
+        benhAnId: medicalRecordId,
+        thoiGianKham: new Date(),
+        ...examinationPayload,
+      })
+      examinationId = created.id
+    }
+
+    const primaryDiseaseId = form.primaryDiseaseId
+
+    if (examinationId === null || primaryDiseaseId === null) {
+      throw new Error('Missing examination or primary disease information.')
+    }
+
+    const diagnosesPayload = [
+      {
+        diseaseId: primaryDiseaseId,
+        isPrimary: true,
+      },
+      ...secondaryDiseaseIds.map((id) => ({ diseaseId: id, isPrimary: false })),
+    ]
+
+    await updateMedicalExaminationDiagnoses(examinationId, {
+      diagnoses: diagnosesPayload,
+    })
+
+    toast.success('Examination details saved.')
+    examinationDialogOpen.value = false
+  } catch (error) {
+    const message =
+      error instanceof ApiError
+        ? error.message
+        : error instanceof Error && error.message
+          ? error.message
+          : 'Unable to save examination details. Please try again.'
+    toast.error(message)
+  } finally {
+    examinationSaving.value = false
+  }
+}
+
 let fetchToken = 0
 
 const loadRecords = async () => {
@@ -297,20 +488,20 @@ const loadRecords = async () => {
   recordsError.value = null
 
   try {
-    const baseParams = {
+    const baseParams: GetMedicalRecordsParams = {
       page: 1,
       limit: 100,
       enteredFrom: appliedFilters.value.from ?? undefined,
       enteredTo: appliedFilters.value.to ?? undefined,
       roomId: roomId ?? undefined,
-    } as const
+    }
 
     let medicalRecords: MedicalRecordSummary[] = []
 
-    if (!roomId && departmentId) {
+    if (departmentId !== null && !roomId) {
       const primary = await getMedicalRecords({
         ...baseParams,
-        departmentId,
+        departmentId: departmentId ?? undefined,
       })
       medicalRecords = primary.medicalRecords
 
@@ -396,6 +587,19 @@ const handleStartExamination = async () => {
   startExamLoading.value = true
 
   try {
+    const paymentStatus = await checkExamServicePaymentStatus(selectedRecord.value.id)
+
+    if (paymentStatus === 'unpaid') {
+      toast.error(
+        'The patient has not paid the examination fee. Please collect payment before starting the exam.',
+      )
+      return
+    }
+
+    if (paymentStatus === 'error') {
+      return
+    }
+
     const updated = await updateMedicalRecord(selectedRecord.value.id, {
       trangThai: 1,
     })
@@ -406,6 +610,7 @@ const handleStartExamination = async () => {
 
     selectedRecordId.value = updated.id
     toast.success('Patient marked as In Progress.')
+    openExaminationDialog()
   } catch (error) {
     const message =
       error instanceof ApiError
@@ -494,9 +699,27 @@ watch(filteredRecords, (list) => {
           <Loader2 v-if="startExamLoading" class="mr-2 h-4 w-4 animate-spin" />
           Start
         </Button>
-        <Button variant="outline" :disabled="secondaryActionsDisabled">Examination</Button>
-        <Button variant="outline" :disabled="secondaryActionsDisabled">Services</Button>
-        <Button variant="outline" :disabled="secondaryActionsDisabled">Disposition</Button>
+        <Button
+          variant="outline"
+          :disabled="secondaryActionsDisabled"
+          class="hover:text-primary-foreground"
+          type="button"
+          @click="openExaminationDialog"
+        >
+          Examination
+        </Button>
+        <Button
+          variant="outline"
+          :disabled="secondaryActionsDisabled"
+          class="hover:text-primary-foreground"
+          >Services</Button
+        >
+        <Button
+          variant="outline"
+          :disabled="secondaryActionsDisabled"
+          class="hover:text-primary-foreground"
+          >Disposition</Button
+        >
       </div>
 
       <Card class="mt-6 border-none shadow-sm">
@@ -605,6 +828,13 @@ watch(filteredRecords, (list) => {
           </Tabs>
         </CardContent>
       </Card>
+
+      <MedicalExaminationDialog
+        v-model:open="examinationDialogOpen"
+        :selected-record="selectedRecord"
+        :saving="examinationSaving"
+        @save="handleSaveExamination"
+      />
     </div>
   </section>
 </template>

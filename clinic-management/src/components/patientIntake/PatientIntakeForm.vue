@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { DateValue } from '@internationalized/date'
 import { CalendarIcon, AlertCircle } from 'lucide-vue-next'
-import { toRefs } from 'vue'
+import { ref, toRefs } from 'vue'
 import { useVModel } from '@vueuse/core'
 
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert'
@@ -70,8 +70,11 @@ const {
   maxBirthDate,
 } = toRefs(props)
 
+const birthDatePopoverOpen = ref(false)
+
 const handleBirthDateUpdate = (value: DateValue | undefined) => {
   emit('update:birthDate', value)
+  birthDatePopoverOpen.value = false
 }
 </script>
 <template>
@@ -110,7 +113,7 @@ const handleBirthDateUpdate = (value: DateValue | undefined) => {
 
         <Field>
           <FieldLabel> Birth Date <span class="text-destructive">*</span> </FieldLabel>
-          <Popover>
+          <Popover v-model:open="birthDatePopoverOpen">
             <PopoverTrigger as-child>
               <Button
                 id="patient-birthdate"
