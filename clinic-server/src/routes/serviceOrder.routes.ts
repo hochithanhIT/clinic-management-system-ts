@@ -58,4 +58,10 @@ router.put(
   serviceOrderController.updateServiceOrderDetail,
 );
 
+router.delete(
+  "/detail/:id",
+  authMiddleware.authenticateUser,
+  serviceOrderController.deleteServiceOrderDetail,
+);
+
 export default router;

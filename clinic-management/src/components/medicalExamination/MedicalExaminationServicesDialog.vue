@@ -50,7 +50,9 @@ import { getRooms } from '@/services/room'
 export interface MedicalExaminationServicesSavePayload {
   medicalRecordId: number
   orderTime: Date
+  serviceOrderId?: number | null
   services: Array<{
+    detailId: number | null
     serviceId: number
     quantity: number
     price: number
@@ -59,6 +61,7 @@ export interface MedicalExaminationServicesSavePayload {
 }
 
 interface SelectedServiceEntry {
+  detailId: number | null
   serviceId: number
   code: string
   name: string
@@ -66,6 +69,7 @@ interface SelectedServiceEntry {
   price: number
   quantity: number
   executionRoomId: number | null
+  hasResult: boolean
 }
 
 interface ServiceGroupBucket {
@@ -77,6 +81,23 @@ interface ServiceGroupBucket {
 interface ComboOption {
   value: number
   label: string
+}
+
+type ServicesDialogMode = 'create' | 'edit'
+
+interface InitialOrderPayload {
+  id: number
+  createdAt: string
+  services: Array<{
+    detailId: number
+    serviceId: number
+    code: string
+    name: string
+    price: number
+    quantity: number
+    executionRoomId: number | null
+    hasResult: boolean
+  }>
 }
 
 const dateFormatter = new Intl.DateTimeFormat('vi-VN', {
@@ -98,12 +119,26 @@ const props = defineProps<{
   examinationDetail: MedicalExaminationDetail | null
   patientDetail: PatientSummary | null
   loadingDetails: boolean
+  mode: ServicesDialogMode
+  initialOrder: InitialOrderPayload | null
 }>()
 
 const emit = defineEmits<{
   (event: 'update:open', value: boolean): void
   (event: 'save', payload: MedicalExaminationServicesSavePayload): void
 }>()
+
+const isEditMode = computed(() => props.mode === 'edit' && props.initialOrder !== null)
+
+const dialogTitle = computed(() => (isEditMode.value ? 'Update Service Order' : 'Assign Services'))
+
+const dialogDescription = computed(() =>
+  isEditMode.value
+    ? 'Review and update the existing service order for the current medical record.'
+    : 'Select and configure services before submitting the order for the current medical record.',
+)
+
+const saveButtonLabel = computed(() => (isEditMode.value ? 'Update' : 'Save'))
 
 const serviceTypes = ref<ServiceTypeSummary[]>([])
 const serviceTypesLoading = ref(false)
@@ -201,6 +236,19 @@ const patientAddress = computed(() => {
   const parts = [wardName, cityName].filter(Boolean)
   return parts.length ? parts.join(', ') : '—'
 })
+
+const isServiceInSelection = (serviceId: number): boolean => {
+  return selectedServices.value.some((entry) => entry.serviceId === serviceId)
+}
+
+const isServiceChecked = (serviceId: number): boolean => {
+  return selectedServices.value.some((entry) => entry.serviceId === serviceId)
+}
+
+const isServiceCheckboxDisabled = (serviceId: number): boolean => {
+  const entry = selectedServices.value.find((service) => service.serviceId === serviceId)
+  return entry?.hasResult ?? false
+}
 
 const primaryDiagnosisLabel = computed(() => {
   const entry = props.examinationDetail?.diagnoses.find(
@@ -519,12 +567,23 @@ const getGroupedServicesForType = (typeId: number): ServiceGroupBucket[] => {
 }
 
 const toggleServiceSelection = (serviceId: number) => {
-  if (selectedServiceIds.value.includes(serviceId)) {
-    selectedServiceIds.value = selectedServiceIds.value.filter((id) => id !== serviceId)
+  if (isServiceInSelection(serviceId) || isServiceCheckboxDisabled(serviceId)) {
     return
   }
 
-  selectedServiceIds.value = [...selectedServiceIds.value, serviceId]
+  if (selectedServiceIds.value.includes(serviceId)) {
+    selectedServiceIds.value = selectedServiceIds.value.filter((id) => id !== serviceId)
+  } else {
+    selectedServiceIds.value = [...selectedServiceIds.value, serviceId]
+  }
+}
+
+const handleServiceRowClick = (serviceId: number) => {
+  if (isServiceInSelection(serviceId) || isServiceCheckboxDisabled(serviceId)) {
+    return
+  }
+
+  toggleServiceSelection(serviceId)
 }
 
 const addSelectedServices = () => {
@@ -555,6 +614,7 @@ const addSelectedServices = () => {
       existing.quantity = Math.max(existing.quantity + 1, 1)
     } else {
       selectedServices.value.push({
+        detailId: null,
         serviceId: service.id,
         code: service.code,
         name: service.name,
@@ -562,6 +622,7 @@ const addSelectedServices = () => {
         price: service.price,
         quantity: 1,
         executionRoomId: service.executionRoom?.id ?? null,
+        hasResult: false,
       })
       ensureRoomOptionPresent(service.executionRoom)
     }
@@ -576,8 +637,24 @@ const addSelectedServices = () => {
   }
 }
 
-const removeSelectedService = (serviceId: number) => {
-  selectedServices.value = selectedServices.value.filter((entry) => entry.serviceId !== serviceId)
+const removeSelectedService = (index: number) => {
+  if (index < 0 || index >= selectedServices.value.length) {
+    return
+  }
+
+  const entry = selectedServices.value[index]
+  if (entry?.hasResult) {
+    toast.warning('Services with recorded results cannot be removed.')
+    return
+  }
+
+  const updated = [...selectedServices.value]
+  const [removed] = updated.splice(index, 1)
+  selectedServices.value = updated
+
+  if (removed) {
+    selectedServiceIds.value = selectedServiceIds.value.filter((id) => id !== removed.serviceId)
+  }
 }
 
 const handleQuantityChange = (serviceId: number, value: string | number) => {
@@ -625,7 +702,9 @@ const handleSave = () => {
   emit('save', {
     medicalRecordId: props.selectedRecord.id,
     orderTime: resolvedOrderTime,
+    serviceOrderId: props.initialOrder?.id ?? null,
     services: selectedServices.value.map((service) => ({
+      detailId: service.detailId,
       serviceId: service.serviceId,
       quantity: service.quantity,
       price: service.price,
@@ -650,10 +729,16 @@ const resetState = () => {
 }
 
 const initializeDialog = async () => {
+  selectedServiceIds.value = []
+  selectedServices.value = []
   await ensureServiceTypesLoaded()
   await ensureRoomsLoaded()
 
-  setDefaultOrderTime()
+  if (isEditMode.value && props.initialOrder) {
+    applyInitialOrder(props.initialOrder)
+  } else {
+    setDefaultOrderTime()
+  }
 
   if (activeServiceTypeId.value !== null) {
     await loadServicesForType(activeServiceTypeId.value)
@@ -665,6 +750,30 @@ const setDefaultOrderTime = () => {
   setOrderDateTimeFromDate(new Date())
 }
 
+const applyInitialOrder = (order: InitialOrderPayload) => {
+  const createdAt = new Date(order.createdAt)
+  if (Number.isNaN(createdAt.getTime())) {
+    setDefaultOrderTime()
+  } else {
+    setOrderDateTimeFromDate(createdAt)
+  }
+
+  orderDatePopoverOpen.value = false
+
+  selectedServices.value = order.services.map((service) => ({
+    detailId: service.detailId,
+    serviceId: service.serviceId,
+    code: service.code,
+    name: service.name,
+    unit: null,
+    price: service.price,
+    quantity: service.quantity,
+    executionRoomId: service.executionRoomId,
+    hasResult: service.hasResult,
+  }))
+  selectedServiceIds.value = []
+}
+
 watch(
   () => props.open,
   (isOpen) => {
@@ -672,6 +781,15 @@ watch(
       void initializeDialog()
     } else {
       resetState()
+    }
+  },
+)
+
+watch(
+  () => props.initialOrder,
+  (order) => {
+    if (props.open && isEditMode.value && order) {
+      applyInitialOrder(order)
     }
   },
 )
@@ -727,10 +845,9 @@ watch(
     <DialogContent class="max-w-[95vw] lg:max-w-[90vw]">
       <div ref="dialogContentRef" class="grid gap-4 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Assign Services</DialogTitle>
+          <DialogTitle>{{ dialogTitle }}</DialogTitle>
           <DialogDescription>
-            Select and configure services before submitting the order for the current medical
-            record.
+            {{ dialogDescription }}
           </DialogDescription>
         </DialogHeader>
 
@@ -923,14 +1040,24 @@ watch(
                                 <TableRow
                                   v-for="service in bucket.services"
                                   :key="service.id"
-                                  class="cursor-pointer hover:bg-muted/60"
-                                  @click="toggleServiceSelection(service.id)"
+                                  :class="[
+                                    isServiceInSelection(service.id)
+                                      ? 'cursor-not-allowed opacity-90'
+                                      : 'cursor-pointer hover:bg-muted/60',
+                                  ]"
+                                  @click="handleServiceRowClick(service.id)"
                                 >
                                   <TableCell>
                                     <input
-                                      :checked="selectedServiceIds.includes(service.id)"
-                                      class="h-4 w-4 cursor-pointer"
+                                      :checked="isServiceChecked(service.id)"
+                                      :class="[
+                                        'h-4 w-4',
+                                        isServiceCheckboxDisabled(service.id)
+                                          ? 'cursor-not-allowed'
+                                          : 'cursor-pointer',
+                                      ]"
                                       type="checkbox"
+                                      :disabled="isServiceCheckboxDisabled(service.id)"
                                       @change.stop="toggleServiceSelection(service.id)"
                                     />
                                   </TableCell>
@@ -970,7 +1097,10 @@ watch(
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          <ContextMenu v-for="entry in selectedServices" :key="entry.serviceId">
+                          <ContextMenu
+                            v-for="(entry, index) in selectedServices"
+                            :key="entry.detailId ?? `${entry.serviceId}-${index}`"
+                          >
                             <ContextMenuTrigger as-child>
                               <TableRow>
                                 <TableCell>
@@ -1009,8 +1139,14 @@ watch(
                               </TableRow>
                             </ContextMenuTrigger>
                             <ContextMenuContent class="w-48">
-                              <ContextMenuItem @select="removeSelectedService(entry.serviceId)">
+                              <ContextMenuItem
+                                v-if="entry.detailId === null || !entry.hasResult"
+                                @select="removeSelectedService(index)"
+                              >
                                 Remove service
+                              </ContextMenuItem>
+                              <ContextMenuItem v-else disabled>
+                                Services with results cannot be removed
                               </ContextMenuItem>
                             </ContextMenuContent>
                           </ContextMenu>
@@ -1045,7 +1181,7 @@ watch(
           </Button>
           <Button :disabled="props.saving" @click="handleSave">
             <Loader2 v-if="props.saving" class="mr-2 h-4 w-4 animate-spin" />
-            Save
+            {{ saveButtonLabel }}
           </Button>
         </DialogFooter>
       </div>

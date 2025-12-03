@@ -23,6 +23,13 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu'
 import MedicalExaminationDetailCard from '@/components/medicalExamination/MedicalExaminationDetailCard.vue'
 import MedicalExaminationFilters from '@/components/medicalExamination/MedicalExaminationFilters.vue'
 import MedicalExaminationPatientTable from '@/components/medicalExamination/MedicalExaminationPatientTable.vue'
@@ -49,10 +56,13 @@ import { ApiError } from '@/services/http'
 import {
   createServiceOrder,
   createServiceOrderDetail,
+  deleteServiceOrderDetail,
   getServiceOrderDetails,
   getServiceOrders,
-  type ServiceOrderDetailSummary,
+  updateServiceOrder,
+  updateServiceOrderDetail,
 } from '@/services/serviceOrder'
+import { getResults } from '@/services/result'
 import { getPatient, type PatientSummary } from '@/services/patient'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useAuthStore } from '@/stores/auth'
@@ -78,24 +88,240 @@ const pageSize = ref<PageSizeOption>(PAGE_SIZE_OPTIONS[0])
 const pageSizeOptions = [...PAGE_SIZE_OPTIONS]
 const currentPage = ref(1)
 
-interface LabOrderRow {
+interface DiagnosticOrderSummaryRow {
   id: number
-  orderId: number
-  orderCode: string
-  orderCreatedAt: string
+  code: string
+  createdAt: string
+  orderedBy: string
+  status: number
+}
+
+interface DiagnosticServiceRow {
+  id: number
+  serviceId: number
   serviceCode: string
   serviceName: string
   quantity: number
-  executionRoom: string
-  orderedBy: string
-  statusLabel: string
-  statusClass: string
+  amount: number
+  unitPrice: number
+  executionRoomId: number | null
+  hasResult: boolean
 }
 
-const labOrders = ref<LabOrderRow[]>([])
-const labOrdersLoading = ref(false)
-const labOrdersError = ref<string | null>(null)
-const labOrdersLoadToken = ref(0)
+interface DiagnosticResultRow {
+  id: number
+  serviceCode: string
+  serviceName: string
+  receivedAt: string
+  performedAt: string
+  deliveredAt: string
+  result: string
+  conclusion: string
+  note: string | null
+  url: string | null
+}
+
+interface ServicesDialogInitialOrder {
+  id: number
+  createdAt: string
+  services: Array<{
+    detailId: number
+    serviceId: number
+    code: string
+    name: string
+    price: number
+    quantity: number
+    executionRoomId: number | null
+    hasResult: boolean
+  }>
+}
+
+const laboratoryOrderSummaries = ref<DiagnosticOrderSummaryRow[]>([])
+const laboratoryOrderDetailsByOrder = ref<Record<number, DiagnosticServiceRow[]>>({})
+const selectedLaboratoryOrderId = ref<number | null>(null)
+
+const imagingOrderSummaries = ref<DiagnosticOrderSummaryRow[]>([])
+const imagingOrderDetailsByOrder = ref<Record<number, DiagnosticServiceRow[]>>({})
+const selectedImagingOrderId = ref<number | null>(null)
+
+const procedureOrderSummaries = ref<DiagnosticOrderSummaryRow[]>([])
+const procedureOrderDetailsByOrder = ref<Record<number, DiagnosticServiceRow[]>>({})
+const selectedProcedureOrderId = ref<number | null>(null)
+
+const laboratoryResultsByOrder = ref<Record<number, DiagnosticResultRow[]>>({})
+const laboratoryResultsError = ref<string | null>(null)
+const laboratoryResultsLoadingOrderId = ref<number | null>(null)
+const laboratoryResultsLoadToken = ref(0)
+
+const imagingResultsByOrder = ref<Record<number, DiagnosticResultRow[]>>({})
+const imagingResultsError = ref<string | null>(null)
+const imagingResultsLoadingOrderId = ref<number | null>(null)
+const imagingResultsLoadToken = ref(0)
+
+const procedureResultsByOrder = ref<Record<number, DiagnosticResultRow[]>>({})
+const procedureResultsError = ref<string | null>(null)
+const procedureResultsLoadingOrderId = ref<number | null>(null)
+const procedureResultsLoadToken = ref(0)
+
+const serviceOrdersLoadToken = ref(0)
+const serviceOrdersLoading = ref(false)
+const serviceOrderError = ref<string | null>(null)
+
+const setServiceOrdersLoading = (isLoading: boolean) => {
+  serviceOrdersLoading.value = isLoading
+}
+
+const setServiceOrderErrors = (message: string | null) => {
+  serviceOrderError.value = message
+}
+
+const laboratoryOrdersLoading = computed(() => serviceOrdersLoading.value)
+const laboratoryOrdersError = computed(() => serviceOrderError.value)
+const imagingOrdersLoading = computed(() => serviceOrdersLoading.value)
+const imagingOrdersError = computed(() => serviceOrderError.value)
+const procedureOrdersLoading = computed(() => serviceOrdersLoading.value)
+const procedureOrdersError = computed(() => serviceOrderError.value)
+
+const selectedLaboratoryOrder = computed(() => {
+  const orderId = selectedLaboratoryOrderId.value
+  if (orderId === null) {
+    return null
+  }
+
+  return laboratoryOrderSummaries.value.find((order) => order.id === orderId) ?? null
+})
+
+const selectedLaboratoryOrderServices = computed(() => {
+  const orderId = selectedLaboratoryOrderId.value
+  if (orderId === null) {
+    return []
+  }
+
+  return laboratoryOrderDetailsByOrder.value[orderId] ?? []
+})
+
+const selectedLaboratoryOrderResults = computed(() => {
+  const orderId = selectedLaboratoryOrderId.value
+  if (orderId === null) {
+    return []
+  }
+
+  return laboratoryResultsByOrder.value[orderId] ?? []
+})
+
+const isLaboratoryResultsLoading = computed(() => {
+  if (laboratoryResultsLoadingOrderId.value === null) {
+    return false
+  }
+
+  if (selectedLaboratoryOrderId.value === null) {
+    return true
+  }
+
+  return laboratoryResultsLoadingOrderId.value === selectedLaboratoryOrderId.value
+})
+
+const selectedImagingOrder = computed(() => {
+  const orderId = selectedImagingOrderId.value
+  if (orderId === null) {
+    return null
+  }
+
+  return imagingOrderSummaries.value.find((order) => order.id === orderId) ?? null
+})
+
+const selectedImagingOrderServices = computed(() => {
+  const orderId = selectedImagingOrderId.value
+  if (orderId === null) {
+    return []
+  }
+
+  return imagingOrderDetailsByOrder.value[orderId] ?? []
+})
+
+const selectedImagingOrderResults = computed(() => {
+  const orderId = selectedImagingOrderId.value
+  if (orderId === null) {
+    return []
+  }
+
+  return imagingResultsByOrder.value[orderId] ?? []
+})
+
+const isImagingResultsLoading = computed(() => {
+  if (imagingResultsLoadingOrderId.value === null) {
+    return false
+  }
+
+  if (selectedImagingOrderId.value === null) {
+    return true
+  }
+
+  return imagingResultsLoadingOrderId.value === selectedImagingOrderId.value
+})
+
+const selectedProcedureOrder = computed(() => {
+  const orderId = selectedProcedureOrderId.value
+  if (orderId === null) {
+    return null
+  }
+
+  return procedureOrderSummaries.value.find((order) => order.id === orderId) ?? null
+})
+
+const selectedProcedureOrderServices = computed(() => {
+  const orderId = selectedProcedureOrderId.value
+  if (orderId === null) {
+    return []
+  }
+
+  return procedureOrderDetailsByOrder.value[orderId] ?? []
+})
+
+const selectedProcedureOrderResults = computed(() => {
+  const orderId = selectedProcedureOrderId.value
+  if (orderId === null) {
+    return []
+  }
+
+  return procedureResultsByOrder.value[orderId] ?? []
+})
+
+const isProcedureResultsLoading = computed(() => {
+  if (procedureResultsLoadingOrderId.value === null) {
+    return false
+  }
+
+  if (selectedProcedureOrderId.value === null) {
+    return true
+  }
+
+  return procedureResultsLoadingOrderId.value === selectedProcedureOrderId.value
+})
+
+const resetServiceOrderRows = () => {
+  laboratoryOrderSummaries.value = []
+  laboratoryOrderDetailsByOrder.value = {}
+  selectedLaboratoryOrderId.value = null
+  laboratoryResultsByOrder.value = {}
+  laboratoryResultsError.value = null
+  laboratoryResultsLoadingOrderId.value = null
+  laboratoryResultsLoadToken.value = 0
+  imagingOrderSummaries.value = []
+  imagingOrderDetailsByOrder.value = {}
+  selectedImagingOrderId.value = null
+  imagingResultsByOrder.value = {}
+  imagingResultsError.value = null
+  imagingResultsLoadingOrderId.value = null
+  imagingResultsLoadToken.value = 0
+  procedureOrderSummaries.value = []
+  procedureOrderDetailsByOrder.value = {}
+  selectedProcedureOrderId.value = null
+  procedureResultsByOrder.value = {}
+  procedureResultsError.value = null
+  procedureResultsLoadingOrderId.value = null
+  procedureResultsLoadToken.value = 0
+}
 
 const isPageSizeOption = (value: number): value is PageSizeOption => {
   return PAGE_SIZE_OPTIONS.includes(value as PageSizeOption)
@@ -117,16 +343,23 @@ const statusClassMap: Record<number, string> = {
   2: 'bg-emerald-100 text-emerald-800',
 }
 
-const serviceOrderStatusLabelMap: Record<number, string> = {
-  0: 'Pending',
-  1: 'In progress',
-  2: 'Completed',
+type ServiceOrderCategory = 'lab' | 'imaging' | 'procedure'
+
+const serviceTypeCategoryMap: Record<string, ServiceOrderCategory> = {
+  'xét nghiệm': 'lab',
+  'chẩn đoán hình ảnh và thăm dò chức năng': 'imaging',
+  'phẫu thuật - thủ thuật': 'procedure',
 }
 
-const serviceOrderStatusClassMap: Record<number, string> = {
-  0: 'bg-amber-100 text-amber-800',
-  1: 'bg-sky-100 text-sky-800',
-  2: 'bg-emerald-100 text-emerald-800',
+const resolveServiceOrderCategory = (
+  typeName: string | null | undefined,
+): ServiceOrderCategory | null => {
+  if (!typeName) {
+    return null
+  }
+
+  const normalized = typeName.trim().toLowerCase()
+  return serviceTypeCategoryMap[normalized] ?? null
 }
 
 const formatStaffLabel = (
@@ -146,6 +379,11 @@ const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', {
   dateStyle: 'short',
   timeStyle: 'short',
 })
+const currencyFormatter = new Intl.NumberFormat('vi-VN', {
+  style: 'currency',
+  currency: 'VND',
+  maximumFractionDigits: 0,
+})
 
 const getStatusLabel = (value: number): string => {
   return statusLabelMap[value] ?? 'Unknown'
@@ -153,6 +391,16 @@ const getStatusLabel = (value: number): string => {
 
 const getStatusClass = (value: number): string => {
   return statusClassMap[value] ?? 'bg-muted text-muted-foreground'
+}
+
+const formatCurrency = (value: number | string): string => {
+  const numericValue = typeof value === 'string' ? Number(value) : value
+
+  if (!Number.isFinite(numericValue)) {
+    return '—'
+  }
+
+  return currencyFormatter.format(numericValue)
 }
 
 const formatBirthYear = (value: string | null | undefined): string => {
@@ -336,7 +584,7 @@ const selectedDoctorDisplay = computed(() => {
   return formatStaffLabel(selectedRecord.value?.doctor, 'Not assigned')
 })
 
-const labOrderingStaffLabel = computed(() => {
+const defaultOrderingStaffLabel = computed(() => {
   return formatStaffLabel(selectedRecord.value?.doctor)
 })
 
@@ -363,6 +611,13 @@ const examinationDialogOpen = ref(false)
 const examinationSaving = ref(false)
 const servicesDialogOpen = ref(false)
 const servicesSaving = ref(false)
+
+type ServicesDialogMode = 'create' | 'edit'
+const servicesDialogMode = ref<ServicesDialogMode>('create')
+const servicesDialogInitialOrder = ref<ServicesDialogInitialOrder | null>(null)
+const servicesDialogOrderId = ref<number | null>(null)
+const servicesDialogOrderCategory = ref<ServiceOrderCategory | null>(null)
+const serviceOrderActionLoadingId = ref<number | null>(null)
 
 const medicalRecordDetailLoading = ref(false)
 const medicalRecordPatientDetail = ref<PatientSummary | null>(null)
@@ -476,6 +731,106 @@ const openServicesDialog = () => {
     return
   }
 
+  resetServicesDialogContext()
+  servicesDialogOpen.value = true
+}
+
+const isOrderActionInProgress = (orderId: number): boolean => {
+  return serviceOrderActionLoadingId.value === orderId
+}
+
+const canSendServiceOrder = (status: number): boolean => {
+  return status === 0
+}
+
+const canCancelServiceOrder = (status: number): boolean => {
+  return status === 1
+}
+
+const canUpdateServiceOrder = (status: number): boolean => {
+  return status !== 2
+}
+
+const handleServiceOrderStatusChange = async (
+  orderId: number,
+  nextStatus: number,
+  successMessage: string,
+) => {
+  serviceOrderActionLoadingId.value = orderId
+
+  try {
+    await updateServiceOrder(orderId, { status: nextStatus })
+    toast.success(successMessage)
+    await loadServiceOrders()
+  } catch (error) {
+    const message =
+      error instanceof ApiError
+        ? error.message
+        : error instanceof Error && error.message
+          ? error.message
+          : 'Unable to update service order status. Please try again.'
+    toast.error(message)
+  } finally {
+    serviceOrderActionLoadingId.value = null
+  }
+}
+
+const handleSendServiceOrder = async (orderId: number) => {
+  await handleServiceOrderStatusChange(orderId, 1, 'Service order sent.')
+}
+
+const handleCancelServiceOrder = async (orderId: number) => {
+  await handleServiceOrderStatusChange(orderId, 0, 'Service order reverted to pending.')
+}
+
+const resetServicesDialogContext = () => {
+  servicesDialogMode.value = 'create'
+  servicesDialogInitialOrder.value = null
+  servicesDialogOrderId.value = null
+  servicesDialogOrderCategory.value = null
+}
+
+const openServicesDialogForOrder = (orderId: number, category: ServiceOrderCategory) => {
+  let summaries: DiagnosticOrderSummaryRow[] = []
+  let detailsMap: Record<number, DiagnosticServiceRow[]> = {}
+
+  if (category === 'lab') {
+    summaries = laboratoryOrderSummaries.value
+    detailsMap = laboratoryOrderDetailsByOrder.value
+  } else if (category === 'imaging') {
+    summaries = imagingOrderSummaries.value
+    detailsMap = imagingOrderDetailsByOrder.value
+  } else {
+    summaries = procedureOrderSummaries.value
+    detailsMap = procedureOrderDetailsByOrder.value
+  }
+
+  const summary = summaries.find((order) => order.id === orderId)
+  if (!summary) {
+    toast.error('Unable to locate the selected service order.')
+    return
+  }
+
+  const details = detailsMap[orderId] ?? []
+
+  servicesDialogMode.value = 'edit'
+  servicesDialogOrderId.value = orderId
+  servicesDialogOrderCategory.value = category
+  servicesDialogInitialOrder.value = {
+    id: summary.id,
+    createdAt: summary.createdAt,
+    services: details.map((detail) => ({
+      detailId: detail.id,
+      serviceId: detail.serviceId,
+      code: detail.serviceCode,
+      name: detail.serviceName,
+      price: detail.unitPrice,
+      quantity: detail.quantity,
+      executionRoomId: detail.executionRoomId,
+      hasResult: detail.hasResult,
+    })),
+  }
+
   servicesDialogOpen.value = true
 }
 
@@ -524,12 +879,6 @@ const generateServiceOrderCode = (): string => {
   const datePart = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`
   const timePart = `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`
   return `SO-${datePart}-${timePart}`
-}
-
-const getServiceOrderStatusMeta = (value: number) => {
-  const label = serviceOrderStatusLabelMap[value] ?? 'Unknown'
-  const className = serviceOrderStatusClassMap[value] ?? 'bg-muted text-muted-foreground'
-  return { label, className }
 }
 
 const loadSelectedRecordDetail = async () => {
@@ -585,39 +934,33 @@ const loadSelectedRecordDetail = async () => {
   }
 }
 
-const buildExecutionRoomLabel = (detail: ServiceOrderDetailSummary): string => {
-  const room = detail.service.executionRoom
-  if (!room) {
-    return '—'
-  }
-
-  return room.departmentName ? `${room.name} · ${room.departmentName}` : room.name
-}
-
-const loadLabOrders = async () => {
-  labOrdersLoadToken.value += 1
-  const requestId = labOrdersLoadToken.value
+const loadServiceOrders = async () => {
+  serviceOrdersLoadToken.value += 1
+  const requestId = serviceOrdersLoadToken.value
   const record = selectedRecord.value
 
   if (!record) {
-    labOrders.value = []
-    labOrdersError.value = null
-    labOrdersLoading.value = false
+    resetServiceOrderRows()
+    setServiceOrderErrors(null)
+    setServiceOrdersLoading(false)
     return
   }
 
-  labOrdersLoading.value = true
-  labOrdersError.value = null
+  setServiceOrdersLoading(true)
+  setServiceOrderErrors(null)
+  laboratoryResultsError.value = null
+  imagingResultsError.value = null
+  procedureResultsError.value = null
 
   try {
     const { serviceOrders } = await getServiceOrders({ medicalRecordId: record.id, limit: 50 })
 
-    if (requestId !== labOrdersLoadToken.value) {
+    if (requestId !== serviceOrdersLoadToken.value) {
       return
     }
 
     if (!serviceOrders.length) {
-      labOrders.value = []
+      resetServiceOrderRows()
       return
     }
 
@@ -628,62 +971,400 @@ const loadLabOrders = async () => {
       }),
     )
 
-    if (requestId !== labOrdersLoadToken.value) {
+    if (requestId !== serviceOrdersLoadToken.value) {
       return
     }
 
-    const rows: LabOrderRow[] = []
+    const labSummaryMap = new Map<number, DiagnosticOrderSummaryRow>()
+    const labDetailsMap: Record<number, DiagnosticServiceRow[]> = {}
+    const imagingSummaryMap = new Map<number, DiagnosticOrderSummaryRow>()
+    const imagingDetailsMap: Record<number, DiagnosticServiceRow[]> = {}
+    const procedureSummaryMap = new Map<number, DiagnosticOrderSummaryRow>()
+    const procedureDetailsMap: Record<number, DiagnosticServiceRow[]> = {}
 
     for (const { order, details } of ordersWithDetails) {
       if (!details.length) {
         continue
       }
 
-      const statusMeta = getServiceOrderStatusMeta(order.status)
       const orderingStaffLabel = order.orderingStaff
         ? formatStaffLabel(order.orderingStaff)
-        : labOrderingStaffLabel.value
+        : defaultOrderingStaffLabel.value
 
       for (const detail of details) {
-        rows.push({
+        const serviceTypeName =
+          detail.service.type?.name ?? detail.service.group?.type?.name ?? null
+        const category = resolveServiceOrderCategory(serviceTypeName)
+
+        if (!category) {
+          continue
+        }
+
+        if (category === 'lab') {
+          if (!labSummaryMap.has(order.id)) {
+            labSummaryMap.set(order.id, {
+              id: order.id,
+              code: order.code,
+              createdAt: order.createdAt,
+              orderedBy: orderingStaffLabel,
+              status: order.status,
+            })
+          }
+
+          const bucket = labDetailsMap[order.id] ?? []
+          const quantity = Number(detail.quantity)
+          const totalAmount = Number(detail.amount)
+          const unitPrice = quantity > 0 ? totalAmount / quantity : totalAmount
+          bucket.push({
+            id: detail.id,
+            serviceId: detail.service.id,
+            serviceCode: detail.service.code,
+            serviceName: detail.service.name,
+            quantity,
+            amount: totalAmount,
+            unitPrice,
+            executionRoomId: detail.service.executionRoom?.id ?? null,
+            hasResult: detail.hasResult,
+          })
+          labDetailsMap[order.id] = bucket
+          continue
+        }
+
+        if (category === 'imaging') {
+          if (!imagingSummaryMap.has(order.id)) {
+            imagingSummaryMap.set(order.id, {
+              id: order.id,
+              code: order.code,
+              createdAt: order.createdAt,
+              orderedBy: orderingStaffLabel,
+              status: order.status,
+            })
+          }
+
+          const bucket = imagingDetailsMap[order.id] ?? []
+          const quantity = Number(detail.quantity)
+          const totalAmount = Number(detail.amount)
+          const unitPrice = quantity > 0 ? totalAmount / quantity : totalAmount
+          bucket.push({
+            id: detail.id,
+            serviceId: detail.service.id,
+            serviceCode: detail.service.code,
+            serviceName: detail.service.name,
+            quantity,
+            amount: totalAmount,
+            unitPrice,
+            executionRoomId: detail.service.executionRoom?.id ?? null,
+            hasResult: detail.hasResult,
+          })
+          imagingDetailsMap[order.id] = bucket
+          continue
+        }
+
+        if (!procedureSummaryMap.has(order.id)) {
+          procedureSummaryMap.set(order.id, {
+            id: order.id,
+            code: order.code,
+            createdAt: order.createdAt,
+            orderedBy: orderingStaffLabel,
+            status: order.status,
+          })
+        }
+
+        const bucket = procedureDetailsMap[order.id] ?? []
+        const quantity = Number(detail.quantity)
+        const totalAmount = Number(detail.amount)
+        const unitPrice = quantity > 0 ? totalAmount / quantity : totalAmount
+        bucket.push({
           id: detail.id,
-          orderId: order.id,
-          orderCode: order.code,
-          orderCreatedAt: order.createdAt,
+          serviceId: detail.service.id,
           serviceCode: detail.service.code,
           serviceName: detail.service.name,
-          quantity: detail.quantity,
-          executionRoom: buildExecutionRoomLabel(detail),
-          orderedBy: orderingStaffLabel,
-          statusLabel: statusMeta.label,
-          statusClass: statusMeta.className,
+          quantity,
+          amount: totalAmount,
+          unitPrice,
+          executionRoomId: detail.service.executionRoom?.id ?? null,
+          hasResult: detail.hasResult,
         })
+        procedureDetailsMap[order.id] = bucket
       }
     }
 
-    rows.sort((a, b) => {
-      const first = new Date(a.orderCreatedAt).getTime()
-      const second = new Date(b.orderCreatedAt).getTime()
+    const labSummaries = Array.from(labSummaryMap.values()).sort((a, b) => {
+      const first = new Date(a.createdAt).getTime()
+      const second = new Date(b.createdAt).getTime()
       return Number.isNaN(second) || Number.isNaN(first) ? 0 : second - first
     })
 
-    labOrders.value = rows
+    const imagingSummaries = Array.from(imagingSummaryMap.values()).sort((a, b) => {
+      const first = new Date(a.createdAt).getTime()
+      const second = new Date(b.createdAt).getTime()
+      return Number.isNaN(second) || Number.isNaN(first) ? 0 : second - first
+    })
+
+    const procedureSummaries = Array.from(procedureSummaryMap.values()).sort((a, b) => {
+      const first = new Date(a.createdAt).getTime()
+      const second = new Date(b.createdAt).getTime()
+      return Number.isNaN(second) || Number.isNaN(first) ? 0 : second - first
+    })
+
+    Object.values(labDetailsMap).forEach((detailRows) => {
+      detailRows.sort((a, b) => a.serviceName.localeCompare(b.serviceName))
+    })
+
+    Object.values(imagingDetailsMap).forEach((detailRows) => {
+      detailRows.sort((a, b) => a.serviceName.localeCompare(b.serviceName))
+    })
+
+    Object.values(procedureDetailsMap).forEach((detailRows) => {
+      detailRows.sort((a, b) => a.serviceName.localeCompare(b.serviceName))
+    })
+
+    const hasExistingLabSelection = Boolean(
+      selectedLaboratoryOrderId.value !== null &&
+        labSummaryMap.has(selectedLaboratoryOrderId.value),
+    )
+
+    const hasExistingImagingSelection = Boolean(
+      selectedImagingOrderId.value !== null && imagingSummaryMap.has(selectedImagingOrderId.value),
+    )
+
+    const hasExistingProcedureSelection = Boolean(
+      selectedProcedureOrderId.value !== null &&
+        procedureSummaryMap.has(selectedProcedureOrderId.value),
+    )
+
+    laboratoryOrderSummaries.value = labSummaries
+    laboratoryOrderDetailsByOrder.value = labDetailsMap
+    imagingOrderSummaries.value = imagingSummaries
+    imagingOrderDetailsByOrder.value = imagingDetailsMap
+    procedureOrderSummaries.value = procedureSummaries
+    procedureOrderDetailsByOrder.value = procedureDetailsMap
+
+    const nextLabSelection = hasExistingLabSelection
+      ? selectedLaboratoryOrderId.value
+      : (labSummaries[0]?.id ?? null)
+
+    const nextImagingSelection = hasExistingImagingSelection
+      ? selectedImagingOrderId.value
+      : (imagingSummaries[0]?.id ?? null)
+
+    const nextProcedureSelection = hasExistingProcedureSelection
+      ? selectedProcedureOrderId.value
+      : (procedureSummaries[0]?.id ?? null)
+
+    selectedLaboratoryOrderId.value = nextLabSelection
+    selectedImagingOrderId.value = nextImagingSelection
+    selectedProcedureOrderId.value = nextProcedureSelection
+
+    const preservedLabResults: Record<number, DiagnosticResultRow[]> = {}
+    for (const summary of labSummaries) {
+      const existingResults = laboratoryResultsByOrder.value[summary.id]
+      if (existingResults) {
+        preservedLabResults[summary.id] = existingResults
+      }
+    }
+
+    const preservedImagingResults: Record<number, DiagnosticResultRow[]> = {}
+    for (const summary of imagingSummaries) {
+      const existingResults = imagingResultsByOrder.value[summary.id]
+      if (existingResults) {
+        preservedImagingResults[summary.id] = existingResults
+      }
+    }
+
+    const preservedProcedureResults: Record<number, DiagnosticResultRow[]> = {}
+    for (const summary of procedureSummaries) {
+      const existingResults = procedureResultsByOrder.value[summary.id]
+      if (existingResults) {
+        preservedProcedureResults[summary.id] = existingResults
+      }
+    }
+
+    laboratoryResultsByOrder.value = preservedLabResults
+    imagingResultsByOrder.value = preservedImagingResults
+    procedureResultsByOrder.value = preservedProcedureResults
+
+    if (selectedLaboratoryOrderId.value === null) {
+      laboratoryResultsLoadingOrderId.value = null
+    }
+
+    if (selectedImagingOrderId.value === null) {
+      imagingResultsLoadingOrderId.value = null
+    }
+
+    if (selectedProcedureOrderId.value === null) {
+      procedureResultsLoadingOrderId.value = null
+    }
   } catch (error) {
-    if (requestId !== labOrdersLoadToken.value) {
+    if (requestId !== serviceOrdersLoadToken.value) {
+      return
+    }
+
+    const message =
+      error instanceof ApiError ? error.message : 'Unable to load service orders. Please try again.'
+
+    resetServiceOrderRows()
+    setServiceOrderErrors(message)
+    toast.error(message)
+  } finally {
+    if (requestId === serviceOrdersLoadToken.value) {
+      setServiceOrdersLoading(false)
+    }
+  }
+}
+
+const loadLaboratoryResults = async (orderId: number) => {
+  laboratoryResultsLoadToken.value += 1
+  const requestId = laboratoryResultsLoadToken.value
+
+  laboratoryResultsLoadingOrderId.value = orderId
+  laboratoryResultsError.value = null
+
+  try {
+    const { results } = await getResults({ serviceOrderId: orderId, limit: 100 })
+
+    if (requestId !== laboratoryResultsLoadToken.value) {
+      return
+    }
+
+    const mappedResults: DiagnosticResultRow[] = results.map((result) => ({
+      id: result.id,
+      serviceCode: result.serviceOrderDetail.service.code,
+      serviceName: result.serviceOrderDetail.service.name,
+      receivedAt: result.receivedAt,
+      performedAt: result.performedAt,
+      deliveredAt: result.deliveredAt,
+      result: result.result,
+      conclusion: result.conclusion,
+      note: result.note,
+      url: result.url,
+    }))
+
+    const nextResults = {
+      ...laboratoryResultsByOrder.value,
+      [orderId]: mappedResults,
+    }
+
+    laboratoryResultsByOrder.value = nextResults
+  } catch (error) {
+    if (requestId !== laboratoryResultsLoadToken.value) {
       return
     }
 
     const message =
       error instanceof ApiError
         ? error.message
-        : 'Unable to load laboratory orders. Please try again.'
+        : 'Unable to load laboratory results. Please try again.'
 
-    labOrdersError.value = message
-    labOrders.value = []
+    laboratoryResultsError.value = message
     toast.error(message)
   } finally {
-    if (requestId === labOrdersLoadToken.value) {
-      labOrdersLoading.value = false
+    if (requestId === laboratoryResultsLoadToken.value) {
+      laboratoryResultsLoadingOrderId.value = null
+    }
+  }
+}
+
+const loadImagingResults = async (orderId: number) => {
+  imagingResultsLoadToken.value += 1
+  const requestId = imagingResultsLoadToken.value
+
+  imagingResultsLoadingOrderId.value = orderId
+  imagingResultsError.value = null
+
+  try {
+    const { results } = await getResults({ serviceOrderId: orderId, limit: 100 })
+
+    if (requestId !== imagingResultsLoadToken.value) {
+      return
+    }
+
+    const mappedResults: DiagnosticResultRow[] = results.map((result) => ({
+      id: result.id,
+      serviceCode: result.serviceOrderDetail.service.code,
+      serviceName: result.serviceOrderDetail.service.name,
+      receivedAt: result.receivedAt,
+      performedAt: result.performedAt,
+      deliveredAt: result.deliveredAt,
+      result: result.result,
+      conclusion: result.conclusion,
+      note: result.note,
+      url: result.url,
+    }))
+
+    const nextResults = {
+      ...imagingResultsByOrder.value,
+      [orderId]: mappedResults,
+    }
+
+    imagingResultsByOrder.value = nextResults
+  } catch (error) {
+    if (requestId !== imagingResultsLoadToken.value) {
+      return
+    }
+
+    const message =
+      error instanceof ApiError
+        ? error.message
+        : 'Unable to load imaging results. Please try again.'
+
+    imagingResultsError.value = message
+    toast.error(message)
+  } finally {
+    if (requestId === imagingResultsLoadToken.value) {
+      imagingResultsLoadingOrderId.value = null
+    }
+  }
+}
+
+const loadProcedureResults = async (orderId: number) => {
+  procedureResultsLoadToken.value += 1
+  const requestId = procedureResultsLoadToken.value
+
+  procedureResultsLoadingOrderId.value = orderId
+  procedureResultsError.value = null
+
+  try {
+    const { results } = await getResults({ serviceOrderId: orderId, limit: 100 })
+
+    if (requestId !== procedureResultsLoadToken.value) {
+      return
+    }
+
+    const mappedResults: DiagnosticResultRow[] = results.map((result) => ({
+      id: result.id,
+      serviceCode: result.serviceOrderDetail.service.code,
+      serviceName: result.serviceOrderDetail.service.name,
+      receivedAt: result.receivedAt,
+      performedAt: result.performedAt,
+      deliveredAt: result.deliveredAt,
+      result: result.result,
+      conclusion: result.conclusion,
+      note: result.note,
+      url: result.url,
+    }))
+
+    const nextResults = {
+      ...procedureResultsByOrder.value,
+      [orderId]: mappedResults,
+    }
+
+    procedureResultsByOrder.value = nextResults
+  } catch (error) {
+    if (requestId !== procedureResultsLoadToken.value) {
+      return
+    }
+
+    const message =
+      error instanceof ApiError
+        ? error.message
+        : 'Unable to load procedure results. Please try again.'
+
+    procedureResultsError.value = message
+    toast.error(message)
+  } finally {
+    if (requestId === procedureResultsLoadToken.value) {
+      procedureResultsLoadingOrderId.value = null
     }
   }
 }
@@ -866,6 +1547,19 @@ const handleSaveServices = async (payload: MedicalExaminationServicesSavePayload
     return
   }
 
+  if (
+    servicesDialogMode.value === 'edit' &&
+    servicesDialogOrderId.value !== null &&
+    servicesDialogOrderCategory.value !== null
+  ) {
+    await submitServiceOrderUpdate(payload)
+    return
+  }
+
+  await submitServiceOrderCreate(payload)
+}
+
+const submitServiceOrderCreate = async (payload: MedicalExaminationServicesSavePayload) => {
   servicesSaving.value = true
 
   try {
@@ -895,7 +1589,7 @@ const handleSaveServices = async (payload: MedicalExaminationServicesSavePayload
     }
 
     toast.success('Service order saved.')
-    await loadLabOrders()
+    await loadServiceOrders()
     servicesDialogOpen.value = false
   } catch (error) {
     const message =
@@ -904,6 +1598,102 @@ const handleSaveServices = async (payload: MedicalExaminationServicesSavePayload
         : error instanceof Error && error.message
           ? error.message
           : 'Unable to save service order. Please try again.'
+    toast.error(message)
+  } finally {
+    servicesSaving.value = false
+  }
+}
+
+const submitServiceOrderUpdate = async (payload: MedicalExaminationServicesSavePayload) => {
+  const orderId = servicesDialogOrderId.value ?? payload.serviceOrderId ?? null
+  const category = servicesDialogOrderCategory.value
+
+  if (orderId === null || !category) {
+    toast.error('Unable to determine which service order to update.')
+    return
+  }
+
+  servicesSaving.value = true
+
+  try {
+    await updateServiceOrder(orderId, { createdAt: payload.orderTime })
+
+    let existingDetails: DiagnosticServiceRow[] = []
+
+    if (category === 'lab') {
+      existingDetails = laboratoryOrderDetailsByOrder.value[orderId] ?? []
+    } else if (category === 'imaging') {
+      existingDetails = imagingOrderDetailsByOrder.value[orderId] ?? []
+    } else {
+      existingDetails = procedureOrderDetailsByOrder.value[orderId] ?? []
+    }
+
+    const retainedDetailIds = new Set<number>()
+    const existingDetailIds = new Set(existingDetails.map((detail) => detail.id))
+
+    for (const item of payload.services) {
+      const totalAmount = item.price * item.quantity
+
+      if (
+        item.detailId !== null &&
+        item.detailId !== undefined &&
+        existingDetailIds.has(item.detailId)
+      ) {
+        await updateServiceOrderDetail(item.detailId, {
+          quantity: item.quantity,
+          amount: totalAmount,
+        })
+        retainedDetailIds.add(item.detailId)
+      } else {
+        await createServiceOrderDetail({
+          serviceOrderId: orderId,
+          serviceId: item.serviceId,
+          quantity: item.quantity,
+          amount: totalAmount,
+          requireResult: false,
+          isPaid: false,
+        })
+      }
+    }
+
+    const detailsMarkedForRemoval = existingDetails.filter(
+      (detail) => !retainedDetailIds.has(detail.id),
+    )
+
+    const removableDetailIds = detailsMarkedForRemoval
+      .filter((detail) => !detail.hasResult)
+      .map((detail) => detail.id)
+
+    const nonRemovableDetails = detailsMarkedForRemoval.filter((detail) => detail.hasResult)
+
+    if (removableDetailIds.length) {
+      await Promise.all(removableDetailIds.map((detailId) => deleteServiceOrderDetail(detailId)))
+    }
+
+    if (nonRemovableDetails.length) {
+      toast.warning('Some services were kept because results have already been recorded.')
+    }
+
+    toast.success('Service order updated.')
+    await loadServiceOrders()
+
+    if (category === 'lab') {
+      selectedLaboratoryOrderId.value = orderId
+    } else if (category === 'imaging') {
+      selectedImagingOrderId.value = orderId
+    } else {
+      selectedProcedureOrderId.value = orderId
+    }
+
+    servicesDialogOpen.value = false
+    resetServicesDialogContext()
+  } catch (error) {
+    const message =
+      error instanceof ApiError
+        ? error.message
+        : error instanceof Error && error.message
+          ? error.message
+          : 'Unable to update service order. Please try again.'
     toast.error(message)
   } finally {
     servicesSaving.value = false
@@ -1109,10 +1899,88 @@ watch(
   () => selectedRecord.value?.id ?? null,
   () => {
     void loadSelectedRecordDetail()
-    void loadLabOrders()
+    void loadServiceOrders()
   },
   { immediate: true },
 )
+
+watch(selectedLaboratoryOrderId, (orderId) => {
+  if (orderId === null) {
+    laboratoryResultsError.value = null
+    laboratoryResultsLoadingOrderId.value = null
+    return
+  }
+
+  const details = laboratoryOrderDetailsByOrder.value[orderId] ?? []
+
+  if (!details.length) {
+    laboratoryResultsError.value = null
+    laboratoryResultsLoadingOrderId.value = null
+    laboratoryResultsByOrder.value = {
+      ...laboratoryResultsByOrder.value,
+      [orderId]: [],
+    }
+    return
+  }
+
+  if (!laboratoryResultsByOrder.value[orderId]) {
+    void loadLaboratoryResults(orderId)
+  }
+})
+
+watch(selectedImagingOrderId, (orderId) => {
+  if (orderId === null) {
+    imagingResultsError.value = null
+    imagingResultsLoadingOrderId.value = null
+    return
+  }
+
+  const details = imagingOrderDetailsByOrder.value[orderId] ?? []
+
+  if (!details.length) {
+    imagingResultsError.value = null
+    imagingResultsLoadingOrderId.value = null
+    imagingResultsByOrder.value = {
+      ...imagingResultsByOrder.value,
+      [orderId]: [],
+    }
+    return
+  }
+
+  if (!imagingResultsByOrder.value[orderId]) {
+    void loadImagingResults(orderId)
+  }
+})
+
+watch(selectedProcedureOrderId, (orderId) => {
+  if (orderId === null) {
+    procedureResultsError.value = null
+    procedureResultsLoadingOrderId.value = null
+    return
+  }
+
+  const details = procedureOrderDetailsByOrder.value[orderId] ?? []
+
+  if (!details.length) {
+    procedureResultsError.value = null
+    procedureResultsLoadingOrderId.value = null
+    procedureResultsByOrder.value = {
+      ...procedureResultsByOrder.value,
+      [orderId]: [],
+    }
+    return
+  }
+
+  if (!procedureResultsByOrder.value[orderId]) {
+    void loadProcedureResults(orderId)
+  }
+})
+
+watch(servicesDialogOpen, (isOpen) => {
+  if (!isOpen) {
+    resetServicesDialogContext()
+  }
+})
 
 watch(
   () => [totalFilteredRecords.value, pageSize.value] as const,
@@ -1540,97 +2408,751 @@ watch(filteredRecords, (list) => {
               </div>
             </TabsContent>
 
-            <TabsContent value="lab" class="space-y-4 px-6 py-6">
+            <TabsContent value="lab" class="space-y-6 px-6 py-6">
               <div v-if="!selectedRecord" class="py-12 text-center text-sm text-muted-foreground">
                 Select a patient to view laboratory orders.
               </div>
-              <Card v-else>
-                <CardHeader>
-                  <CardTitle>Laboratory Orders</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div
-                    v-if="labOrdersLoading"
-                    class="flex items-center gap-2 text-sm text-muted-foreground"
-                  >
-                    <Loader2 class="h-4 w-4 animate-spin" />
-                    Loading laboratory orders...
-                  </div>
-                  <Alert v-else-if="labOrdersError" variant="destructive">
-                    <AlertCircle class="mr-2 h-5 w-5" />
-                    <AlertTitle>Unable to load laboratory orders</AlertTitle>
-                    <AlertDescription>
-                      {{ labOrdersError }}
-                    </AlertDescription>
-                  </Alert>
-                  <div
-                    v-else-if="!labOrders.length"
-                    class="py-8 text-center text-sm text-muted-foreground"
-                  >
-                    No laboratory orders available for this patient.
-                  </div>
-                  <div v-else class="overflow-x-auto rounded-lg border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead class="whitespace-nowrap">Order Code</TableHead>
-                          <TableHead class="whitespace-nowrap">Service Code</TableHead>
-                          <TableHead>Service Name</TableHead>
-                          <TableHead class="w-24 text-right">Quantity</TableHead>
-                          <TableHead>Execution Room</TableHead>
-                          <TableHead>Ordered By</TableHead>
-                          <TableHead class="w-32 text-center">Status</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        <TableRow v-for="row in labOrders" :key="`${row.orderId}-${row.id}`">
-                          <TableCell class="font-semibold text-foreground">
-                            {{ row.orderCode }}
-                          </TableCell>
-                          <TableCell class="text-sm text-muted-foreground">
-                            {{ row.serviceCode }}
-                          </TableCell>
-                          <TableCell class="text-sm text-foreground">
-                            {{ row.serviceName }}
-                          </TableCell>
-                          <TableCell class="text-right text-sm font-medium">
-                            {{ row.quantity }}
-                          </TableCell>
-                          <TableCell class="text-sm text-foreground">
-                            {{ row.executionRoom }}
-                          </TableCell>
-                          <TableCell class="text-sm text-foreground">
-                            {{ row.orderedBy }}
-                          </TableCell>
-                          <TableCell class="text-center">
-                            <span
-                              :class="`inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-semibold ${row.statusClass}`"
-                            >
-                              {{ row.statusLabel }}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
+              <div v-else class="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Laboratory Orders</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div
+                      v-if="laboratoryOrdersLoading"
+                      class="flex items-center gap-2 text-sm text-muted-foreground"
+                    >
+                      <Loader2 class="h-4 w-4 animate-spin" />
+                      Loading laboratory orders...
+                    </div>
+                    <Alert v-else-if="laboratoryOrdersError" variant="destructive">
+                      <AlertCircle class="mr-2 h-5 w-5" />
+                      <AlertTitle>Unable to load laboratory orders</AlertTitle>
+                      <AlertDescription>
+                        {{ laboratoryOrdersError }}
+                      </AlertDescription>
+                    </Alert>
+                    <div
+                      v-else-if="!laboratoryOrderSummaries.length"
+                      class="py-8 text-center text-sm text-muted-foreground"
+                    >
+                      No laboratory orders available for this patient.
+                    </div>
+                    <div v-else class="overflow-x-auto rounded-lg border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead class="whitespace-nowrap">Status</TableHead>
+                            <TableHead class="whitespace-nowrap">Order Code</TableHead>
+                            <TableHead class="whitespace-nowrap">Ordered At</TableHead>
+                            <TableHead>Ordering Staff</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          <ContextMenu
+                            v-for="order in laboratoryOrderSummaries"
+                            :key="order.id"
+                            :modal="false"
+                          >
+                            <ContextMenuTrigger as-child>
+                              <TableRow
+                                class="cursor-pointer"
+                                :class="[
+                                  'hover:bg-muted/60',
+                                  order.id === selectedLaboratoryOrderId ? 'bg-muted/80' : '',
+                                ]"
+                                @click="selectedLaboratoryOrderId = order.id"
+                              >
+                                <TableCell>
+                                  <span
+                                    class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium"
+                                    :class="getStatusClass(order.status)"
+                                  >
+                                    {{ getStatusLabel(order.status) }}
+                                  </span>
+                                </TableCell>
+                                <TableCell class="font-semibold text-foreground">
+                                  {{ order.code }}
+                                </TableCell>
+                                <TableCell class="text-sm text-foreground">
+                                  {{ formatDateTime(order.createdAt) }}
+                                </TableCell>
+                                <TableCell class="text-sm text-foreground">
+                                  {{ order.orderedBy }}
+                                </TableCell>
+                              </TableRow>
+                            </ContextMenuTrigger>
+                            <ContextMenuContent class="w-56">
+                              <ContextMenuItem
+                                :disabled="
+                                  !canSendServiceOrder(order.status) ||
+                                  isOrderActionInProgress(order.id) ||
+                                  servicesSaving
+                                "
+                                @select="handleSendServiceOrder(order.id)"
+                              >
+                                Send order
+                              </ContextMenuItem>
+                              <ContextMenuItem
+                                :disabled="
+                                  !canCancelServiceOrder(order.status) ||
+                                  isOrderActionInProgress(order.id) ||
+                                  servicesSaving
+                                "
+                                @select="handleCancelServiceOrder(order.id)"
+                              >
+                                Cancel send
+                              </ContextMenuItem>
+                              <ContextMenuSeparator />
+                              <ContextMenuItem
+                                :disabled="
+                                  !canUpdateServiceOrder(order.status) ||
+                                  isOrderActionInProgress(order.id) ||
+                                  servicesSaving
+                                "
+                                @select="openServicesDialogForOrder(order.id, 'lab')"
+                              >
+                                Update order
+                              </ContextMenuItem>
+                            </ContextMenuContent>
+                          </ContextMenu>
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Laboratory Details</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div
+                      v-if="!selectedLaboratoryOrder"
+                      class="py-8 text-center text-sm text-muted-foreground"
+                    >
+                      Select an order above to view its services and results.
+                    </div>
+                    <Tabs v-else default-value="services" class="space-y-4">
+                      <TabsList>
+                        <TabsTrigger value="services">Ordered Services</TabsTrigger>
+                        <TabsTrigger value="results">Results</TabsTrigger>
+                      </TabsList>
+
+                      <TabsContent value="services" class="space-y-4">
+                        <div
+                          v-if="laboratoryOrdersLoading"
+                          class="flex items-center gap-2 text-sm text-muted-foreground"
+                        >
+                          <Loader2 class="h-4 w-4 animate-spin" />
+                          Loading ordered services...
+                        </div>
+                        <div
+                          v-else-if="!selectedLaboratoryOrderServices.length"
+                          class="py-8 text-center text-sm text-muted-foreground"
+                        >
+                          No services recorded for this order.
+                        </div>
+                        <div v-else class="overflow-x-auto rounded-lg border">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead class="whitespace-nowrap">Service Code</TableHead>
+                                <TableHead>Service Name</TableHead>
+                                <TableHead class="w-24 text-right">Quantity</TableHead>
+                                <TableHead class="w-32 text-right">Price</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              <TableRow
+                                v-for="service in selectedLaboratoryOrderServices"
+                                :key="service.id"
+                              >
+                                <TableCell class="text-sm font-medium text-foreground">
+                                  {{ service.serviceCode }}
+                                </TableCell>
+                                <TableCell class="text-sm text-foreground">
+                                  {{ service.serviceName }}
+                                </TableCell>
+                                <TableCell class="text-right text-sm text-foreground">
+                                  {{ service.quantity }}
+                                </TableCell>
+                                <TableCell class="text-right text-sm font-semibold text-foreground">
+                                  {{ formatCurrency(service.amount) }}
+                                </TableCell>
+                              </TableRow>
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </TabsContent>
+
+                      <TabsContent value="results" class="space-y-4">
+                        <div
+                          v-if="isLaboratoryResultsLoading"
+                          class="flex items-center gap-2 text-sm text-muted-foreground"
+                        >
+                          <Loader2 class="h-4 w-4 animate-spin" />
+                          Loading laboratory results...
+                        </div>
+                        <Alert v-else-if="laboratoryResultsError" variant="destructive">
+                          <AlertCircle class="mr-2 h-5 w-5" />
+                          <AlertTitle>Unable to load results</AlertTitle>
+                          <AlertDescription>
+                            {{ laboratoryResultsError }}
+                          </AlertDescription>
+                        </Alert>
+                        <div
+                          v-else-if="!selectedLaboratoryOrderResults.length"
+                          class="py-8 text-center text-sm text-muted-foreground"
+                        >
+                          No results available for this order.
+                        </div>
+                        <div v-else class="overflow-x-auto rounded-lg border">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead class="whitespace-nowrap">Service Code</TableHead>
+                                <TableHead>Service Name</TableHead>
+                                <TableHead class="whitespace-nowrap">Received At</TableHead>
+                                <TableHead class="whitespace-nowrap">Performed At</TableHead>
+                                <TableHead class="whitespace-nowrap">Delivered At</TableHead>
+                                <TableHead>Result</TableHead>
+                                <TableHead>Conclusion</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              <TableRow
+                                v-for="result in selectedLaboratoryOrderResults"
+                                :key="result.id"
+                              >
+                                <TableCell class="text-sm font-medium text-foreground">
+                                  {{ result.serviceCode }}
+                                </TableCell>
+                                <TableCell class="text-sm text-foreground">
+                                  {{ result.serviceName }}
+                                </TableCell>
+                                <TableCell class="text-sm text-foreground">
+                                  {{ formatDateTime(result.receivedAt) }}
+                                </TableCell>
+                                <TableCell class="text-sm text-foreground">
+                                  {{ formatDateTime(result.performedAt) }}
+                                </TableCell>
+                                <TableCell class="text-sm text-foreground">
+                                  {{ formatDateTime(result.deliveredAt) }}
+                                </TableCell>
+                                <TableCell class="whitespace-pre-line text-sm text-foreground">
+                                  {{ result.result || '—' }}
+                                </TableCell>
+                                <TableCell class="whitespace-pre-line text-sm text-foreground">
+                                  {{ result.conclusion || '—' }}
+                                </TableCell>
+                              </TableRow>
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </TabsContent>
+                    </Tabs>
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
 
-            <TabsContent value="imaging" class="px-6 py-6">
-              <Card>
-                <CardContent class="py-12 text-center text-sm text-muted-foreground">
-                  Content will be added later.
-                </CardContent>
-              </Card>
+            <TabsContent value="imaging" class="space-y-6 px-6 py-6">
+              <div v-if="!selectedRecord" class="py-12 text-center text-sm text-muted-foreground">
+                Select a patient to view imaging orders.
+              </div>
+              <div v-else class="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Imaging Orders</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div
+                      v-if="imagingOrdersLoading"
+                      class="flex items-center gap-2 text-sm text-muted-foreground"
+                    >
+                      <Loader2 class="h-4 w-4 animate-spin" />
+                      Loading imaging orders...
+                    </div>
+                    <Alert v-else-if="imagingOrdersError" variant="destructive">
+                      <AlertCircle class="mr-2 h-5 w-5" />
+                      <AlertTitle>Unable to load imaging orders</AlertTitle>
+                      <AlertDescription>
+                        {{ imagingOrdersError }}
+                      </AlertDescription>
+                    </Alert>
+                    <div
+                      v-else-if="!imagingOrderSummaries.length"
+                      class="py-8 text-center text-sm text-muted-foreground"
+                    >
+                      No imaging orders available for this patient.
+                    </div>
+                    <div v-else class="overflow-x-auto rounded-lg border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead class="whitespace-nowrap">Status</TableHead>
+                            <TableHead class="whitespace-nowrap">Order Code</TableHead>
+                            <TableHead class="whitespace-nowrap">Ordered At</TableHead>
+                            <TableHead>Ordering Staff</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          <ContextMenu
+                            v-for="order in imagingOrderSummaries"
+                            :key="order.id"
+                            :modal="false"
+                          >
+                            <ContextMenuTrigger as-child>
+                              <TableRow
+                                class="cursor-pointer"
+                                :class="[
+                                  'hover:bg-muted/60',
+                                  order.id === selectedImagingOrderId ? 'bg-muted/80' : '',
+                                ]"
+                                @click="selectedImagingOrderId = order.id"
+                              >
+                                <TableCell>
+                                  <span
+                                    class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium"
+                                    :class="getStatusClass(order.status)"
+                                  >
+                                    {{ getStatusLabel(order.status) }}
+                                  </span>
+                                </TableCell>
+                                <TableCell class="font-semibold text-foreground">
+                                  {{ order.code }}
+                                </TableCell>
+                                <TableCell class="text-sm text-foreground">
+                                  {{ formatDateTime(order.createdAt) }}
+                                </TableCell>
+                                <TableCell class="text-sm text-foreground">
+                                  {{ order.orderedBy }}
+                                </TableCell>
+                              </TableRow>
+                            </ContextMenuTrigger>
+                            <ContextMenuContent class="w-56">
+                              <ContextMenuItem
+                                :disabled="
+                                  !canSendServiceOrder(order.status) ||
+                                  isOrderActionInProgress(order.id) ||
+                                  servicesSaving
+                                "
+                                @select="handleSendServiceOrder(order.id)"
+                              >
+                                Send order
+                              </ContextMenuItem>
+                              <ContextMenuItem
+                                :disabled="
+                                  !canCancelServiceOrder(order.status) ||
+                                  isOrderActionInProgress(order.id) ||
+                                  servicesSaving
+                                "
+                                @select="handleCancelServiceOrder(order.id)"
+                              >
+                                Cancel send
+                              </ContextMenuItem>
+                              <ContextMenuSeparator />
+                              <ContextMenuItem
+                                :disabled="
+                                  !canUpdateServiceOrder(order.status) ||
+                                  isOrderActionInProgress(order.id) ||
+                                  servicesSaving
+                                "
+                                @select="openServicesDialogForOrder(order.id, 'imaging')"
+                              >
+                                Update order
+                              </ContextMenuItem>
+                            </ContextMenuContent>
+                          </ContextMenu>
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Imaging Details</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div
+                      v-if="!selectedImagingOrder"
+                      class="py-8 text-center text-sm text-muted-foreground"
+                    >
+                      Select an order above to view its services and results.
+                    </div>
+                    <Tabs v-else default-value="services" class="space-y-4">
+                      <TabsList>
+                        <TabsTrigger value="services">Ordered Services</TabsTrigger>
+                        <TabsTrigger value="results">Results</TabsTrigger>
+                      </TabsList>
+
+                      <TabsContent value="services" class="space-y-4">
+                        <div
+                          v-if="imagingOrdersLoading"
+                          class="flex items-center gap-2 text-sm text-muted-foreground"
+                        >
+                          <Loader2 class="h-4 w-4 animate-spin" />
+                          Loading ordered services...
+                        </div>
+                        <div
+                          v-else-if="!selectedImagingOrderServices.length"
+                          class="py-8 text-center text-sm text-muted-foreground"
+                        >
+                          No services recorded for this order.
+                        </div>
+                        <div v-else class="overflow-x-auto rounded-lg border">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead class="whitespace-nowrap">Service Code</TableHead>
+                                <TableHead>Service Name</TableHead>
+                                <TableHead class="w-24 text-right">Quantity</TableHead>
+                                <TableHead class="w-32 text-right">Price</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              <TableRow
+                                v-for="service in selectedImagingOrderServices"
+                                :key="service.id"
+                              >
+                                <TableCell class="text-sm font-medium text-foreground">
+                                  {{ service.serviceCode }}
+                                </TableCell>
+                                <TableCell class="text-sm text-foreground">
+                                  {{ service.serviceName }}
+                                </TableCell>
+                                <TableCell class="text-right text-sm text-foreground">
+                                  {{ service.quantity }}
+                                </TableCell>
+                                <TableCell class="text-right text-sm font-semibold text-foreground">
+                                  {{ formatCurrency(service.amount) }}
+                                </TableCell>
+                              </TableRow>
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </TabsContent>
+
+                      <TabsContent value="results" class="space-y-4">
+                        <div
+                          v-if="isImagingResultsLoading"
+                          class="flex items-center gap-2 text-sm text-muted-foreground"
+                        >
+                          <Loader2 class="h-4 w-4 animate-spin" />
+                          Loading imaging results...
+                        </div>
+                        <Alert v-else-if="imagingResultsError" variant="destructive">
+                          <AlertCircle class="mr-2 h-5 w-5" />
+                          <AlertTitle>Unable to load results</AlertTitle>
+                          <AlertDescription>
+                            {{ imagingResultsError }}
+                          </AlertDescription>
+                        </Alert>
+                        <div
+                          v-else-if="!selectedImagingOrderResults.length"
+                          class="py-8 text-center text-sm text-muted-foreground"
+                        >
+                          No results available for this order.
+                        </div>
+                        <div v-else class="overflow-x-auto rounded-lg border">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead class="whitespace-nowrap">Service Code</TableHead>
+                                <TableHead>Service Name</TableHead>
+                                <TableHead class="whitespace-nowrap">Received At</TableHead>
+                                <TableHead class="whitespace-nowrap">Performed At</TableHead>
+                                <TableHead class="whitespace-nowrap">Delivered At</TableHead>
+                                <TableHead>Result</TableHead>
+                                <TableHead>Conclusion</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              <TableRow
+                                v-for="result in selectedImagingOrderResults"
+                                :key="result.id"
+                              >
+                                <TableCell class="text-sm font-medium text-foreground">
+                                  {{ result.serviceCode }}
+                                </TableCell>
+                                <TableCell class="text-sm text-foreground">
+                                  {{ result.serviceName }}
+                                </TableCell>
+                                <TableCell class="text-sm text-foreground">
+                                  {{ formatDateTime(result.receivedAt) }}
+                                </TableCell>
+                                <TableCell class="text-sm text-foreground">
+                                  {{ formatDateTime(result.performedAt) }}
+                                </TableCell>
+                                <TableCell class="text-sm text-foreground">
+                                  {{ formatDateTime(result.deliveredAt) }}
+                                </TableCell>
+                                <TableCell class="whitespace-pre-line text-sm text-foreground">
+                                  {{ result.result || '—' }}
+                                </TableCell>
+                                <TableCell class="whitespace-pre-line text-sm text-foreground">
+                                  {{ result.conclusion || '—' }}
+                                </TableCell>
+                              </TableRow>
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </TabsContent>
+                    </Tabs>
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
 
-            <TabsContent value="procedure" class="px-6 py-6">
-              <Card>
-                <CardContent class="py-12 text-center text-sm text-muted-foreground">
-                  Content will be added later.
-                </CardContent>
-              </Card>
+            <TabsContent value="procedure" class="space-y-6 px-6 py-6">
+              <div v-if="!selectedRecord" class="py-12 text-center text-sm text-muted-foreground">
+                Select a patient to view procedure orders.
+              </div>
+              <div v-else class="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Procedure Orders</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div
+                      v-if="procedureOrdersLoading"
+                      class="flex items-center gap-2 text-sm text-muted-foreground"
+                    >
+                      <Loader2 class="h-4 w-4 animate-spin" />
+                      Loading procedure orders...
+                    </div>
+                    <Alert v-else-if="procedureOrdersError" variant="destructive">
+                      <AlertCircle class="mr-2 h-5 w-5" />
+                      <AlertTitle>Unable to load procedure orders</AlertTitle>
+                      <AlertDescription>
+                        {{ procedureOrdersError }}
+                      </AlertDescription>
+                    </Alert>
+                    <div
+                      v-else-if="!procedureOrderSummaries.length"
+                      class="py-8 text-center text-sm text-muted-foreground"
+                    >
+                      No procedure orders available for this patient.
+                    </div>
+                    <div v-else class="overflow-x-auto rounded-lg border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead class="whitespace-nowrap">Status</TableHead>
+                            <TableHead class="whitespace-nowrap">Order Code</TableHead>
+                            <TableHead class="whitespace-nowrap">Ordered At</TableHead>
+                            <TableHead>Ordering Staff</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          <ContextMenu
+                            v-for="order in procedureOrderSummaries"
+                            :key="order.id"
+                            :modal="false"
+                          >
+                            <ContextMenuTrigger as-child>
+                              <TableRow
+                                class="cursor-pointer"
+                                :class="[
+                                  'hover:bg-muted/60',
+                                  order.id === selectedProcedureOrderId ? 'bg-muted/80' : '',
+                                ]"
+                                @click="selectedProcedureOrderId = order.id"
+                              >
+                                <TableCell>
+                                  <span
+                                    class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium"
+                                    :class="getStatusClass(order.status)"
+                                  >
+                                    {{ getStatusLabel(order.status) }}
+                                  </span>
+                                </TableCell>
+                                <TableCell class="font-semibold text-foreground">
+                                  {{ order.code }}
+                                </TableCell>
+                                <TableCell class="text-sm text-foreground">
+                                  {{ formatDateTime(order.createdAt) }}
+                                </TableCell>
+                                <TableCell class="text-sm text-foreground">
+                                  {{ order.orderedBy }}
+                                </TableCell>
+                              </TableRow>
+                            </ContextMenuTrigger>
+                            <ContextMenuContent class="w-56">
+                              <ContextMenuItem
+                                :disabled="
+                                  !canSendServiceOrder(order.status) ||
+                                  isOrderActionInProgress(order.id) ||
+                                  servicesSaving
+                                "
+                                @select="handleSendServiceOrder(order.id)"
+                              >
+                                Send order
+                              </ContextMenuItem>
+                              <ContextMenuItem
+                                :disabled="
+                                  !canCancelServiceOrder(order.status) ||
+                                  isOrderActionInProgress(order.id) ||
+                                  servicesSaving
+                                "
+                                @select="handleCancelServiceOrder(order.id)"
+                              >
+                                Cancel send
+                              </ContextMenuItem>
+                              <ContextMenuSeparator />
+                              <ContextMenuItem
+                                :disabled="
+                                  !canUpdateServiceOrder(order.status) ||
+                                  isOrderActionInProgress(order.id) ||
+                                  servicesSaving
+                                "
+                                @select="openServicesDialogForOrder(order.id, 'procedure')"
+                              >
+                                Update order
+                              </ContextMenuItem>
+                            </ContextMenuContent>
+                          </ContextMenu>
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Procedure Details</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div
+                      v-if="!selectedProcedureOrder"
+                      class="py-8 text-center text-sm text-muted-foreground"
+                    >
+                      Select an order above to view its services and results.
+                    </div>
+                    <Tabs v-else default-value="services" class="space-y-4">
+                      <TabsList>
+                        <TabsTrigger value="services">Ordered Services</TabsTrigger>
+                        <TabsTrigger value="results">Results</TabsTrigger>
+                      </TabsList>
+
+                      <TabsContent value="services" class="space-y-4">
+                        <div
+                          v-if="procedureOrdersLoading"
+                          class="flex items-center gap-2 text-sm text-muted-foreground"
+                        >
+                          <Loader2 class="h-4 w-4 animate-spin" />
+                          Loading ordered services...
+                        </div>
+                        <div
+                          v-else-if="!selectedProcedureOrderServices.length"
+                          class="py-8 text-center text-sm text-muted-foreground"
+                        >
+                          No services recorded for this order.
+                        </div>
+                        <div v-else class="overflow-x-auto rounded-lg border">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead class="whitespace-nowrap">Service Code</TableHead>
+                                <TableHead>Service Name</TableHead>
+                                <TableHead class="w-24 text-right">Quantity</TableHead>
+                                <TableHead class="w-32 text-right">Price</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              <TableRow
+                                v-for="service in selectedProcedureOrderServices"
+                                :key="service.id"
+                              >
+                                <TableCell class="text-sm font-medium text-foreground">
+                                  {{ service.serviceCode }}
+                                </TableCell>
+                                <TableCell class="text-sm text-foreground">
+                                  {{ service.serviceName }}
+                                </TableCell>
+                                <TableCell class="text-right text-sm text-foreground">
+                                  {{ service.quantity }}
+                                </TableCell>
+                                <TableCell class="text-right text-sm font-semibold text-foreground">
+                                  {{ formatCurrency(service.amount) }}
+                                </TableCell>
+                              </TableRow>
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </TabsContent>
+
+                      <TabsContent value="results" class="space-y-4">
+                        <div
+                          v-if="isProcedureResultsLoading"
+                          class="flex items-center gap-2 text-sm text-muted-foreground"
+                        >
+                          <Loader2 class="h-4 w-4 animate-spin" />
+                          Loading procedure results...
+                        </div>
+                        <Alert v-else-if="procedureResultsError" variant="destructive">
+                          <AlertCircle class="mr-2 h-5 w-5" />
+                          <AlertTitle>Unable to load results</AlertTitle>
+                          <AlertDescription>
+                            {{ procedureResultsError }}
+                          </AlertDescription>
+                        </Alert>
+                        <div
+                          v-else-if="!selectedProcedureOrderResults.length"
+                          class="py-8 text-center text-sm text-muted-foreground"
+                        >
+                          No results available for this order.
+                        </div>
+                        <div v-else class="overflow-x-auto rounded-lg border">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead class="whitespace-nowrap">Service Code</TableHead>
+                                <TableHead>Service Name</TableHead>
+                                <TableHead class="whitespace-nowrap">Received At</TableHead>
+                                <TableHead class="whitespace-nowrap">Performed At</TableHead>
+                                <TableHead class="whitespace-nowrap">Delivered At</TableHead>
+                                <TableHead>Result</TableHead>
+                                <TableHead>Conclusion</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              <TableRow
+                                v-for="result in selectedProcedureOrderResults"
+                                :key="result.id"
+                              >
+                                <TableCell class="text-sm font-medium text-foreground">
+                                  {{ result.serviceCode }}
+                                </TableCell>
+                                <TableCell class="text-sm text-foreground">
+                                  {{ result.serviceName }}
+                                </TableCell>
+                                <TableCell class="text-sm text-foreground">
+                                  {{ formatDateTime(result.receivedAt) }}
+                                </TableCell>
+                                <TableCell class="text-sm text-foreground">
+                                  {{ formatDateTime(result.performedAt) }}
+                                </TableCell>
+                                <TableCell class="text-sm text-foreground">
+                                  {{ formatDateTime(result.deliveredAt) }}
+                                </TableCell>
+                                <TableCell class="whitespace-pre-line text-sm text-foreground">
+                                  {{ result.result || '—' }}
+                                </TableCell>
+                                <TableCell class="whitespace-pre-line text-sm text-foreground">
+                                  {{ result.conclusion || '—' }}
+                                </TableCell>
+                              </TableRow>
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </TabsContent>
+                    </Tabs>
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
           </Tabs>
         </CardContent>
@@ -1649,6 +3171,8 @@ watch(filteredRecords, (list) => {
         :examination-detail="medicalRecordExamination"
         :loading-details="medicalRecordDetailLoading"
         :saving="servicesSaving"
+        :mode="servicesDialogMode"
+        :initial-order="servicesDialogInitialOrder"
         @save="handleSaveServices"
       />
     </div>

@@ -37,11 +37,28 @@ const serviceOrderDetailSelect = {
   tongTien: true,
   yeuCauKQ: true,
   trangThaiDongTien: true,
+  ketQua: {
+    select: {
+      id: true,
+    },
+  },
   dichVu: {
     select: {
       id: true,
       maDV: true,
       tenDV: true,
+      nhomDichVu: {
+        select: {
+          id: true,
+          tenNhomDV: true,
+          loaiDichVu: {
+            select: {
+              id: true,
+              tenLoai: true,
+            },
+          },
+        },
+      },
       phongThucHien: {
         select: {
           id: true,
@@ -123,7 +140,36 @@ const mapServiceOrderDetail = (detail: ServiceOrderDetailResult) => ({
   tongTien: detail.tongTien,
   yeuCauKQ: detail.yeuCauKQ,
   trangThaiDongTien: detail.trangThaiDongTien,
-  dichVu: detail.dichVu,
+  hasResult: detail.ketQua ? true : false,
+  dichVu: {
+    id: detail.dichVu.id,
+    maDV: detail.dichVu.maDV,
+    tenDV: detail.dichVu.tenDV,
+    nhomDichVu: detail.dichVu.nhomDichVu
+      ? {
+          id: detail.dichVu.nhomDichVu.id,
+          tenNhomDV: detail.dichVu.nhomDichVu.tenNhomDV,
+          loaiDichVu: detail.dichVu.nhomDichVu.loaiDichVu
+            ? {
+                id: detail.dichVu.nhomDichVu.loaiDichVu.id,
+                tenLoai: detail.dichVu.nhomDichVu.loaiDichVu.tenLoai,
+              }
+            : null,
+        }
+      : null,
+    phongThucHien: detail.dichVu.phongThucHien
+      ? {
+          id: detail.dichVu.phongThucHien.id,
+          tenPhong: detail.dichVu.phongThucHien.tenPhong,
+          khoa: detail.dichVu.phongThucHien.khoa
+            ? {
+                id: detail.dichVu.phongThucHien.khoa.id,
+                tenKhoa: detail.dichVu.phongThucHien.khoa.tenKhoa,
+              }
+            : null,
+        }
+      : null,
+  },
   phieuChiDinh: detail.phieuChiDinh,
 });
 
@@ -593,6 +639,47 @@ const updateServiceOrderDetail = async (
   }
 };
 
+const deleteServiceOrderDetail = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { id }: ServiceOrderDetailParam =
+      serviceOrderSchema.serviceOrderDetailParam.parse(req.params);
+
+    await prisma.chiTietPhieuChiDinh.delete({
+      where: { id },
+    });
+
+    return Send.success(res, null, "Xóa chi tiết phiếu chỉ định thành công");
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return Send.validationErrors(res, error.flatten().fieldErrors);
+    }
+
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2025") {
+        return Send.notFound(
+          res,
+          null,
+          "Không tìm thấy chi tiết phiếu chỉ định",
+        );
+      }
+
+      if (error.code === "P2003") {
+        return Send.badRequest(
+          res,
+          null,
+          "Không thể xóa chi tiết phiếu chỉ định vì đang được sử dụng",
+        );
+      }
+    }
+
+    return next(error);
+  }
+};
+
 const getServiceOrderDetailsByOrder = async (
   req: Request,
   res: Response,
@@ -637,5 +724,6 @@ export default {
   deleteServiceOrder,
   addServiceOrderDetail,
   updateServiceOrderDetail,
+  deleteServiceOrderDetail,
   getServiceOrderDetailsByOrder,
 };
