@@ -1004,7 +1004,7 @@ onBeforeUnmount(() => {
 
 <template>
   <section class="w-full bg-primary-foreground py-8">
-    <div class="mx-auto max-w-6xl px-4">
+    <div class="mx-auto max-w-7xl px-4">
       <Card>
         <CardHeader class="space-y-2">
           <CardTitle>Administrative Information</CardTitle>

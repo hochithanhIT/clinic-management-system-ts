@@ -6,6 +6,12 @@ import serviceTypeController from "../controllers/serviceType.controller";
 
 const router = Router();
 
+router.get(
+  "/",
+  authMiddleware.authenticateUser,
+  serviceTypeController.getServiceTypes,
+);
+
 router.post(
   "/",
   authMiddleware.authenticateUser,

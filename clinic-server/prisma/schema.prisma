@@ -95,6 +95,7 @@ model NhanVien {
   benhAnTiepNhan BenhAn[] @relation("TiepNhan")
   benhAnKham BenhAn[] @relation("KhamBenh")
   hoaDons HoaDon[]
+  phieuChiDinhChiDinhs PhieuChiDinh[] @relation("NhanVienChiDinh")
 
   @@map("NhanVien")
 }
@@ -155,6 +156,7 @@ model Phong {
   khoaId Int @map("Khoa_ID")
 
   benhAns BenhAn[]
+  dichVus DichVu[] @relation("PhongDichVu")
 
   @@map("Phong")
 }
@@ -246,6 +248,9 @@ model PhieuChiDinh {
   benhAn BenhAn @relation(fields: [benhAnId], references: [id])
   benhAnId Int @map("BA_ID")
 
+  nvChiDinh NhanVien? @relation("NhanVienChiDinh", fields: [nvChiDinhId], references: [id])
+  nvChiDinhId Int? @map("NV_ID_ChiDinh")
+
   chiTiet ChiTietPhieuChiDinh[]
 
   @@map("PhieuChiDinh")
@@ -281,6 +286,8 @@ model DichVu {
 
   nhomDichVu          NhomDichVu              @relation(fields: [ndvId], references: [id])
   ndvId               Int                     @map("NDV_ID")
+  phongThucHien       Phong?                  @relation("PhongDichVu", fields: [phongThucHienId], references: [id])
+  phongThucHienId     Int?                    @map("DV_PhongThucHienID")
   
   chiTietPhieuChiDinh ChiTietPhieuChiDinh[]
 

@@ -27,6 +27,25 @@ const mapServiceType = (serviceType: ServiceTypeResult) => ({
   tenLoai: serviceType.tenLoai,
 });
 
+const getServiceTypes = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const serviceTypes = await prisma.loaiDichVu.findMany({
+      select: serviceTypeSelect,
+      orderBy: { id: "asc" },
+    });
+
+    return Send.success(res, {
+      serviceTypes: serviceTypes.map(mapServiceType),
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 const addServiceType = async (
   req: Request,
   res: Response,
@@ -179,6 +198,7 @@ const deleteServiceType = async (
 };
 
 export default {
+  getServiceTypes,
   addServiceType,
   updateServiceType,
   deleteServiceType,

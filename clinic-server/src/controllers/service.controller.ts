@@ -13,6 +13,19 @@ const serviceSelect = {
   donGia: true,
   thamChieuMin: true,
   thamChieuMax: true,
+  phongThucHienId: true,
+  phongThucHien: {
+    select: {
+      id: true,
+      tenPhong: true,
+      khoa: {
+        select: {
+          id: true,
+          tenKhoa: true,
+        },
+      },
+    },
+  },
   nhomDichVu: {
     select: {
       id: true,
@@ -42,6 +55,19 @@ const mapService = (service: ServiceResult) => ({
   donGia: service.donGia,
   thamChieuMin: service.thamChieuMin,
   thamChieuMax: service.thamChieuMax,
+  phongThucHienId: service.phongThucHienId ?? null,
+  phongThucHien: service.phongThucHien
+    ? {
+        id: service.phongThucHien.id,
+        tenPhong: service.phongThucHien.tenPhong,
+        khoa: service.phongThucHien.khoa
+          ? {
+              id: service.phongThucHien.khoa.id,
+              tenKhoa: service.phongThucHien.khoa.tenKhoa,
+            }
+          : null,
+      }
+    : null,
   nhomDichVu: service.nhomDichVu,
 });
 
@@ -138,6 +164,25 @@ const addService = async (
       return Send.badRequest(res, null, "Tên dịch vụ đã tồn tại");
     }
 
+    let executionRoomId: number | null = null;
+
+    if (payload.phongThucHienId !== undefined) {
+      if (payload.phongThucHienId === null) {
+        executionRoomId = null;
+      } else {
+        const executionRoom = await prisma.phong.findUnique({
+          where: { id: payload.phongThucHienId },
+          select: { id: true },
+        });
+
+        if (!executionRoom) {
+          return Send.badRequest(res, null, "Phòng thực hiện không tồn tại");
+        }
+
+        executionRoomId = executionRoom.id;
+      }
+    }
+
     const service = await prisma.dichVu.create({
       data: {
         maDV,
@@ -147,6 +192,9 @@ const addService = async (
         thamChieuMin: payload.thamChieuMin?.trim() || null,
         thamChieuMax: payload.thamChieuMax?.trim() || null,
         nhomDichVu: { connect: { id: payload.nhomDichVuId } },
+        ...(executionRoomId !== null
+          ? { phongThucHien: { connect: { id: executionRoomId } } }
+          : {}),
       },
       select: serviceSelect,
     });
@@ -252,6 +300,23 @@ const updateService = async (
 
     if (payload.thamChieuMax !== undefined) {
       updateData.thamChieuMax = payload.thamChieuMax?.trim() || null;
+    }
+
+    if (payload.phongThucHienId !== undefined) {
+      if (payload.phongThucHienId === null) {
+        updateData.phongThucHien = { disconnect: true };
+      } else {
+        const executionRoom = await prisma.phong.findUnique({
+          where: { id: payload.phongThucHienId },
+          select: { id: true },
+        });
+
+        if (!executionRoom) {
+          return Send.badRequest(res, null, "Phòng thực hiện không tồn tại");
+        }
+
+        updateData.phongThucHien = { connect: { id: payload.phongThucHienId } };
+      }
     }
 
     const service = await prisma.dichVu.update({

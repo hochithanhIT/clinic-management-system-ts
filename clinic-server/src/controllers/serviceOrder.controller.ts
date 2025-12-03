@@ -16,6 +16,19 @@ const serviceOrderSelect = {
       maBA: true,
     },
   },
+  nvChiDinh: {
+    select: {
+      id: true,
+      hoTen: true,
+      maNV: true,
+      khoa: {
+        select: {
+          id: true,
+          tenKhoa: true,
+        },
+      },
+    },
+  },
 } satisfies Prisma.PhieuChiDinhSelect;
 
 const serviceOrderDetailSelect = {
@@ -29,6 +42,18 @@ const serviceOrderDetailSelect = {
       id: true,
       maDV: true,
       tenDV: true,
+      phongThucHien: {
+        select: {
+          id: true,
+          tenPhong: true,
+          khoa: {
+            select: {
+              id: true,
+              tenKhoa: true,
+            },
+          },
+        },
+      },
     },
   },
   phieuChiDinh: {
@@ -77,6 +102,19 @@ const mapServiceOrder = (order: ServiceOrderResult) => ({
   thoiGianTao: order.thoiGianTao,
   trangThai: order.trangThai,
   benhAn: order.benhAn,
+  nvChiDinh: order.nvChiDinh
+    ? {
+        id: order.nvChiDinh.id,
+        hoTen: order.nvChiDinh.hoTen,
+        maNV: order.nvChiDinh.maNV,
+        khoa: order.nvChiDinh.khoa
+          ? {
+              id: order.nvChiDinh.khoa.id,
+              tenKhoa: order.nvChiDinh.khoa.tenKhoa,
+            }
+          : null,
+      }
+    : null,
 });
 
 const mapServiceOrderDetail = (detail: ServiceOrderDetailResult) => ({
@@ -198,12 +236,28 @@ const addServiceOrder = async (
       return Send.badRequest(res, null, "Bệnh án không tồn tại");
     }
 
+    let orderingStaffConnection: Prisma.PhieuChiDinhCreateInput["nvChiDinh"] | undefined;
+
+    if (payload.nvChiDinhId !== undefined && payload.nvChiDinhId !== null) {
+      const orderingStaff = await prisma.nhanVien.findUnique({
+        where: { id: payload.nvChiDinhId },
+        select: { id: true },
+      });
+
+      if (!orderingStaff) {
+        return Send.badRequest(res, null, "Nhân viên chỉ định không tồn tại");
+      }
+
+      orderingStaffConnection = { connect: { id: payload.nvChiDinhId } };
+    }
+
     const order = await prisma.phieuChiDinh.create({
       data: {
         maPhieuCD,
         thoiGianTao: payload.thoiGianTao,
         trangThai: payload.trangThai,
         benhAn: { connect: { id: payload.benhAnId } },
+        ...(orderingStaffConnection ? { nvChiDinh: orderingStaffConnection } : {}),
       },
       select: serviceOrderSelect,
     });
@@ -245,7 +299,7 @@ const updateServiceOrder = async (
 
     const existingOrder = await prisma.phieuChiDinh.findUnique({
       where: { id },
-      select: { id: true },
+      select: { id: true, nvChiDinhId: true },
     });
 
     if (!existingOrder) {
@@ -291,6 +345,25 @@ const updateServiceOrder = async (
 
     if (payload.trangThai !== undefined) {
       updateData.trangThai = payload.trangThai;
+    }
+
+    if (payload.nvChiDinhId !== undefined) {
+      if (payload.nvChiDinhId === null) {
+        if (existingOrder.nvChiDinhId !== null) {
+          updateData.nvChiDinh = { disconnect: true };
+        }
+      } else if (existingOrder.nvChiDinhId === null) {
+        const orderingStaff = await prisma.nhanVien.findUnique({
+          where: { id: payload.nvChiDinhId },
+          select: { id: true },
+        });
+
+        if (!orderingStaff) {
+          return Send.badRequest(res, null, "Nhân viên chỉ định không tồn tại");
+        }
+
+        updateData.nvChiDinh = { connect: { id: payload.nvChiDinhId } };
+      }
     }
 
     const order = await prisma.phieuChiDinh.update({

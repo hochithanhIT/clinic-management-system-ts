@@ -13,7 +13,15 @@ import { toast } from 'vue-sonner'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import MedicalExaminationDetailCard from '@/components/medicalExamination/MedicalExaminationDetailCard.vue'
 import MedicalExaminationFilters from '@/components/medicalExamination/MedicalExaminationFilters.vue'
@@ -21,16 +29,33 @@ import MedicalExaminationPatientTable from '@/components/medicalExamination/Medi
 import MedicalExaminationDialog, {
   type MedicalExaminationDialogSavePayload,
 } from '@/components/medicalExamination/MedicalExaminationDialog.vue'
-import type { GetMedicalRecordsParams, MedicalRecordSummary } from '@/services/medicalRecord'
+import MedicalExaminationServicesDialog, {
+  type MedicalExaminationServicesSavePayload,
+} from '@/components/medicalExamination/MedicalExaminationServicesDialog.vue'
+import type {
+  GetMedicalRecordsParams,
+  MedicalRecordSummary,
+  MedicalStaffSummary,
+} from '@/services/medicalRecord'
 import { getMedicalRecords, updateMedicalRecord } from '@/services/medicalRecord'
 import {
   createMedicalExamination,
+  getMedicalExaminationByMedicalRecord,
   updateMedicalExamination,
   updateMedicalExaminationDiagnoses,
+  type MedicalExaminationDetail,
 } from '@/services/medicalExamination'
 import { ApiError } from '@/services/http'
-import { getServiceOrderDetails, getServiceOrders } from '@/services/serviceOrder'
+import {
+  createServiceOrder,
+  createServiceOrderDetail,
+  getServiceOrderDetails,
+  getServiceOrders,
+  type ServiceOrderDetailSummary,
+} from '@/services/serviceOrder'
+import { getPatient, type PatientSummary } from '@/services/patient'
 import { useWorkspaceStore } from '@/stores/workspace'
+import { useAuthStore } from '@/stores/auth'
 
 const activeTab = ref('patients')
 
@@ -40,6 +65,7 @@ const EXAM_SERVICE_CODE =
 
 const workspaceStore = useWorkspaceStore()
 const { department: selectedDepartment, room: selectedRoom } = storeToRefs(workspaceStore)
+const { user: authUser } = storeToRefs(useAuthStore())
 
 const records = ref<MedicalRecordSummary[]>([])
 const recordsLoading = ref(false)
@@ -51,6 +77,25 @@ type PageSizeOption = (typeof PAGE_SIZE_OPTIONS)[number]
 const pageSize = ref<PageSizeOption>(PAGE_SIZE_OPTIONS[0])
 const pageSizeOptions = [...PAGE_SIZE_OPTIONS]
 const currentPage = ref(1)
+
+interface LabOrderRow {
+  id: number
+  orderId: number
+  orderCode: string
+  orderCreatedAt: string
+  serviceCode: string
+  serviceName: string
+  quantity: number
+  executionRoom: string
+  orderedBy: string
+  statusLabel: string
+  statusClass: string
+}
+
+const labOrders = ref<LabOrderRow[]>([])
+const labOrdersLoading = ref(false)
+const labOrdersError = ref<string | null>(null)
+const labOrdersLoadToken = ref(0)
 
 const isPageSizeOption = (value: number): value is PageSizeOption => {
   return PAGE_SIZE_OPTIONS.includes(value as PageSizeOption)
@@ -70,6 +115,30 @@ const statusClassMap: Record<number, string> = {
   0: 'bg-amber-100 text-amber-800',
   1: 'bg-sky-100 text-sky-800',
   2: 'bg-emerald-100 text-emerald-800',
+}
+
+const serviceOrderStatusLabelMap: Record<number, string> = {
+  0: 'Pending',
+  1: 'In progress',
+  2: 'Completed',
+}
+
+const serviceOrderStatusClassMap: Record<number, string> = {
+  0: 'bg-amber-100 text-amber-800',
+  1: 'bg-sky-100 text-sky-800',
+  2: 'bg-emerald-100 text-emerald-800',
+}
+
+const formatStaffLabel = (
+  staff: MedicalStaffSummary | null | undefined,
+  emptyLabel = '—',
+): string => {
+  if (!staff) {
+    return emptyLabel
+  }
+
+  const department = staff.department?.name
+  return department ? `${staff.name} · ${department}` : staff.name
 }
 
 const dateFormatter = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium' })
@@ -264,13 +333,11 @@ const secondaryActionsDisabled = computed(() => {
 })
 
 const selectedDoctorDisplay = computed(() => {
-  const doctor = selectedRecord.value?.doctor
-  if (!doctor) {
-    return 'Not assigned'
-  }
+  return formatStaffLabel(selectedRecord.value?.doctor, 'Not assigned')
+})
 
-  const department = doctor.department?.name
-  return department ? `${doctor.name} · ${department}` : doctor.name
+const labOrderingStaffLabel = computed(() => {
+  return formatStaffLabel(selectedRecord.value?.doctor)
 })
 
 const selectedPatientAddress = computed(() => {
@@ -294,6 +361,67 @@ const selectedExamTimeRange = computed(() => {
 
 const examinationDialogOpen = ref(false)
 const examinationSaving = ref(false)
+const servicesDialogOpen = ref(false)
+const servicesSaving = ref(false)
+
+const medicalRecordDetailLoading = ref(false)
+const medicalRecordPatientDetail = ref<PatientSummary | null>(null)
+const medicalRecordExamination = ref<MedicalExaminationDetail | null>(null)
+const medicalRecordLoadToken = ref(0)
+
+const medicalRecordPatientCode = computed(() => {
+  return selectedRecord.value?.patient.code ?? '—'
+})
+
+const medicalRecordPatientName = computed(() => {
+  return medicalRecordPatientDetail.value?.fullName ?? selectedRecord.value?.patient.fullName ?? '—'
+})
+
+const medicalRecordPatientBirthDate = computed(() => {
+  const birthDate =
+    medicalRecordPatientDetail.value?.birthDate ?? selectedRecord.value?.patient.birthDate ?? null
+  return formatDate(birthDate)
+})
+
+const medicalRecordPatientGenderLabel = computed(() => {
+  const genderValue =
+    medicalRecordPatientDetail.value?.gender ?? selectedRecord.value?.patient.gender ?? null
+
+  if (genderValue === 1) {
+    return 'Male'
+  }
+
+  if (genderValue === 0) {
+    return 'Female'
+  }
+
+  return '—'
+})
+
+const medicalRecordPatientOccupation = computed(() => {
+  return medicalRecordPatientDetail.value?.occupation?.name ?? '—'
+})
+
+const medicalRecordPatientAddress = computed(() => {
+  const wardName = medicalRecordPatientDetail.value?.ward?.name ?? ''
+  const cityName = medicalRecordPatientDetail.value?.ward?.city?.name ?? ''
+  const parts = [wardName, cityName].filter(Boolean)
+  return parts.length ? parts.join(', ') : '—'
+})
+
+const medicalRecordPatientPhone = computed(() => {
+  return medicalRecordPatientDetail.value?.phone ?? selectedRecord.value?.patient.phone ?? '—'
+})
+
+const medicalRecordReason = computed(() => {
+  const reason = selectedRecord.value?.reason?.trim()
+  return reason && reason.length ? reason : '—'
+})
+
+const medicalRecordExamTime = computed(() => {
+  const value = medicalRecordExamination.value?.examTime ?? null
+  return formatDateTime(value)
+})
 
 type ExamServicePaymentStatus = 'paid' | 'unpaid' | 'error'
 
@@ -343,6 +471,14 @@ const openExaminationDialog = () => {
   examinationDialogOpen.value = true
 }
 
+const openServicesDialog = () => {
+  if (secondaryActionsDisabled.value) {
+    return
+  }
+
+  servicesDialogOpen.value = true
+}
+
 const toNullableString = (value: string): string | null => {
   const trimmed = value.trim()
   return trimmed.length ? trimmed : null
@@ -382,6 +518,245 @@ const parseBloodPressure = (
   }
 }
 
+const generateServiceOrderCode = (): string => {
+  const now = new Date()
+  const pad = (value: number) => String(value).padStart(2, '0')
+  const datePart = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`
+  const timePart = `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`
+  return `SO-${datePart}-${timePart}`
+}
+
+const getServiceOrderStatusMeta = (value: number) => {
+  const label = serviceOrderStatusLabelMap[value] ?? 'Unknown'
+  const className = serviceOrderStatusClassMap[value] ?? 'bg-muted text-muted-foreground'
+  return { label, className }
+}
+
+const loadSelectedRecordDetail = async () => {
+  const record = selectedRecord.value
+
+  medicalRecordLoadToken.value += 1
+  const requestId = medicalRecordLoadToken.value
+
+  if (!record) {
+    medicalRecordDetailLoading.value = false
+    medicalRecordPatientDetail.value = null
+    medicalRecordExamination.value = null
+    return
+  }
+
+  const shouldReset = medicalRecordPatientDetail.value?.id !== record.patient.id
+
+  if (shouldReset) {
+    medicalRecordPatientDetail.value = null
+    medicalRecordExamination.value = null
+  }
+
+  medicalRecordDetailLoading.value = true
+
+  try {
+    const [patient, examination] = await Promise.all([
+      getPatient(record.patient.id),
+      getMedicalExaminationByMedicalRecord(record.id),
+    ])
+
+    if (requestId !== medicalRecordLoadToken.value) {
+      return
+    }
+
+    medicalRecordPatientDetail.value = patient
+    medicalRecordExamination.value = examination
+  } catch (error) {
+    if (requestId !== medicalRecordLoadToken.value) {
+      return
+    }
+
+    const message =
+      error instanceof ApiError
+        ? error.message
+        : 'Unable to load medical record details. Please try again.'
+    toast.error(message)
+    medicalRecordPatientDetail.value = null
+    medicalRecordExamination.value = null
+  } finally {
+    if (requestId === medicalRecordLoadToken.value) {
+      medicalRecordDetailLoading.value = false
+    }
+  }
+}
+
+const buildExecutionRoomLabel = (detail: ServiceOrderDetailSummary): string => {
+  const room = detail.service.executionRoom
+  if (!room) {
+    return '—'
+  }
+
+  return room.departmentName ? `${room.name} · ${room.departmentName}` : room.name
+}
+
+const loadLabOrders = async () => {
+  labOrdersLoadToken.value += 1
+  const requestId = labOrdersLoadToken.value
+  const record = selectedRecord.value
+
+  if (!record) {
+    labOrders.value = []
+    labOrdersError.value = null
+    labOrdersLoading.value = false
+    return
+  }
+
+  labOrdersLoading.value = true
+  labOrdersError.value = null
+
+  try {
+    const { serviceOrders } = await getServiceOrders({ medicalRecordId: record.id, limit: 50 })
+
+    if (requestId !== labOrdersLoadToken.value) {
+      return
+    }
+
+    if (!serviceOrders.length) {
+      labOrders.value = []
+      return
+    }
+
+    const ordersWithDetails = await Promise.all(
+      serviceOrders.map(async (order) => {
+        const { serviceOrderDetails } = await getServiceOrderDetails(order.id)
+        return { order, details: serviceOrderDetails }
+      }),
+    )
+
+    if (requestId !== labOrdersLoadToken.value) {
+      return
+    }
+
+    const rows: LabOrderRow[] = []
+
+    for (const { order, details } of ordersWithDetails) {
+      if (!details.length) {
+        continue
+      }
+
+      const statusMeta = getServiceOrderStatusMeta(order.status)
+      const orderingStaffLabel = order.orderingStaff
+        ? formatStaffLabel(order.orderingStaff)
+        : labOrderingStaffLabel.value
+
+      for (const detail of details) {
+        rows.push({
+          id: detail.id,
+          orderId: order.id,
+          orderCode: order.code,
+          orderCreatedAt: order.createdAt,
+          serviceCode: detail.service.code,
+          serviceName: detail.service.name,
+          quantity: detail.quantity,
+          executionRoom: buildExecutionRoomLabel(detail),
+          orderedBy: orderingStaffLabel,
+          statusLabel: statusMeta.label,
+          statusClass: statusMeta.className,
+        })
+      }
+    }
+
+    rows.sort((a, b) => {
+      const first = new Date(a.orderCreatedAt).getTime()
+      const second = new Date(b.orderCreatedAt).getTime()
+      return Number.isNaN(second) || Number.isNaN(first) ? 0 : second - first
+    })
+
+    labOrders.value = rows
+  } catch (error) {
+    if (requestId !== labOrdersLoadToken.value) {
+      return
+    }
+
+    const message =
+      error instanceof ApiError
+        ? error.message
+        : 'Unable to load laboratory orders. Please try again.'
+
+    labOrdersError.value = message
+    labOrders.value = []
+    toast.error(message)
+  } finally {
+    if (requestId === labOrdersLoadToken.value) {
+      labOrdersLoading.value = false
+    }
+  }
+}
+
+const toDisplayNumber = (value: number | null | undefined, fractionDigits?: number) => {
+  if (value === null || value === undefined) {
+    return null
+  }
+
+  const numeric = Number(value)
+
+  if (!Number.isFinite(numeric)) {
+    return null
+  }
+
+  return fractionDigits !== undefined ? numeric.toFixed(fractionDigits) : String(numeric)
+}
+
+const medicalRecordExamBloodPressure = computed(() => {
+  const examination = medicalRecordExamination.value
+
+  if (!examination) {
+    return '—'
+  }
+
+  const systolic = examination.systolicBloodPressure
+  const diastolic = examination.diastolicBloodPressure
+
+  if (systolic === null && diastolic === null) {
+    return '—'
+  }
+
+  if (systolic !== null && diastolic !== null) {
+    return `${systolic}/${diastolic} mmHg`
+  }
+
+  if (systolic !== null) {
+    return `${systolic} mmHg`
+  }
+
+  return `${diastolic} mmHg`
+})
+
+const medicalRecordExamWeight = computed(() => {
+  const display = toDisplayNumber(medicalRecordExamination.value?.weight, 1)
+  return display ? `${display} kg` : '—'
+})
+
+const medicalRecordExamHeight = computed(() => {
+  const display = toDisplayNumber(medicalRecordExamination.value?.height, 1)
+  return display ? `${display} cm` : '—'
+})
+
+const medicalRecordExamBmi = computed(() => {
+  const display = toDisplayNumber(medicalRecordExamination.value?.bmi, 1)
+  return display ?? '—'
+})
+
+const medicalRecordExamPulse = computed(() => {
+  const display = toDisplayNumber(medicalRecordExamination.value?.pulse)
+  return display ? `${display} bpm` : '—'
+})
+
+const medicalRecordExamTemperature = computed(() => {
+  const display = toDisplayNumber(medicalRecordExamination.value?.temperature, 1)
+  return display ? `${display} °C` : '—'
+})
+
+const medicalRecordExamRespiratoryRate = computed(() => {
+  const display = toDisplayNumber(medicalRecordExamination.value?.respiratoryRate)
+  return display ? `${display} breaths/min` : '—'
+})
+
 const handleSaveExamination = async (payload: MedicalExaminationDialogSavePayload) => {
   if (!selectedRecord.value) {
     return
@@ -393,9 +768,17 @@ const handleSaveExamination = async (payload: MedicalExaminationDialogSavePayloa
     const { form, secondaryDiseaseIds, medicalRecordId } = payload
     const reason = form.reasonForAdmission.trim()
 
-    const updatedRecord = await updateMedicalRecord(medicalRecordId, {
+    const doctorId = authUser.value?.id ?? null
+    const hasAssignedDoctor = Boolean(selectedRecord.value?.doctor)
+    const updatePayload: { lyDoKhamBenh: string; nvKhamId?: number } = {
       lyDoKhamBenh: reason,
-    })
+    }
+
+    if (!hasAssignedDoctor && typeof doctorId === 'number' && Number.isFinite(doctorId)) {
+      updatePayload.nvKhamId = doctorId
+    }
+
+    const updatedRecord = await updateMedicalRecord(medicalRecordId, updatePayload)
 
     records.value = records.value.map((record) => {
       return record.id === updatedRecord.id ? updatedRecord : record
@@ -456,6 +839,8 @@ const handleSaveExamination = async (payload: MedicalExaminationDialogSavePayloa
       diagnoses: diagnosesPayload,
     })
 
+    await loadSelectedRecordDetail()
+
     toast.success('Examination details saved.')
     examinationDialogOpen.value = false
   } catch (error) {
@@ -468,6 +853,60 @@ const handleSaveExamination = async (payload: MedicalExaminationDialogSavePayloa
     toast.error(message)
   } finally {
     examinationSaving.value = false
+  }
+}
+
+const handleSaveServices = async (payload: MedicalExaminationServicesSavePayload) => {
+  if (!selectedRecord.value) {
+    return
+  }
+
+  if (!payload.services.length) {
+    toast.error('Please add at least one service before saving.')
+    return
+  }
+
+  servicesSaving.value = true
+
+  try {
+    const orderCode = generateServiceOrderCode()
+    const orderingStaffId =
+      typeof authUser.value?.id === 'number' && Number.isFinite(authUser.value.id)
+        ? authUser.value.id
+        : undefined
+
+    const serviceOrder = await createServiceOrder({
+      code: orderCode,
+      medicalRecordId: payload.medicalRecordId,
+      createdAt: payload.orderTime,
+      status: 0,
+      assignedStaffId: orderingStaffId,
+    })
+
+    for (const item of payload.services) {
+      await createServiceOrderDetail({
+        serviceOrderId: serviceOrder.id,
+        serviceId: item.serviceId,
+        quantity: item.quantity,
+        amount: item.price * item.quantity,
+        requireResult: false,
+        isPaid: false,
+      })
+    }
+
+    toast.success('Service order saved.')
+    await loadLabOrders()
+    servicesDialogOpen.value = false
+  } catch (error) {
+    const message =
+      error instanceof ApiError
+        ? error.message
+        : error instanceof Error && error.message
+          ? error.message
+          : 'Unable to save service order. Please try again.'
+    toast.error(message)
+  } finally {
+    servicesSaving.value = false
   }
 }
 
@@ -667,6 +1106,15 @@ watch(
 )
 
 watch(
+  () => selectedRecord.value?.id ?? null,
+  () => {
+    void loadSelectedRecordDetail()
+    void loadLabOrders()
+  },
+  { immediate: true },
+)
+
+watch(
   () => [totalFilteredRecords.value, pageSize.value] as const,
   ([count]) => {
     if (count === 0) {
@@ -693,7 +1141,7 @@ watch(filteredRecords, (list) => {
 
 <template>
   <section class="w-full bg-primary-foreground py-8">
-    <div class="mx-auto max-w-6xl px-4">
+    <div class="mx-auto max-w-7xl px-4">
       <div class="flex flex-wrap gap-3">
         <Button :disabled="startExamDisabled" @click="handleStartExamination">
           <Loader2 v-if="startExamLoading" class="mr-2 h-4 w-4 animate-spin" />
@@ -712,6 +1160,8 @@ watch(filteredRecords, (list) => {
           variant="outline"
           :disabled="secondaryActionsDisabled"
           class="hover:text-primary-foreground"
+          type="button"
+          @click="openServicesDialog"
           >Services</Button
         >
         <Button
@@ -794,18 +1244,375 @@ watch(filteredRecords, (list) => {
               </div>
             </TabsContent>
 
-            <TabsContent value="medical-record" class="px-6 py-6">
-              <Card>
-                <CardContent class="py-12 text-center text-sm text-muted-foreground">
-                  Content will be added later.
-                </CardContent>
-              </Card>
+            <TabsContent value="medical-record" class="space-y-4 px-6 py-6">
+              <div v-if="!selectedRecord" class="py-12 text-center text-sm text-muted-foreground">
+                Select a patient to view medical record details.
+              </div>
+
+              <div v-else class="space-y-6">
+                <div
+                  v-if="medicalRecordDetailLoading"
+                  class="flex items-center gap-2 text-sm text-muted-foreground"
+                >
+                  <Loader2 class="h-4 w-4 animate-spin" />
+                  Loading medical record details...
+                </div>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Patient Information</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      <div>
+                        <p
+                          class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                        >
+                          Patient ID
+                        </p>
+                        <p class="text-sm font-semibold text-foreground">
+                          {{ medicalRecordPatientCode }}
+                        </p>
+                      </div>
+                      <div>
+                        <p
+                          class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                        >
+                          Full Name
+                        </p>
+                        <p class="text-sm font-semibold text-foreground">
+                          {{ medicalRecordPatientName }}
+                        </p>
+                      </div>
+                      <div>
+                        <p
+                          class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                        >
+                          Birth Date
+                        </p>
+                        <p class="text-sm text-foreground">{{ medicalRecordPatientBirthDate }}</p>
+                      </div>
+                      <div>
+                        <p
+                          class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                        >
+                          Gender
+                        </p>
+                        <p class="text-sm text-foreground">{{ medicalRecordPatientGenderLabel }}</p>
+                      </div>
+                      <div>
+                        <p
+                          class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                        >
+                          Occupation
+                        </p>
+                        <p class="text-sm text-foreground">{{ medicalRecordPatientOccupation }}</p>
+                      </div>
+                      <div>
+                        <p
+                          class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                        >
+                          Address
+                        </p>
+                        <p class="text-sm text-foreground">{{ medicalRecordPatientAddress }}</p>
+                      </div>
+                      <div>
+                        <p
+                          class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                        >
+                          Phone Number
+                        </p>
+                        <p class="text-sm text-foreground">{{ medicalRecordPatientPhone }}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Admission Overview</CardTitle>
+                  </CardHeader>
+                  <CardContent class="space-y-4">
+                    <div class="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <p
+                          class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                        >
+                          Reason for Admission
+                        </p>
+                        <p class="whitespace-pre-line text-sm text-foreground">
+                          {{ medicalRecordReason }}
+                        </p>
+                      </div>
+                      <div>
+                        <p
+                          class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                        >
+                          Exam timeframe
+                        </p>
+                        <p class="text-sm text-foreground">{{ selectedExamTimeRange }}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Examination Summary</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div v-if="medicalRecordExamination" class="space-y-6">
+                      <div class="grid gap-4 md:grid-cols-2">
+                        <div>
+                          <p
+                            class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                          >
+                            General Examination
+                          </p>
+                          <p class="whitespace-pre-line text-sm text-foreground">
+                            {{ medicalRecordExamination.generalAssessment ?? '—' }}
+                          </p>
+                        </div>
+                        <div>
+                          <p
+                            class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                          >
+                            System Examination
+                          </p>
+                          <p class="whitespace-pre-line text-sm text-foreground">
+                            {{ medicalRecordExamination.systemAssessment ?? '—' }}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div class="grid gap-4 md:grid-cols-2">
+                        <div>
+                          <p
+                            class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                          >
+                            Initial Diagnosis
+                          </p>
+                          <p class="whitespace-pre-line text-sm text-foreground">
+                            {{ medicalRecordExamination.initialDiagnosis ?? '—' }}
+                          </p>
+                        </div>
+                        <div>
+                          <p
+                            class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                          >
+                            Medical History
+                          </p>
+                          <p class="whitespace-pre-line text-sm text-foreground">
+                            {{ medicalRecordExamination.diseaseProgression ?? '—' }}
+                          </p>
+                        </div>
+                        <div>
+                          <p
+                            class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                          >
+                            Personal History
+                          </p>
+                          <p class="whitespace-pre-line text-sm text-foreground">
+                            {{ medicalRecordExamination.personalHistory ?? '—' }}
+                          </p>
+                        </div>
+                        <div>
+                          <p
+                            class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                          >
+                            Family History
+                          </p>
+                          <p class="whitespace-pre-line text-sm text-foreground">
+                            {{ medicalRecordExamination.familyHistory ?? '—' }}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div>
+                        <p
+                          class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                        >
+                          Diagnoses
+                        </p>
+                        <div
+                          v-if="medicalRecordExamination.diagnoses.length"
+                          class="mt-1 space-y-1 text-sm"
+                        >
+                          <div
+                            v-for="diagnosis in medicalRecordExamination.diagnoses"
+                            :key="`${diagnosis.diseaseId}-${diagnosis.isPrimary}`"
+                            class="flex flex-wrap items-center gap-2"
+                          >
+                            <span
+                              class="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary"
+                            >
+                              {{ diagnosis.isPrimary ? 'Primary' : 'Secondary' }}
+                            </span>
+                            <span class="font-medium text-foreground">
+                              {{ diagnosis.disease?.code ?? '—' }}
+                            </span>
+                            <span class="text-muted-foreground">
+                              {{ diagnosis.disease?.name ?? '—' }}
+                            </span>
+                          </div>
+                        </div>
+                        <p v-else class="mt-1 text-sm text-muted-foreground">
+                          No diagnoses recorded.
+                        </p>
+                      </div>
+
+                      <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        <div>
+                          <p
+                            class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                          >
+                            Exam Time
+                          </p>
+                          <p class="text-sm text-foreground">{{ medicalRecordExamTime }}</p>
+                        </div>
+                        <div>
+                          <p
+                            class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                          >
+                            Weight
+                          </p>
+                          <p class="text-sm text-foreground">{{ medicalRecordExamWeight }}</p>
+                        </div>
+                        <div>
+                          <p
+                            class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                          >
+                            Height
+                          </p>
+                          <p class="text-sm text-foreground">{{ medicalRecordExamHeight }}</p>
+                        </div>
+                        <div>
+                          <p
+                            class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                          >
+                            BMI
+                          </p>
+                          <p class="text-sm text-foreground">{{ medicalRecordExamBmi }}</p>
+                        </div>
+                        <div>
+                          <p
+                            class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                          >
+                            Pulse
+                          </p>
+                          <p class="text-sm text-foreground">{{ medicalRecordExamPulse }}</p>
+                        </div>
+                        <div>
+                          <p
+                            class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                          >
+                            Temperature
+                          </p>
+                          <p class="text-sm text-foreground">{{ medicalRecordExamTemperature }}</p>
+                        </div>
+                        <div>
+                          <p
+                            class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                          >
+                            Respiratory Rate
+                          </p>
+                          <p class="text-sm text-foreground">
+                            {{ medicalRecordExamRespiratoryRate }}
+                          </p>
+                        </div>
+                        <div>
+                          <p
+                            class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                          >
+                            Blood Pressure
+                          </p>
+                          <p class="text-sm text-foreground">
+                            {{ medicalRecordExamBloodPressure }}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <p v-else class="py-8 text-center text-sm text-muted-foreground">
+                      No examination has been recorded for this medical record yet.
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
 
-            <TabsContent value="lab" class="px-6 py-6">
-              <Card>
-                <CardContent class="py-12 text-center text-sm text-muted-foreground">
-                  Content will be added later.
+            <TabsContent value="lab" class="space-y-4 px-6 py-6">
+              <div v-if="!selectedRecord" class="py-12 text-center text-sm text-muted-foreground">
+                Select a patient to view laboratory orders.
+              </div>
+              <Card v-else>
+                <CardHeader>
+                  <CardTitle>Laboratory Orders</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div
+                    v-if="labOrdersLoading"
+                    class="flex items-center gap-2 text-sm text-muted-foreground"
+                  >
+                    <Loader2 class="h-4 w-4 animate-spin" />
+                    Loading laboratory orders...
+                  </div>
+                  <Alert v-else-if="labOrdersError" variant="destructive">
+                    <AlertCircle class="mr-2 h-5 w-5" />
+                    <AlertTitle>Unable to load laboratory orders</AlertTitle>
+                    <AlertDescription>
+                      {{ labOrdersError }}
+                    </AlertDescription>
+                  </Alert>
+                  <div
+                    v-else-if="!labOrders.length"
+                    class="py-8 text-center text-sm text-muted-foreground"
+                  >
+                    No laboratory orders available for this patient.
+                  </div>
+                  <div v-else class="overflow-x-auto rounded-lg border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead class="whitespace-nowrap">Order Code</TableHead>
+                          <TableHead class="whitespace-nowrap">Service Code</TableHead>
+                          <TableHead>Service Name</TableHead>
+                          <TableHead class="w-24 text-right">Quantity</TableHead>
+                          <TableHead>Execution Room</TableHead>
+                          <TableHead>Ordered By</TableHead>
+                          <TableHead class="w-32 text-center">Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow v-for="row in labOrders" :key="`${row.orderId}-${row.id}`">
+                          <TableCell class="font-semibold text-foreground">
+                            {{ row.orderCode }}
+                          </TableCell>
+                          <TableCell class="text-sm text-muted-foreground">
+                            {{ row.serviceCode }}
+                          </TableCell>
+                          <TableCell class="text-sm text-foreground">
+                            {{ row.serviceName }}
+                          </TableCell>
+                          <TableCell class="text-right text-sm font-medium">
+                            {{ row.quantity }}
+                          </TableCell>
+                          <TableCell class="text-sm text-foreground">
+                            {{ row.executionRoom }}
+                          </TableCell>
+                          <TableCell class="text-sm text-foreground">
+                            {{ row.orderedBy }}
+                          </TableCell>
+                          <TableCell class="text-center">
+                            <span
+                              :class="`inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-semibold ${row.statusClass}`"
+                            >
+                              {{ row.statusLabel }}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -834,6 +1641,15 @@ watch(filteredRecords, (list) => {
         :selected-record="selectedRecord"
         :saving="examinationSaving"
         @save="handleSaveExamination"
+      />
+      <MedicalExaminationServicesDialog
+        v-model:open="servicesDialogOpen"
+        :selected-record="selectedRecord"
+        :patient-detail="medicalRecordPatientDetail"
+        :examination-detail="medicalRecordExamination"
+        :loading-details="medicalRecordDetailLoading"
+        :saving="servicesSaving"
+        @save="handleSaveServices"
       />
     </div>
   </section>

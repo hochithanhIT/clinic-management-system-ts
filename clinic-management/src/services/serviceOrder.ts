@@ -1,6 +1,7 @@
 import { apiFetch } from "./http"
 import type { ApiSuccessResponse } from "./http"
 import type { PaginationMeta } from "./types"
+import type { MedicalStaffSummary } from "./medicalRecord"
 
 export interface ServiceOrderSummary {
   id: number
@@ -9,6 +10,7 @@ export interface ServiceOrderSummary {
   status: number
   medicalRecordId: number
   medicalRecordCode: string
+  orderingStaff: MedicalStaffSummary | null
 }
 
 interface GetServiceOrdersResponse {
@@ -21,6 +23,15 @@ interface GetServiceOrdersResponse {
       id: number
       maBA: string
     }
+    nvChiDinh: {
+      id: number
+      hoTen: string
+      maNV: string
+      khoa: {
+        id: number
+        tenKhoa: string
+      } | null
+    } | null
   }>
   pagination: PaginationMeta
 }
@@ -30,6 +41,34 @@ export interface GetServiceOrdersParams {
   limit?: number
   search?: string
   medicalRecordId?: number
+}
+
+type ServiceOrderStaffResponse = {
+  id: number
+  hoTen: string
+  maNV: string
+  khoa: {
+    id: number
+    tenKhoa: string
+  } | null
+} | null
+
+const mapStaff = (staff: ServiceOrderStaffResponse): MedicalStaffSummary | null => {
+  if (!staff) {
+    return null
+  }
+
+  return {
+    id: staff.id,
+    name: staff.hoTen,
+    code: staff.maNV,
+    department: staff.khoa
+      ? {
+          id: staff.khoa.id,
+          name: staff.khoa.tenKhoa,
+        }
+      : null,
+  }
 }
 
 export const getServiceOrders = async (
@@ -57,6 +96,7 @@ export const getServiceOrders = async (
       status: order.trangThai,
       medicalRecordId: order.benhAn.id,
       medicalRecordCode: order.benhAn.maBA,
+      orderingStaff: mapStaff(order.nvChiDinh),
     })),
     pagination,
   }
@@ -72,6 +112,12 @@ export interface ServiceOrderDetailSummary {
     id: number
     code: string
     name: string
+    executionRoom: {
+      id: number
+      name: string
+      departmentId: number | null
+      departmentName: string | null
+    } | null
   }
   serviceOrderId: number
   serviceOrderCode: string
@@ -88,6 +134,14 @@ interface GetServiceOrderDetailsResponse {
       id: number
       maDV: string
       tenDV: string
+      phongThucHien: {
+        id: number
+        tenPhong: string
+        khoa: {
+          id: number
+          tenKhoa: string
+        } | null
+      } | null
     }
     phieuChiDinh: {
       id: number
@@ -119,9 +173,164 @@ export const getServiceOrderDetails = async (
         id: detail.dichVu.id,
         code: detail.dichVu.maDV,
         name: detail.dichVu.tenDV,
+        executionRoom: detail.dichVu.phongThucHien
+          ? {
+              id: detail.dichVu.phongThucHien.id,
+              name: detail.dichVu.phongThucHien.tenPhong,
+              departmentId: detail.dichVu.phongThucHien.khoa?.id ?? null,
+              departmentName: detail.dichVu.phongThucHien.khoa?.tenKhoa ?? null,
+            }
+          : null,
       },
       serviceOrderId: detail.phieuChiDinh.id,
       serviceOrderCode: detail.phieuChiDinh.maPhieuCD,
     })),
+  }
+}
+
+const serializeDateInput = (value: string | Date): string => {
+  if (value instanceof Date) {
+    return value.toISOString()
+  }
+
+  return value
+}
+
+interface CreateServiceOrderResponse {
+  serviceOrder: {
+    id: number
+    maPhieuCD: string
+    thoiGianTao: string
+    trangThai: number
+    benhAn: {
+      id: number
+      maBA: string
+    }
+    nvChiDinh: {
+      id: number
+      hoTen: string
+      maNV: string
+      khoa: {
+        id: number
+        tenKhoa: string
+      } | null
+    } | null
+  }
+}
+
+export interface CreateServiceOrderPayload {
+  code: string
+  medicalRecordId: number
+  createdAt: string | Date
+  status: number
+  assignedStaffId?: number
+}
+
+export const createServiceOrder = async (
+  payload: CreateServiceOrderPayload,
+): Promise<ServiceOrderSummary> => {
+  const requestBody: Record<string, unknown> = {
+    maPhieuCD: payload.code,
+    benhAnId: payload.medicalRecordId,
+    thoiGianTao: serializeDateInput(payload.createdAt),
+    trangThai: payload.status,
+  }
+
+  if (typeof payload.assignedStaffId === "number") {
+    requestBody.nvChiDinhId = payload.assignedStaffId
+  }
+
+  const response = await apiFetch<ApiSuccessResponse<CreateServiceOrderResponse>>("/service-order", {
+    method: "POST",
+    json: requestBody,
+  })
+
+  const { serviceOrder } = response.data
+
+  return {
+    id: serviceOrder.id,
+    code: serviceOrder.maPhieuCD,
+    createdAt: serviceOrder.thoiGianTao,
+    status: serviceOrder.trangThai,
+    medicalRecordId: serviceOrder.benhAn.id,
+    medicalRecordCode: serviceOrder.benhAn.maBA,
+    orderingStaff: mapStaff(serviceOrder.nvChiDinh),
+  }
+}
+
+interface CreateServiceOrderDetailResponse {
+  serviceOrderDetail: {
+    id: number
+    soLuong: number
+    tongTien: number
+    yeuCauKQ: boolean
+    trangThaiDongTien: boolean
+    dichVu: {
+      id: number
+      maDV: string
+      tenDV: string
+      phongThucHien: {
+        id: number
+        tenPhong: string
+        khoa: {
+          id: number
+          tenKhoa: string
+        } | null
+      } | null
+    }
+    phieuChiDinh: {
+      id: number
+      maPhieuCD: string
+    }
+  }
+}
+
+export interface CreateServiceOrderDetailPayload {
+  serviceOrderId: number
+  serviceId: number
+  quantity: number
+  amount: number
+  requireResult: boolean
+  isPaid: boolean
+}
+
+export const createServiceOrderDetail = async (
+  payload: CreateServiceOrderDetailPayload,
+): Promise<ServiceOrderDetailSummary> => {
+  const response = await apiFetch<ApiSuccessResponse<CreateServiceOrderDetailResponse>>("/service-order/detail", {
+    method: "POST",
+    json: {
+      phieuChiDinhId: payload.serviceOrderId,
+      dichVuId: payload.serviceId,
+      soLuong: payload.quantity,
+      tongTien: payload.amount,
+      yeuCauKQ: payload.requireResult,
+      trangThaiDongTien: payload.isPaid,
+    },
+  })
+
+  const { serviceOrderDetail } = response.data
+
+  return {
+    id: serviceOrderDetail.id,
+    quantity: serviceOrderDetail.soLuong,
+    amount: serviceOrderDetail.tongTien,
+    requireResult: serviceOrderDetail.yeuCauKQ,
+    isPaid: serviceOrderDetail.trangThaiDongTien,
+    service: {
+      id: serviceOrderDetail.dichVu.id,
+      code: serviceOrderDetail.dichVu.maDV,
+      name: serviceOrderDetail.dichVu.tenDV,
+      executionRoom: serviceOrderDetail.dichVu.phongThucHien
+        ? {
+            id: serviceOrderDetail.dichVu.phongThucHien.id,
+            name: serviceOrderDetail.dichVu.phongThucHien.tenPhong,
+            departmentId: serviceOrderDetail.dichVu.phongThucHien.khoa?.id ?? null,
+            departmentName: serviceOrderDetail.dichVu.phongThucHien.khoa?.tenKhoa ?? null,
+          }
+        : null,
+    },
+    serviceOrderId: serviceOrderDetail.phieuChiDinh.id,
+    serviceOrderCode: serviceOrderDetail.phieuChiDinh.maPhieuCD,
   }
 }

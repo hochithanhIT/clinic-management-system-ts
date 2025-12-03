@@ -569,6 +569,7 @@ const updateMedicalRecord = async (
       select: {
         id: true,
         thoiGianVao: true,
+        nvKhamId: true,
       },
     });
 
@@ -623,8 +624,10 @@ const updateMedicalRecord = async (
 
     if (payload.nvKhamId !== undefined) {
       if (payload.nvKhamId === null) {
-        updateData.nvKham = { disconnect: true };
-      } else {
+        if (existingRecord.nvKhamId !== null) {
+          updateData.nvKham = { disconnect: true };
+        }
+      } else if (existingRecord.nvKhamId === null) {
         const staffDoctor = await prisma.nhanVien.findUnique({
           where: { id: payload.nvKhamId },
           select: { id: true },

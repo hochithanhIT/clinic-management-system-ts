@@ -21,6 +21,15 @@ const baseServiceOrderBody = z.object({
   trangThai: z.coerce
     .number()
     .int("Trạng thái không hợp lệ"),
+  nvChiDinhId: z
+    .union([
+      z.coerce
+        .number()
+        .int("Nhân viên chỉ định không hợp lệ")
+        .min(1, "Nhân viên chỉ định không hợp lệ"),
+      z.null(),
+    ])
+    .optional(),
 });
 
 const addServiceOrderBody = baseServiceOrderBody;

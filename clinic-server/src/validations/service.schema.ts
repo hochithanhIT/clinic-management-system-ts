@@ -73,6 +73,15 @@ const addServiceBody = z.object({
     .number()
     .int("Nhóm dịch vụ không hợp lệ")
     .min(1, "Nhóm dịch vụ không hợp lệ"),
+  phongThucHienId: z
+    .union([
+      z.coerce
+        .number()
+        .int("Phòng thực hiện không hợp lệ")
+        .min(1, "Phòng thực hiện không hợp lệ"),
+      z.null(),
+    ])
+    .optional(),
 });
 
 const updateServiceBody = addServiceBody
