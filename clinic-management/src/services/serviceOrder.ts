@@ -164,6 +164,9 @@ interface GetServiceOrderDetailsResponse {
         } | null
       } | null
     }
+    ketQua: {
+      id: number
+    } | null
     phieuChiDinh: {
       id: number
       maPhieuCD: string
@@ -241,7 +244,7 @@ interface CreateServiceOrderResponse {
     id: number
     maPhieuCD: string
     thoiGianTao: string
-    trangThai: number
+    trangThai: number | null
     benhAn: {
       id: number
       maBA: string
@@ -299,7 +302,7 @@ export const createServiceOrder = async (
     id: serviceOrder.id,
     code: serviceOrder.maPhieuCD,
     createdAt: serviceOrder.thoiGianTao,
-    status: serviceOrder.trangThai,
+    status: serviceOrder.trangThai ?? 0,
     medicalRecordId: serviceOrder.benhAn.id,
     medicalRecordCode: serviceOrder.benhAn.maBA,
     orderingStaff: mapStaff(serviceOrder.nvChiDinh),
@@ -350,7 +353,7 @@ export const updateServiceOrder = async (
     id: serviceOrder.id,
     code: serviceOrder.maPhieuCD,
     createdAt: serviceOrder.thoiGianTao,
-    status: serviceOrder.trangThai,
+    status: serviceOrder.trangThai ?? 0,
     medicalRecordId: serviceOrder.benhAn.id,
     medicalRecordCode: serviceOrder.benhAn.maBA,
     orderingStaff: mapStaff(serviceOrder.nvChiDinh),

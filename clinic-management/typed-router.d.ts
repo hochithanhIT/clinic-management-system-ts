@@ -58,6 +58,13 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/laboratory/': RouteRecordInfo<
+      '/laboratory/',
+      '/laboratory',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
     '/login/': RouteRecordInfo<
       '/login/',
       '/login',
@@ -126,6 +133,12 @@ declare module 'vue-router/auto-routes' {
     'src/pages/changePassword/index.vue': {
       routes:
         | '/changePassword/'
+      views:
+        | never
+    }
+    'src/pages/laboratory/index.vue': {
+      routes:
+        | '/laboratory/'
       views:
         | never
     }

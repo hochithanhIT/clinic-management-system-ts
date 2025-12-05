@@ -242,7 +242,7 @@ const isServiceInSelection = (serviceId: number): boolean => {
 }
 
 const isServiceChecked = (serviceId: number): boolean => {
-  return selectedServices.value.some((entry) => entry.serviceId === serviceId)
+  return selectedServiceIds.value.includes(serviceId) || isServiceInSelection(serviceId)
 }
 
 const isServiceCheckboxDisabled = (serviceId: number): boolean => {

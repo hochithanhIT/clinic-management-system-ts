@@ -76,11 +76,8 @@ const medicalExaminationMenu: MenuRouteItem[] = [
   { name: 'Off-schedule Examination', path: '/' },
 ]
 const diagnosticsMenu: MenuRouteItem[] = [
-  { name: 'Laboratory', path: '/' },
-  { name: 'Ultrasound', path: '/' },
-  { name: 'Endoscopy', path: '/' },
-  { name: 'ECG', path: '/' },
-  { name: 'X-Ray', path: '/' },
+  { name: 'Laboratory', path: '/laboratory/' },
+  { name: 'Diagnostic Imaging', path: '/diagnostic-imaging/' },
   { name: 'Surgery & Procedures', path: '/' },
 ]
 </script>
