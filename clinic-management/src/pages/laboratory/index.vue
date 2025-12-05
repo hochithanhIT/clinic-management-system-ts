@@ -1,19 +1,24 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
-import type { DateValue } from 'reka-ui'
-import { parseDate } from '@internationalized/date'
 import { CalendarIcon, Loader2, SearchIcon } from 'lucide-vue-next'
-import { toast } from 'vue-sonner'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { DateTimePicker } from '@/components/ui/date-time-picker'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   Table,
   TableBody,
@@ -30,689 +35,65 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination'
-import { useFormatting } from '@/pages/medicalExamination/composables/useFormatting'
-import { useStatusHelpers } from '@/pages/medicalExamination/composables/useStatusHelpers'
-import {
-  getServiceOrderDetails,
-  getServiceOrders,
-  updateServiceOrder,
-  type ServiceOrderDetailSummary,
-  type ServiceOrderSummary,
-} from '@/services/serviceOrder'
-import { getMedicalRecords, type MedicalRecordSummary } from '@/services/medicalRecord'
-import { getResults, type ResultSummary } from '@/services/result'
-
-type StatusFilter = 'active' | 'completed'
-
-interface LaboratoryOrderRow {
-  id: number
-  code: string
-  status: number
-  medicalRecordId: number
-  medicalRecordCode: string
-  patientCode: string
-  patientName: string
-  patientBirthDate: string | null
-  patientDepartment: string
-  patientRoom: string
-  orderedAt: string
-  orderedBy: string
-}
-
-interface LaboratoryDetailRow {
-  id: number
-  serviceId: number
-  serviceCode: string
-  serviceName: string
-  referenceValue: string | null
-}
-
-const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const
-type PageSizeOption = (typeof PAGE_SIZE_OPTIONS)[number]
-
-const { formatDate, formatDateTime, getDefaultFromDate, parseDateInput, startOfDay, endOfDay } =
-  useFormatting()
-
-const { getServiceOrderStatusClass, getServiceOrderStatusLabel } = useStatusHelpers()
-
-const today = getDefaultFromDate()
-
-const filters = reactive({
-  from: today,
-  to: today,
-  status: 'active' as StatusFilter,
-  page: 1,
-  limit: PAGE_SIZE_OPTIONS[0] as PageSizeOption,
-})
-
-const appliedFilters = reactive({
-  // Tracks the filter values used for data fetching; updated explicitly via search/reset actions.
-  from: filters.from,
-  to: filters.to,
-  status: filters.status,
-  page: filters.page,
-  limit: filters.limit,
-})
-
-const fromDatePopoverOpen = ref(false)
-const toDatePopoverOpen = ref(false)
-const fromCalendarValue = ref<DateValue | undefined>(undefined)
-const toCalendarValue = ref<DateValue | undefined>(undefined)
-
-const orders = ref<LaboratoryOrderRow[]>([])
-const ordersLoading = ref(false)
-const ordersError = ref<string | null>(null)
-const ordersTotalPages = ref(1)
-const ordersTotalItems = ref(0)
-const ordersLoadToken = ref(0)
-
-const orderDetailsCache = ref<Record<number, LaboratoryDetailRow[]>>({})
-const orderDetailResultsCache = ref<Record<number, Record<number, string>>>({})
-
-const medicalRecordCache = ref<Record<number, MedicalRecordSummary>>({})
-
-const selectedOrderId = ref<number | null>(null)
-const resultsLoading = ref(false)
-const resultsError = ref<string | null>(null)
-const resultDrafts = ref<Record<number, string>>({})
-const statusUpdating = ref(false)
-
-const statusOptions: Array<{ value: StatusFilter; label: string }> = [
-  { value: 'active', label: 'In progress' },
-  { value: 'completed', label: 'Completed' },
-]
-
-const isPageSizeOption = (value: number): value is PageSizeOption => {
-  return PAGE_SIZE_OPTIONS.includes(value as PageSizeOption)
-}
-
-const pageSizeModel = computed({
-  get: () => String(filters.limit),
-  set: (value: string | number | boolean) => {
-    const parsed = Number(value)
-    if (!Number.isFinite(parsed) || !isPageSizeOption(parsed)) {
-      return
-    }
-
-    if (filters.limit !== parsed) {
-      filters.limit = parsed
-      filters.page = 1
-      appliedFilters.limit = parsed
-      appliedFilters.page = 1
-    }
-  },
-})
-
-const fromDateLabel = computed(() => {
-  return filters.from ? formatDate(filters.from) : 'Select date'
-})
-
-const toDateLabel = computed(() => {
-  return filters.to ? formatDate(filters.to) : 'Select date'
-})
-
-const toCalendarValueFromString = (value: string | null | undefined): DateValue | undefined => {
-  if (!value) {
-    return undefined
-  }
-
-  try {
-    return parseDate(value) as unknown as DateValue
-  } catch {
-    return undefined
-  }
-}
-
-const fromCalendarBinding = computed<DateValue | undefined>(() => {
-  const value = fromCalendarValue.value
-  return value ? (value as unknown as DateValue) : undefined
-})
-
-const toCalendarBinding = computed<DateValue | undefined>(() => {
-  const value = toCalendarValue.value
-  return value ? (value as unknown as DateValue) : undefined
-})
-
-const handleFromDateSelect = (value: DateValue | undefined) => {
-  if (!value) {
-    fromCalendarValue.value = undefined
-    return
-  }
-
-  fromCalendarValue.value = value
-  filters.from = value.toString()
-  fromDatePopoverOpen.value = false
-}
-
-const handleToDateSelect = (value: DateValue | undefined) => {
-  if (!value) {
-    toCalendarValue.value = undefined
-    return
-  }
-
-  toCalendarValue.value = value
-  filters.to = value.toString()
-  toDatePopoverOpen.value = false
-}
-
-watch(
-  () => filters.from,
-  (next) => {
-    fromCalendarValue.value = toCalendarValueFromString(next)
-  },
-  { immediate: true },
-)
-
-watch(
-  () => filters.to,
-  (next) => {
-    toCalendarValue.value = toCalendarValueFromString(next)
-  },
-  { immediate: true },
-)
-
-const selectedOrder = computed(() => {
-  return orders.value.find((order) => order.id === selectedOrderId.value) ?? null
-})
-
-const selectedOrderDetails = computed(() => {
-  if (!selectedOrderId.value) {
-    return [] as LaboratoryDetailRow[]
-  }
-
-  return orderDetailsCache.value[selectedOrderId.value] ?? []
-})
-
-const selectedOrderStatusLabel = computed(() => {
-  if (!selectedOrder.value) {
-    return null
-  }
-
-  return {
-    label: getServiceOrderStatusLabel(selectedOrder.value.status),
-    class: getServiceOrderStatusClass(selectedOrder.value.status),
-  }
-})
-
-const isReceiveDisabled = computed(() => {
-  if (statusUpdating.value) {
-    return true
-  }
-
-  return !selectedOrder.value || selectedOrder.value.status !== 1
-})
-
-const shouldShowCancelReceive = computed(() => {
-  return selectedOrder.value?.status === 2
-})
-
-const isCancelReceiveDisabled = computed(() => {
-  if (statusUpdating.value) {
-    return true
-  }
-
-  return selectedOrder.value?.status !== 2
-})
-
-const normalizeDateRange = () => {
-  const fromDate = parseDateInput(filters.from)
-  const toDate = parseDateInput(filters.to)
-
-  if (!fromDate && toDate) {
-    filters.from = filters.to
-    return
-  }
-
-  if (fromDate && !toDate) {
-    filters.to = filters.from
-    return
-  }
-
-  if (fromDate && toDate && fromDate > toDate) {
-    filters.to = filters.from
-  }
-}
-
-const matchesStatusFilter = (status: number, filter: StatusFilter): boolean => {
-  switch (filter) {
-    case 'completed':
-      return status === 3
-    case 'active':
-    default:
-      return status === 1 || status === 2
-  }
-}
-
-const evaluateOrderAgainstFilters = (
-  order: ServiceOrderSummary,
-  rangeStart: Date | null,
-  rangeEnd: Date | null,
-  statusFilter: StatusFilter,
-): { matches: boolean; beforeRange: boolean } => {
-  const createdAt = new Date(order.createdAt)
-  if (Number.isNaN(createdAt.getTime())) {
-    return { matches: false, beforeRange: false }
-  }
-
-  if (rangeEnd && createdAt > rangeEnd) {
-    return { matches: false, beforeRange: false }
-  }
-
-  if (rangeStart && createdAt < rangeStart) {
-    return { matches: false, beforeRange: true }
-  }
-
-  if (!matchesStatusFilter(order.status, statusFilter)) {
-    return { matches: false, beforeRange: false }
-  }
-
-  return { matches: true, beforeRange: false }
-}
-
-const ensureMedicalRecord = async (
-  medicalRecordId: number,
-  medicalRecordCode: string,
-): Promise<MedicalRecordSummary | null> => {
-  if (medicalRecordCache.value[medicalRecordId]) {
-    return medicalRecordCache.value[medicalRecordId]
-  }
-
-  try {
-    const { medicalRecords } = await getMedicalRecords({
-      page: 1,
-      limit: 1,
-      search: medicalRecordCode,
-    })
-
-    const record =
-      medicalRecords.find((item) => item.id === medicalRecordId) ?? medicalRecords[0] ?? null
-
-    if (record) {
-      medicalRecordCache.value[medicalRecordId] = record
-    }
-
-    return record ?? null
-  } catch (error) {
-    console.error('Failed to load medical record summary', error)
-    return null
-  }
-}
-
-const SERVICE_TYPE_CONSULTATION = 'công khám'
-const SERVICE_TYPE_LABORATORY = 'xét nghiệm'
-
-const getServiceTypeName = (detail: ServiceOrderDetailSummary): string => {
-  const typeName =
-    detail.service.type?.name ??
-    detail.service.group?.type?.name ??
-    detail.service.group?.name ??
-    ''
-
-  return typeName.trim().toLowerCase()
-}
-
-const isConsultationService = (detail: ServiceOrderDetailSummary): boolean => {
-  return getServiceTypeName(detail) === SERVICE_TYPE_CONSULTATION
-}
-
-const isLaboratoryService = (detail: ServiceOrderDetailSummary): boolean => {
-  return getServiceTypeName(detail) === SERVICE_TYPE_LABORATORY
-}
-
-const mapDetailRows = (details: ServiceOrderDetailSummary[]): LaboratoryDetailRow[] => {
-  return details
-    .filter((detail) => isLaboratoryService(detail))
-    .map((detail) => ({
-      id: detail.id,
-      serviceId: detail.service.id,
-      serviceCode: detail.service.code,
-      serviceName: detail.service.name,
-      referenceValue: null,
-    }))
-}
-
-const shouldSkipServiceOrder = (details: ServiceOrderDetailSummary[]): boolean => {
-  if (!details.length) {
-    return false
-  }
-
-  return details.every((detail) => isConsultationService(detail))
-}
-
-const loadOrders = async () => {
-  ordersLoadToken.value += 1
-  const requestId = ordersLoadToken.value
-
-  ordersLoading.value = true
-  ordersError.value = null
-
-  const pageSize = Math.max(appliedFilters.limit || PAGE_SIZE_OPTIONS[0], 1)
-  const targetPage = Math.max(appliedFilters.page, 1)
-  const targetStartIndex = (targetPage - 1) * pageSize
-  const targetEndIndex = targetStartIndex + pageSize
-
-  const fromDate = parseDateInput(appliedFilters.from)
-  const toDate = parseDateInput(appliedFilters.to)
-  const rangeStart = fromDate ? startOfDay(fromDate) : null
-  const rangeEnd = toDate ? endOfDay(toDate) : null
-  const statusFilter = appliedFilters.status
-
-  const pageOrders: LaboratoryOrderRow[] = []
-  const pageDetails: Record<number, LaboratoryDetailRow[]> = {}
-
-  let matchedCount = 0
-  let apiPage = 1
-  let totalApiPages = 1
-  const apiPageSize = Math.max(pageSize, 25)
-  let stopDueToRange = false
-
-  try {
-    while (!stopDueToRange && apiPage <= totalApiPages) {
-      const { serviceOrders, pagination } = await getServiceOrders({
-        page: apiPage,
-        limit: apiPageSize,
-      })
-
-      if (requestId !== ordersLoadToken.value) {
-        return
-      }
-
-      totalApiPages = pagination.totalPages ?? totalApiPages
-
-      if (!serviceOrders.length) {
-        break
-      }
-
-      for (const order of serviceOrders) {
-        const { matches, beforeRange } = evaluateOrderAgainstFilters(
-          order,
-          rangeStart,
-          rangeEnd,
-          statusFilter,
-        )
-
-        if (beforeRange) {
-          stopDueToRange = true
-          break
-        }
-
-        if (!matches) {
-          continue
-        }
-
-        const { serviceOrderDetails } = await getServiceOrderDetails(order.id)
-        if (requestId !== ordersLoadToken.value) {
-          return
-        }
-
-        if (shouldSkipServiceOrder(serviceOrderDetails)) {
-          continue
-        }
-
-        const detailRows = mapDetailRows(serviceOrderDetails)
-
-        const currentIndex = matchedCount
-        matchedCount += 1
-
-        if (currentIndex >= targetStartIndex && currentIndex < targetEndIndex) {
-          const medicalRecord = await ensureMedicalRecord(
-            order.medicalRecordId,
-            order.medicalRecordCode,
-          )
-
-          if (requestId !== ordersLoadToken.value) {
-            return
-          }
-
-          const clinicRoom = medicalRecord?.clinicRoom
-          const departmentName =
-            clinicRoom?.department?.name ?? order.orderingStaff?.department?.name ?? '—'
-          const roomName = clinicRoom?.name ?? '—'
-
-          pageOrders.push({
-            id: order.id,
-            code: order.code,
-            status: order.status,
-            medicalRecordId: order.medicalRecordId,
-            medicalRecordCode: order.medicalRecordCode,
-            patientCode: medicalRecord?.patient.code ?? '—',
-            patientName: medicalRecord?.patient.fullName ?? '—',
-            patientBirthDate: medicalRecord?.patient.birthDate ?? null,
-            patientDepartment: departmentName,
-            patientRoom: roomName,
-            orderedAt: order.createdAt,
-            orderedBy: order.orderingStaff?.name ?? '—',
-          })
-
-          pageDetails[order.id] = detailRows
-        }
-      }
-
-      apiPage += 1
-    }
-
-    if (requestId !== ordersLoadToken.value) {
-      return
-    }
-
-    const totalPages = matchedCount > 0 ? Math.ceil(matchedCount / pageSize) : 1
-    ordersTotalItems.value = matchedCount
-    ordersTotalPages.value = Math.max(totalPages, 1)
-
-    if (matchedCount > 0 && pageOrders.length === 0 && targetPage > ordersTotalPages.value) {
-      appliedFilters.page = ordersTotalPages.value
-      filters.page = ordersTotalPages.value
-      return
-    }
-
-    if (matchedCount === 0 && appliedFilters.page !== 1) {
-      appliedFilters.page = 1
-    }
-
-    pageOrders.sort((a, b) => {
-      const first = new Date(b.orderedAt).getTime()
-      const second = new Date(a.orderedAt).getTime()
-      if (Number.isNaN(first) || Number.isNaN(second)) {
-        return 0
-      }
-      return first - second
-    })
-
-    orders.value = pageOrders
-    orderDetailsCache.value = pageDetails
-    filters.page = Math.min(targetPage, ordersTotalPages.value)
-
-    if (
-      !selectedOrderId.value ||
-      !orders.value.some((order) => order.id === selectedOrderId.value)
-    ) {
-      selectedOrderId.value = orders.value[0]?.id ?? null
-    }
-  } catch (error) {
-    console.error('Failed to load laboratory orders', error)
-    if (requestId === ordersLoadToken.value) {
-      ordersError.value = 'Unable to load service orders. Please try again.'
-      orders.value = []
-      orderDetailsCache.value = {}
-      ordersTotalItems.value = 0
-      ordersTotalPages.value = 1
-      selectedOrderId.value = null
-    }
-  } finally {
-    if (requestId === ordersLoadToken.value) {
-      ordersLoading.value = false
-    }
-  }
-}
-
-const loadResultsForOrder = async (orderId: number) => {
-  resultsLoading.value = true
-  resultsError.value = null
-  resultDrafts.value = {}
-
-  try {
-    const { results } = await getResults({ serviceOrderId: orderId, limit: 100 })
-    const resultMap: Record<number, ResultSummary> = {}
-    for (const result of results) {
-      resultMap[result.serviceOrderDetail.id] = result
-    }
-
-    const detailResults: Record<number, string> = {}
-
-    for (const detail of selectedOrderDetails.value) {
-      detailResults[detail.id] = resultMap[detail.id]?.result ?? ''
-    }
-
-    orderDetailResultsCache.value[orderId] = detailResults
-    resultDrafts.value = { ...detailResults }
-  } catch (error) {
-    console.error('Failed to load laboratory results', error)
-    resultsError.value = 'Unable to load laboratory results. Please try again.'
-    orderDetailResultsCache.value[orderId] = {}
-    resultDrafts.value = {}
-  } finally {
-    resultsLoading.value = false
-  }
-}
-
-const applyOrderStatusUpdate = (orderId: number, status: number) => {
-  orders.value = orders.value.map((order) =>
-    order.id === orderId
-      ? {
-          ...order,
-          status,
-        }
-      : order,
-  )
-}
-
-const handlePageChange = (page: number) => {
-  if (!Number.isFinite(page)) {
-    return
-  }
-
-  const nextPage = Math.min(Math.max(Math.trunc(page), 1), ordersTotalPages.value)
-  if (nextPage !== appliedFilters.page) {
-    appliedFilters.page = nextPage
-  }
-  filters.page = nextPage
-}
-
-const handleSelectOrder = (orderId: number) => {
-  selectedOrderId.value = orderId
-}
-
-const handleReceive = async () => {
-  if (!selectedOrder.value || isReceiveDisabled.value) {
-    return
-  }
-
-  statusUpdating.value = true
-
-  try {
-    const updated = await updateServiceOrder(selectedOrder.value.id, { status: 2 })
-    applyOrderStatusUpdate(updated.id, updated.status)
-    toast.success('Service order marked as In progress.')
-  } catch (error) {
-    console.error('Failed to update service order status', error)
-    toast.error('Unable to mark the service order as In progress. Please try again.')
-  } finally {
-    statusUpdating.value = false
-  }
-}
-
-const handleCancelReceive = async () => {
-  if (!selectedOrder.value || isCancelReceiveDisabled.value) {
-    return
-  }
-
-  statusUpdating.value = true
-
-  try {
-    const updated = await updateServiceOrder(selectedOrder.value.id, { status: 1 })
-    applyOrderStatusUpdate(updated.id, updated.status)
-    toast.success('Service order reverted to Pending.')
-  } catch (error) {
-    console.error('Failed to revert service order status', error)
-    toast.error('Unable to revert the service order to Pending. Please try again.')
-  } finally {
-    statusUpdating.value = false
-  }
-}
-
-const handleSearch = () => {
-  normalizeDateRange()
-  filters.page = 1
-  appliedFilters.from = filters.from
-  appliedFilters.to = filters.to
-  appliedFilters.status = filters.status
-  appliedFilters.limit = filters.limit
-  appliedFilters.page = filters.page
-}
-
-const handleResetFilters = () => {
-  const resetDate = getDefaultFromDate()
-  filters.from = resetDate
-  filters.to = resetDate
-  filters.status = 'active'
-  filters.limit = PAGE_SIZE_OPTIONS[0]
-  filters.page = 1
-  normalizeDateRange()
-  appliedFilters.from = filters.from
-  appliedFilters.to = filters.to
-  appliedFilters.status = filters.status
-  appliedFilters.limit = filters.limit
-  appliedFilters.page = filters.page
-}
-
-watch(
-  () => [filters.from, filters.to],
-  () => {
-    normalizeDateRange()
-    filters.page = 1
-  },
-)
-
-watch(
-  () => [filters.status, filters.limit],
-  () => {
-    filters.page = 1
-  },
-)
-
-watch(
-  () => [
-    appliedFilters.from,
-    appliedFilters.to,
-    appliedFilters.status,
-    appliedFilters.page,
-    appliedFilters.limit,
-  ],
-  () => {
-    void loadOrders()
-  },
-  { immediate: true },
-)
-
-watch(selectedOrderId, (orderId) => {
-  if (!orderId) {
-    resultDrafts.value = {}
-    resultsError.value = null
-    return
-  }
-
-  const cached = orderDetailResultsCache.value[orderId]
-  if (cached) {
-    resultDrafts.value = { ...cached }
-    return
-  }
-
-  void loadResultsForOrder(orderId)
-})
-
-onMounted(() => {
-  normalizeDateRange()
-})
+import { Textarea } from '@/components/ui/textarea'
+
+import { PAGE_SIZE_OPTIONS, useLaboratoryPage } from './useLaboratoryPage'
+
+const {
+  filters,
+  fromDatePopoverOpen,
+  toDatePopoverOpen,
+  fromCalendarBinding,
+  toCalendarBinding,
+  fromDateLabel,
+  toDateLabel,
+  statusOptions,
+  pageSizeModel,
+  ordersLoading,
+  ordersError,
+  orders,
+  ordersTotalItems,
+  selectedOrderId,
+  selectedOrder,
+  selectedOrderDetails,
+  selectedOrderStatusLabel,
+  resultsLoading,
+  resultsError,
+  resultDrafts,
+  resultDetailDialogOpen,
+  resultDetailDialogTarget,
+  resultDetailForm,
+  resultDetailSaving,
+  shouldShowCancelReceive,
+  isCancelReceiveDisabled,
+  isReceiveDisabled,
+  shouldShowDeliverResults,
+  isDeliverResultsDisabled,
+  shouldShowCancelResults,
+  isCancelResultsDisabled,
+  hasSavedResultsForSelectedOrder,
+  isSelectedOrderCompleted,
+  areAllResultsCompletedForSelectedOrder,
+  performerName,
+  formatDate,
+  formatDateTime,
+  getServiceOrderStatusClass,
+  getServiceOrderStatusLabel,
+  updateResultDraftPartial,
+  handleFromDateSelect,
+  handleToDateSelect,
+  handleSearch,
+  handleResetFilters,
+  handlePageChange,
+  handleSelectOrder,
+  handleResultDetailDoubleClick,
+  handleResultDetailSave,
+  handleResultDetailCancel,
+  handleReceive,
+  handleCancelReceive,
+  handleDeliverResults,
+  handleCancelResults,
+} = useLaboratoryPage()
 </script>
 
 <template>
@@ -938,15 +319,28 @@ onMounted(() => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <TableRow v-for="detail in selectedOrderDetails" :key="detail.id">
+                <TableRow
+                  v-for="detail in selectedOrderDetails"
+                  :key="detail.id"
+                  @dblclick="handleResultDetailDoubleClick(detail, $event)"
+                >
                   <TableCell class="font-medium">{{ detail.serviceCode }}</TableCell>
                   <TableCell>{{ detail.serviceName }}</TableCell>
                   <TableCell class="w-60">
                     <Input
                       type="text"
-                      :model-value="resultDrafts[detail.id] ?? ''"
+                      :model-value="resultDrafts[detail.id]?.description ?? ''"
                       placeholder="Enter result"
-                      @update:model-value="(value) => (resultDrafts[detail.id] = String(value))"
+                      :disabled="isSelectedOrderCompleted"
+                      :title="
+                        isSelectedOrderCompleted
+                          ? 'Results are read-only once the service order is completed.'
+                          : undefined
+                      "
+                      @update:model-value="
+                        (value) =>
+                          updateResultDraftPartial(detail.id, { description: String(value) })
+                      "
                     />
                   </TableCell>
                   <TableCell>{{ detail.referenceValue ?? '—' }}</TableCell>
@@ -959,10 +353,37 @@ onMounted(() => {
 
       <div class="flex justify-end gap-3">
         <Button
+          v-if="shouldShowCancelResults"
+          type="button"
+          variant="outline"
+          :disabled="isCancelResultsDisabled"
+          @click="handleCancelResults"
+        >
+          Cancel Results
+        </Button>
+        <Button
+          v-if="shouldShowDeliverResults"
+          type="button"
+          :disabled="isDeliverResultsDisabled"
+          :title="
+            !areAllResultsCompletedForSelectedOrder
+              ? 'All services must have saved results before delivering.'
+              : undefined
+          "
+          @click="handleDeliverResults"
+        >
+          Deliver Results
+        </Button>
+        <Button
           v-if="shouldShowCancelReceive"
           type="button"
           variant="outline"
           :disabled="isCancelReceiveDisabled"
+          :title="
+            hasSavedResultsForSelectedOrder
+              ? 'Results already exist and this order cannot be reverted.'
+              : undefined
+          "
           @click="handleCancelReceive"
         >
           Cancel Receive
@@ -973,4 +394,111 @@ onMounted(() => {
       </div>
     </div>
   </section>
+
+  <Dialog :open="resultDetailDialogOpen" @update:open="(value) => (resultDetailDialogOpen = value)">
+    <DialogContent class="max-w-5xl sm:max-w-5xl lg:max-w-6xl">
+      <DialogHeader>
+        <DialogTitle>Result Details</DialogTitle>
+        <DialogDescription v-if="resultDetailDialogTarget">
+          {{ resultDetailDialogTarget.serviceCode }} · {{ resultDetailDialogTarget.serviceName }}
+        </DialogDescription>
+      </DialogHeader>
+
+      <div class="space-y-5">
+        <Field>
+          <FieldLabel for="result-detail-description">Description</FieldLabel>
+          <Textarea
+            id="result-detail-description"
+            v-model="resultDetailForm.description"
+            rows="8"
+            placeholder="Enter description"
+            :disabled="resultDetailSaving || isSelectedOrderCompleted"
+          />
+        </Field>
+
+        <Field>
+          <FieldLabel>Performed By</FieldLabel>
+          <Input :value="performerName || '—'" disabled />
+        </Field>
+
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <Field>
+            <FieldLabel for="result-detail-received-at">Received At</FieldLabel>
+            <DateTimePicker
+              id="result-detail-received-at"
+              v-model="resultDetailForm.receivedAt"
+              placeholder="Select received time"
+              :disabled="resultDetailSaving || isSelectedOrderCompleted"
+            />
+          </Field>
+
+          <Field>
+            <FieldLabel for="result-detail-performed-at">Performed At</FieldLabel>
+            <DateTimePicker
+              id="result-detail-performed-at"
+              v-model="resultDetailForm.performedAt"
+              placeholder="Select performed time"
+              :disabled="resultDetailSaving || isSelectedOrderCompleted"
+            />
+          </Field>
+
+          <Field>
+            <FieldLabel for="result-detail-delivered-at">Delivered At</FieldLabel>
+            <DateTimePicker
+              id="result-detail-delivered-at"
+              v-model="resultDetailForm.deliveredAt"
+              placeholder="Select delivered time"
+              :disabled="resultDetailSaving || isSelectedOrderCompleted"
+            />
+          </Field>
+        </div>
+
+        <Field>
+          <FieldLabel for="result-detail-conclusion">Conclusion</FieldLabel>
+          <Input
+            id="result-detail-conclusion"
+            v-model="resultDetailForm.conclusion"
+            type="text"
+            placeholder="Enter conclusion"
+            :disabled="resultDetailSaving || isSelectedOrderCompleted"
+          />
+        </Field>
+
+        <Field>
+          <FieldLabel for="result-detail-note">Note</FieldLabel>
+          <Textarea
+            id="result-detail-note"
+            v-model="resultDetailForm.note"
+            rows="4"
+            placeholder="Enter note"
+            :disabled="resultDetailSaving || isSelectedOrderCompleted"
+          />
+        </Field>
+      </div>
+
+      <DialogFooter>
+        <Button
+          type="button"
+          variant="outline"
+          :disabled="resultDetailSaving"
+          @click="handleResultDetailCancel"
+        >
+          Cancel
+        </Button>
+        <Button
+          type="button"
+          :disabled="resultDetailSaving || isSelectedOrderCompleted"
+          :title="
+            isSelectedOrderCompleted
+              ? 'Results are read-only once the service order is completed.'
+              : undefined
+          "
+          @click="handleResultDetailSave"
+        >
+          <Loader2 v-if="resultDetailSaving" class="mr-2 h-4 w-4 animate-spin" />
+          <span>Save</span>
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 </template>

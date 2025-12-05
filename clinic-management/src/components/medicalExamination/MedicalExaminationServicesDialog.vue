@@ -57,6 +57,7 @@ export interface MedicalExaminationServicesSavePayload {
     quantity: number
     price: number
     executionRoomId: number | null
+    requireResult: boolean
   }>
 }
 
@@ -69,6 +70,8 @@ interface SelectedServiceEntry {
   price: number
   quantity: number
   executionRoomId: number | null
+  serviceTypeName: string | null
+  requireResult: boolean
   hasResult: boolean
 }
 
@@ -93,9 +96,11 @@ interface InitialOrderPayload {
     serviceId: number
     code: string
     name: string
+    serviceTypeName: string | null
     price: number
     quantity: number
     executionRoomId: number | null
+    requireResult: boolean
     hasResult: boolean
   }>
 }
@@ -159,8 +164,20 @@ const orderDatePopoverOpen = ref(false)
 const orderDateValue = ref<CalendarDate | undefined>(undefined)
 const orderTimeValue = ref('')
 
+const normalizeServiceTypeName = (value: string | null | undefined): string => {
+  return typeof value === 'string' ? value.trim().toLocaleLowerCase('vi-VN') : ''
+}
+
+const isConsultationServiceType = (value: string | null | undefined): boolean => {
+  return normalizeServiceTypeName(value) === 'công khám'
+}
+
+const shouldRequireResultForType = (value: string | null | undefined): boolean => {
+  return !isConsultationServiceType(value)
+}
+
 const processServiceTypes = (types: ServiceTypeSummary[]): ServiceTypeSummary[] => {
-  return types.filter((type) => type.name.trim().toLowerCase() !== 'công khám')
+  return types.filter((type) => !isConsultationServiceType(type.name))
 }
 
 const activeServiceTab = computed({
@@ -612,7 +629,10 @@ const addSelectedServices = () => {
 
     if (existing) {
       existing.quantity = Math.max(existing.quantity + 1, 1)
+      existing.requireResult = shouldRequireResultForType(existing.serviceTypeName)
     } else {
+      const serviceTypeName = service.serviceGroup?.serviceType?.name ?? null
+      const requireResult = shouldRequireResultForType(serviceTypeName)
       selectedServices.value.push({
         detailId: null,
         serviceId: service.id,
@@ -622,6 +642,8 @@ const addSelectedServices = () => {
         price: service.price,
         quantity: 1,
         executionRoomId: service.executionRoom?.id ?? null,
+        serviceTypeName,
+        requireResult,
         hasResult: false,
       })
       ensureRoomOptionPresent(service.executionRoom)
@@ -703,13 +725,21 @@ const handleSave = () => {
     medicalRecordId: props.selectedRecord.id,
     orderTime: resolvedOrderTime,
     serviceOrderId: props.initialOrder?.id ?? null,
-    services: selectedServices.value.map((service) => ({
-      detailId: service.detailId,
-      serviceId: service.serviceId,
-      quantity: service.quantity,
-      price: service.price,
-      executionRoomId: service.executionRoomId,
-    })),
+    services: selectedServices.value.map((service) => {
+      const requireResult = shouldRequireResultForType(service.serviceTypeName)
+      if (service.requireResult !== requireResult) {
+        service.requireResult = requireResult
+      }
+
+      return {
+        detailId: service.detailId,
+        serviceId: service.serviceId,
+        quantity: service.quantity,
+        price: service.price,
+        executionRoomId: service.executionRoomId,
+        requireResult,
+      }
+    }),
   })
 }
 
@@ -760,17 +790,23 @@ const applyInitialOrder = (order: InitialOrderPayload) => {
 
   orderDatePopoverOpen.value = false
 
-  selectedServices.value = order.services.map((service) => ({
-    detailId: service.detailId,
-    serviceId: service.serviceId,
-    code: service.code,
-    name: service.name,
-    unit: null,
-    price: service.price,
-    quantity: service.quantity,
-    executionRoomId: service.executionRoomId,
-    hasResult: service.hasResult,
-  }))
+  selectedServices.value = order.services.map((service) => {
+    const serviceTypeName = service.serviceTypeName ?? null
+    const requireResult = shouldRequireResultForType(serviceTypeName)
+    return {
+      detailId: service.detailId,
+      serviceId: service.serviceId,
+      code: service.code,
+      name: service.name,
+      unit: null,
+      price: service.price,
+      quantity: service.quantity,
+      executionRoomId: service.executionRoomId,
+      serviceTypeName,
+      requireResult,
+      hasResult: service.hasResult,
+    }
+  })
   selectedServiceIds.value = []
 }
 

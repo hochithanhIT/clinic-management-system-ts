@@ -14,10 +14,12 @@ export interface DiagnosticServiceRow {
   serviceId: number
   serviceCode: string
   serviceName: string
+  serviceTypeName: string | null
   quantity: number
   amount: number
   unitPrice: number
   executionRoomId: number | null
+  requireResult: boolean
   hasResult: boolean
 }
 
@@ -42,9 +44,11 @@ export interface ServicesDialogInitialOrder {
     serviceId: number
     code: string
     name: string
+    serviceTypeName: string | null
     price: number
     quantity: number
     executionRoomId: number | null
+    requireResult: boolean
     hasResult: boolean
   }>
 }

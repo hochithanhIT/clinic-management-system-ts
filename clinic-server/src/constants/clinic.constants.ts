@@ -17,6 +17,10 @@ const clinicConstants = {
     pendingPayment: toNumber(process.env.SERVICE_ORDER_STATUS_PENDING_PAYMENT, 0),
     paid: toNumber(process.env.SERVICE_ORDER_STATUS_PAID, 1),
   },
+  invoiceStatus: {
+    active: toNumber(process.env.INVOICE_STATUS_ACTIVE, 0),
+    cancelled: toNumber(process.env.INVOICE_STATUS_CANCELLED, 1),
+  },
   medicalRecordStatus: {
     waitingForExam: toNumber(process.env.MEDICAL_RECORD_STATUS_WAITING_FOR_EXAM, 0),
     inProgress: toNumber(process.env.MEDICAL_RECORD_STATUS_IN_PROGRESS, 1),

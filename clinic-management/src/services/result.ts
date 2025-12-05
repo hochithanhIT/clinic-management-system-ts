@@ -59,6 +59,57 @@ interface GetResultsResponse {
   pagination: PaginationMeta
 }
 
+type ResultResponse = GetResultsResponse["results"][number]
+
+const mapResult = (result: ResultResponse): ResultSummary => ({
+  id: result.id,
+  receivedAt: result.tgTiepNhan,
+  performedAt: result.tgThucHien,
+  deliveredAt: result.tgTraKQ,
+  result: result.ketQua,
+  conclusion: result.ketLuan,
+  note: result.ghiChu,
+  url: result.url,
+  serviceOrderDetail: {
+    id: result.chiTietPhieuChiDinh.id,
+    quantity: result.chiTietPhieuChiDinh.soLuong,
+    amount: Number(result.chiTietPhieuChiDinh.tongTien),
+    requireResult: result.chiTietPhieuChiDinh.yeuCauKQ,
+    isPaid: result.chiTietPhieuChiDinh.trangThaiDongTien,
+    service: {
+      id: result.chiTietPhieuChiDinh.dichVu.id,
+      code: result.chiTietPhieuChiDinh.dichVu.maDV,
+      name: result.chiTietPhieuChiDinh.dichVu.tenDV,
+    },
+    serviceOrder: {
+      id: result.chiTietPhieuChiDinh.phieuChiDinh.id,
+      code: result.chiTietPhieuChiDinh.phieuChiDinh.maPhieuCD,
+    },
+  },
+})
+
+interface CreateResultPayload {
+  serviceOrderDetailId: number
+  receivedAt: string
+  performedAt: string
+  deliveredAt: string
+  result: string
+  conclusion: string
+  note?: string
+  url?: string
+}
+
+interface UpdateResultPayload {
+  serviceOrderDetailId?: number
+  receivedAt?: string
+  performedAt?: string
+  deliveredAt?: string
+  result?: string
+  conclusion?: string
+  note?: string
+  url?: string
+}
+
 export interface GetResultsParams {
   page?: number
   limit?: number
@@ -98,32 +149,49 @@ export const getResults = async (
   const { results, pagination } = response.data
 
   return {
-    results: results.map((result) => ({
-      id: result.id,
-      receivedAt: result.tgTiepNhan,
-      performedAt: result.tgThucHien,
-      deliveredAt: result.tgTraKQ,
-      result: result.ketQua,
-      conclusion: result.ketLuan,
-      note: result.ghiChu,
-      url: result.url,
-      serviceOrderDetail: {
-        id: result.chiTietPhieuChiDinh.id,
-        quantity: result.chiTietPhieuChiDinh.soLuong,
-        amount: Number(result.chiTietPhieuChiDinh.tongTien),
-        requireResult: result.chiTietPhieuChiDinh.yeuCauKQ,
-        isPaid: result.chiTietPhieuChiDinh.trangThaiDongTien,
-        service: {
-          id: result.chiTietPhieuChiDinh.dichVu.id,
-          code: result.chiTietPhieuChiDinh.dichVu.maDV,
-          name: result.chiTietPhieuChiDinh.dichVu.tenDV,
-        },
-        serviceOrder: {
-          id: result.chiTietPhieuChiDinh.phieuChiDinh.id,
-          code: result.chiTietPhieuChiDinh.phieuChiDinh.maPhieuCD,
-        },
-      },
-    })),
+    results: results.map(mapResult),
     pagination,
   }
+}
+
+export const createResult = async (payload: CreateResultPayload): Promise<ResultSummary> => {
+  const response = await apiFetch<ApiSuccessResponse<{ result: ResultResponse }>>("/result", {
+    method: "POST",
+    json: {
+      ctpcdId: payload.serviceOrderDetailId,
+      tgTiepNhan: payload.receivedAt,
+      tgThucHien: payload.performedAt,
+      tgTraKQ: payload.deliveredAt,
+      ketQua: payload.result,
+      ketLuan: payload.conclusion,
+      ghiChu: payload.note,
+      url: payload.url,
+    },
+  })
+
+  return mapResult(response.data.result)
+}
+
+export const updateResult = async (
+  id: number,
+  payload: UpdateResultPayload,
+): Promise<ResultSummary> => {
+  const response = await apiFetch<ApiSuccessResponse<{ result: ResultResponse }>>(
+    `/result/${id}`,
+    {
+      method: "PUT",
+      json: {
+        ctpcdId: payload.serviceOrderDetailId,
+        tgTiepNhan: payload.receivedAt,
+        tgThucHien: payload.performedAt,
+        tgTraKQ: payload.deliveredAt,
+        ketQua: payload.result,
+        ketLuan: payload.conclusion,
+        ghiChu: payload.note,
+        url: payload.url,
+      },
+    },
+  )
+
+  return mapResult(response.data.result)
 }

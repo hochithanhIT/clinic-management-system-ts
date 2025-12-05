@@ -207,3 +207,16 @@ export const getInvoiceDetails = async (
     details: details.map(mapToInvoiceDetailItem),
   }
 }
+
+export const cancelInvoice = async (invoiceId: number): Promise<InvoiceSummary> => {
+  const response = await apiFetch<ApiSuccessResponse<{ invoice: RawInvoice }>>(
+    `/invoice/${invoiceId}/cancel`,
+    {
+      method: "POST",
+    },
+  );
+
+  const { invoice } = response.data;
+
+  return mapToInvoiceSummary(invoice);
+}

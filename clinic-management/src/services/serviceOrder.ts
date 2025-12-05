@@ -568,3 +568,9 @@ export const deleteServiceOrderDetail = async (serviceOrderDetailId: number): Pr
     method: "DELETE",
   })
 }
+
+export const deleteServiceOrder = async (serviceOrderId: number): Promise<void> => {
+  await apiFetch(`/service-order/${serviceOrderId}`, {
+    method: "DELETE",
+  })
+}

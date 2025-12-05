@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { toRefs } from 'vue'
 
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu'
+
 import type { BillingInvoice } from './types'
 import {
   Table,
@@ -35,6 +42,7 @@ const { invoices, isLoading, pagination, currentPage, summary, hasSelection } = 
 const emit = defineEmits<{
   (e: 'page-change', page: number): void
   (e: 'row-dblclick', invoice: BillingInvoice): void
+  (e: 'cancel', invoice: BillingInvoice): void
 }>()
 
 const currencyFormatter = new Intl.NumberFormat('vi-VN', {
@@ -97,28 +105,47 @@ const getCollectorDisplay = (invoice: BillingInvoice): string => {
             <TableEmpty :colspan="5">No invoices for this medical record.</TableEmpty>
           </template>
           <template v-else>
-            <TableRow
-              v-for="invoice in invoices"
-              :key="invoice.id"
-              class="cursor-pointer"
-              @dblclick="emit('row-dblclick', invoice)"
-            >
-              <TableCell class="font-medium">
-                <span>{{ invoice.code }}</span>
-              </TableCell>
-              <TableCell class="text-right">
-                <span>{{ formatAmount(invoice.amount) }}</span>
-              </TableCell>
-              <TableCell>
-                <span>{{ formatPaidAt(invoice.paidAt) }}</span>
-              </TableCell>
-              <TableCell>
-                <span>{{ getCollectorDisplay(invoice) }}</span>
-              </TableCell>
-              <TableCell>
-                <span v-if="invoice.isCancelled">Cancelled</span>
-              </TableCell>
-            </TableRow>
+            <ContextMenu v-for="invoice in invoices" :key="invoice.id" :modal="false">
+              <ContextMenuTrigger as-child>
+                <TableRow
+                  :class="[
+                    'cursor-pointer hover:bg-muted/60',
+                    invoice.isCancelled ? 'text-muted-foreground' : '',
+                  ]"
+                  @dblclick="emit('row-dblclick', invoice)"
+                >
+                  <TableCell class="font-medium">
+                    <span>{{ invoice.code }}</span>
+                  </TableCell>
+                  <TableCell class="text-right">
+                    <span>{{ formatAmount(invoice.amount) }}</span>
+                  </TableCell>
+                  <TableCell>
+                    <span>{{ formatPaidAt(invoice.paidAt) }}</span>
+                  </TableCell>
+                  <TableCell>
+                    <span>{{ getCollectorDisplay(invoice) }}</span>
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      class="font-semibold"
+                      :class="invoice.isCancelled ? 'text-destructive' : 'text-emerald-600'"
+                    >
+                      {{ invoice.isCancelled ? 'Cancelled' : 'Paid' }}
+                    </span>
+                  </TableCell>
+                </TableRow>
+              </ContextMenuTrigger>
+              <ContextMenuContent class="w-48">
+                <ContextMenuItem
+                  variant="destructive"
+                  :disabled="invoice.isCancelled"
+                  @select="emit('cancel', invoice)"
+                >
+                  Cancel invoice
+                </ContextMenuItem>
+              </ContextMenuContent>
+            </ContextMenu>
           </template>
         </TableBody>
       </Table>

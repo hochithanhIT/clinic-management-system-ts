@@ -6,6 +6,7 @@ import {
   getServiceOrders,
   getServiceOrderDetails,
   updateServiceOrder,
+  deleteServiceOrder,
 } from '@/services/serviceOrder'
 import { getResults } from '@/services/result'
 import type { MedicalRecordSummary, MedicalStaffSummary } from '@/services/medicalRecord'
@@ -557,10 +558,12 @@ export const useServiceOrders = ({
               serviceId: detail.service.id,
               serviceCode: detail.service.code,
               serviceName: detail.service.name,
+              serviceTypeName,
               quantity,
               amount: totalAmount,
               unitPrice,
               executionRoomId: detail.service.executionRoom?.id ?? null,
+              requireResult: detail.requireResult,
               hasResult: detail.hasResult,
             })
             labDetailsMap[order.id] = bucket
@@ -587,10 +590,12 @@ export const useServiceOrders = ({
               serviceId: detail.service.id,
               serviceCode: detail.service.code,
               serviceName: detail.service.name,
+              serviceTypeName,
               quantity,
               amount: totalAmount,
               unitPrice,
               executionRoomId: detail.service.executionRoom?.id ?? null,
+              requireResult: detail.requireResult,
               hasResult: detail.hasResult,
             })
             imagingDetailsMap[order.id] = bucket
@@ -616,10 +621,12 @@ export const useServiceOrders = ({
             serviceId: detail.service.id,
             serviceCode: detail.service.code,
             serviceName: detail.service.name,
+            serviceTypeName,
             quantity,
             amount: totalAmount,
             unitPrice,
             executionRoomId: detail.service.executionRoom?.id ?? null,
+            requireResult: detail.requireResult,
             hasResult: detail.hasResult,
           })
           procedureDetailsMap[order.id] = bucket
@@ -767,6 +774,10 @@ export const useServiceOrders = ({
     return status === 0
   }
 
+  const canDeleteServiceOrder = (status: number): boolean => {
+    return status < 2
+  }
+
   const isServiceOrderExecuting = (status: number): boolean => {
     return status >= 2
   }
@@ -820,9 +831,11 @@ export const useServiceOrders = ({
         serviceId: detail.serviceId,
         code: detail.serviceCode,
         name: detail.serviceName,
+        serviceTypeName: detail.serviceTypeName,
         price: detail.unitPrice,
         quantity: detail.quantity,
         executionRoomId: detail.executionRoomId,
+        requireResult: detail.requireResult,
         hasResult: detail.hasResult,
       })),
     }
@@ -868,6 +881,28 @@ export const useServiceOrders = ({
       0,
       'Service order has been moved back to the pending state.',
     )
+  }
+
+  const deleteServiceOrderById = async (orderId: number): Promise<boolean> => {
+    serviceOrderActionLoadingId.value = orderId
+
+    try {
+      await deleteServiceOrder(orderId)
+      toast.success('Service order deleted.')
+      await loadServiceOrders()
+      return true
+    } catch (error) {
+      const message =
+        error instanceof ApiError
+          ? error.message
+          : error instanceof Error && error.message
+            ? error.message
+            : 'Unable to delete the service order. Please try again.'
+      toast.error(message)
+      return false
+    } finally {
+      serviceOrderActionLoadingId.value = null
+    }
   }
 
   const requestCancelServiceOrder = (order: DiagnosticOrderSummaryRow) => {
@@ -966,6 +1001,8 @@ export const useServiceOrders = ({
     canSendServiceOrder,
     canCancelServiceOrder,
     canUpdateServiceOrder,
+    canDeleteServiceOrder,
     isServiceOrderExecuting,
+    deleteServiceOrderById,
   }
 }

@@ -9,6 +9,8 @@ import clinicConstants from "../constants/clinic.constants";
 const INVOICE_CODE_PREFIX = "HD";
 const INVOICE_CODE_PAD = 6;
 
+const INVOICE_STATUS = clinicConstants.invoiceStatus;
+
 const invoiceSelect = {
   id: true,
   maHD: true,
@@ -352,6 +354,96 @@ const settleInvoice = async (
 
       if (error.code === "P2003") {
         return Send.badRequest(res, null, "Thông tin liên kết không hợp lệ");
+      }
+    }
+
+    return next(error);
+  }
+};
+
+const cancelInvoice = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { id }: InvoiceParam = invoiceSchema.invoiceParam.parse(req.params);
+
+    const invoice = await prisma.hoaDon.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        trangThai: true,
+        chiTiet: {
+          select: {
+            id: true,
+            chiTietPCD: {
+              select: {
+                id: true,
+                pcdId: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!invoice) {
+      return Send.notFound(res, null, "Không tìm thấy hóa đơn");
+    }
+
+    if (invoice.trangThai === INVOICE_STATUS.cancelled) {
+      return Send.badRequest(res, null, "Hóa đơn đã được hủy trước đó");
+    }
+
+    const detailRecords = invoice.chiTiet.map((detail) => detail.chiTietPCD);
+    const detailIds = detailRecords.map((detail) => detail.id);
+    const serviceOrderIds = Array.from(
+      new Set(detailRecords.map((detail) => detail.pcdId)),
+    );
+
+    const updatedInvoice = await prisma.$transaction(async (tx) => {
+      if (detailIds.length > 0) {
+        await tx.hoaDonChiTiet.deleteMany({ where: { hoaDonId: id } });
+
+        await tx.chiTietPhieuChiDinh.updateMany({
+          where: { id: { in: detailIds } },
+          data: { trangThaiDongTien: false },
+        });
+
+        if (serviceOrderIds.length > 0) {
+          await tx.phieuChiDinh.updateMany({
+            where: { id: { in: serviceOrderIds } },
+            data: { trangThai: clinicConstants.serviceOrderStatus.pendingPayment },
+          });
+        }
+      }
+
+      const result = await tx.hoaDon.update({
+        where: { id },
+        data: {
+          trangThai: INVOICE_STATUS.cancelled,
+          tongTien: new Prisma.Decimal(0),
+        },
+        select: invoiceSelect,
+      });
+
+      return result;
+    });
+
+    return Send.success(
+      res,
+      { invoice: mapInvoice(updatedInvoice) },
+      "Hủy hóa đơn thành công",
+    );
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return Send.validationErrors(res, error.flatten().fieldErrors);
+    }
+
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2025") {
+        return Send.notFound(res, null, "Không tìm thấy hóa đơn");
       }
     }
 
@@ -773,6 +865,7 @@ export default {
   addInvoice,
   updateInvoice,
   deleteInvoice,
+  cancelInvoice,
   addInvoiceDetail,
   updateInvoiceDetail,
 };

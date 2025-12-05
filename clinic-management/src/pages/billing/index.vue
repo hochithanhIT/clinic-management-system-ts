@@ -25,11 +25,26 @@ import { ApiError } from '@/services/http'
 import { getMedicalRecords } from '@/services/medicalRecord'
 import type { MedicalRecordSummary } from '@/services/medicalRecord'
 import { getServiceOrderDetails, getServiceOrders } from '@/services/serviceOrder'
-import { INVOICE_STATUS, getInvoiceDetails, getInvoices, settleInvoice } from '@/services/invoice'
+import {
+  INVOICE_STATUS,
+  cancelInvoice,
+  getInvoiceDetails,
+  getInvoices,
+  settleInvoice,
+} from '@/services/invoice'
 import type { InvoiceDetailItem, InvoiceSummary } from '@/services/invoice'
 import type { PaginationMeta } from '@/services/types'
 import type { AcceptableValue } from 'reka-ui'
 import { Button } from '@/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import {
   Dialog,
   DialogContent,
@@ -112,6 +127,10 @@ const billingInvoicesPage = ref(1)
 const billingInvoicesPageSize = 10
 
 const activeInvoiceRequestId = ref(0)
+
+const cancelInvoiceDialogOpen = ref(false)
+const cancelInvoiceDialogSubmitting = ref(false)
+const cancelInvoiceDialogInvoice = ref<BillingInvoice | null>(null)
 
 const paymentDialogOpen = ref(false)
 const paymentDialogLoading = ref(false)
@@ -533,6 +552,9 @@ watch(selectedRecord, (record) => {
     if (invoiceDetailDialogOpen.value) {
       handleInvoiceDialogOpenChange(false)
     }
+    if (cancelInvoiceDialogOpen.value) {
+      handleCancelInvoiceDialogOpenChange(false)
+    }
     return
   }
 
@@ -551,6 +573,13 @@ watch(selectedRecord, (record) => {
 
     if (invoiceDetailDialogRecord.value && invoiceDetailDialogRecord.value.id === record.id) {
       invoiceDetailDialogRecord.value = record
+    }
+  }
+
+  if (cancelInvoiceDialogOpen.value) {
+    const targetInvoice = cancelInvoiceDialogInvoice.value
+    if (!targetInvoice || targetInvoice.medicalRecordId !== record.id) {
+      handleCancelInvoiceDialogOpenChange(false)
     }
   }
 })
@@ -735,6 +764,61 @@ const handleInvoiceDialogOpenChange = (value: boolean) => {
 
 const handleInvoiceDialogCancel = () => {
   handleInvoiceDialogOpenChange(false)
+}
+
+const handleCancelInvoiceDialogOpenChange = (value: boolean) => {
+  cancelInvoiceDialogOpen.value = value
+
+  if (!value) {
+    cancelInvoiceDialogInvoice.value = null
+    cancelInvoiceDialogSubmitting.value = false
+  }
+}
+
+const handleRequestCancelInvoice = (invoice: BillingInvoice) => {
+  if (billingInvoicesLoading.value || invoice.isCancelled) {
+    return
+  }
+
+  cancelInvoiceDialogInvoice.value = invoice
+  cancelInvoiceDialogOpen.value = true
+}
+
+const handleConfirmCancelInvoice = async () => {
+  if (cancelInvoiceDialogSubmitting.value) {
+    return
+  }
+
+  const invoice = cancelInvoiceDialogInvoice.value
+
+  if (!invoice) {
+    toast.error('No invoice selected to cancel.')
+    return
+  }
+
+  cancelInvoiceDialogSubmitting.value = true
+
+  try {
+    const updatedInvoice = await cancelInvoice(invoice.id)
+    const targetRecordId = updatedInvoice.medicalRecordId
+
+    toast.success(`Invoice ${updatedInvoice.code} cancelled successfully.`)
+
+    handleCancelInvoiceDialogOpenChange(false)
+
+    await loadBillingRecords()
+
+    if (targetRecordId) {
+      selectedRecordId.value = targetRecordId
+    }
+
+    await loadInvoices()
+  } catch (error) {
+    const message = error instanceof ApiError ? error.message : 'Unable to cancel the invoice.'
+    toast.error(message)
+  } finally {
+    cancelInvoiceDialogSubmitting.value = false
+  }
 }
 
 const handlePaymentDialogOpenChange = (value: boolean) => {
@@ -1114,6 +1198,7 @@ onMounted(async () => {
               :has-selection="Boolean(selectedRecord)"
               @page-change="handleInvoicePageChange"
               @row-dblclick="handleInvoiceDoubleClick"
+              @cancel="handleRequestCancelInvoice"
             />
           </CardContent>
         </Card>
@@ -1377,5 +1462,35 @@ onMounted(async () => {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <AlertDialog :open="cancelInvoiceDialogOpen" @update:open="handleCancelInvoiceDialogOpenChange">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Cancel invoice?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will mark all services on
+            <span class="font-medium">{{
+              cancelInvoiceDialogInvoice?.code ?? 'this invoice'
+            }}</span>
+            as unpaid and revert related orders to pending payment status.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel
+            :disabled="cancelInvoiceDialogSubmitting"
+            class="hover:text-primary-foreground"
+          >
+            Keep invoice
+          </AlertDialogCancel>
+          <Button
+            variant="destructive"
+            :disabled="cancelInvoiceDialogSubmitting"
+            @click="handleConfirmCancelInvoice"
+          >
+            {{ cancelInvoiceDialogSubmitting ? 'Cancelling...' : 'Cancel invoice' }}
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </section>
 </template>

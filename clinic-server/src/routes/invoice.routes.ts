@@ -33,6 +33,12 @@ router.post(
 );
 
 router.post(
+  "/:id/cancel",
+  authMiddleware.authenticateUser,
+  invoiceController.cancelInvoice,
+);
+
+router.post(
   "/details",
   authMiddleware.authenticateUser,
   ValidationMiddleware.validateBody(invoiceSchema.addInvoiceDetailBody),

@@ -4,6 +4,7 @@ import { prisma } from "../db";
 import Send from "../utils/response.utils";
 import serviceOrderSchema from "../validations/service-order.schema";
 import { z } from "zod";
+import clinicConstants from "../constants/clinic.constants";
 
 const serviceOrderSelect = {
   id: true,
@@ -453,8 +454,56 @@ const deleteServiceOrder = async (
     const { id }: ServiceOrderParam =
       serviceOrderSchema.serviceOrderParam.parse(req.params);
 
-    await prisma.phieuChiDinh.delete({
+    const existingOrder = await prisma.phieuChiDinh.findUnique({
       where: { id },
+      select: { id: true },
+    });
+
+    if (!existingOrder) {
+      return Send.notFound(res, null, "Không tìm thấy phiếu chỉ định");
+    }
+
+    const relatedDetails = await prisma.chiTietPhieuChiDinh.findMany({
+      where: { pcdId: id },
+      select: {
+        id: true,
+        ketQua: { select: { id: true } },
+        hoaDonChiTiet: {
+          select: {
+            id: true,
+            hoaDon: { select: { trangThai: true } },
+          },
+        },
+      },
+    });
+
+    const hasResults = relatedDetails.some((detail) => detail.ketQua !== null);
+    const hasActiveInvoices = relatedDetails.some((detail) =>
+      detail.hoaDonChiTiet.some((invoiceDetail) => {
+        const status = invoiceDetail.hoaDon?.trangThai;
+        return (
+          status === undefined ||
+          status !== clinicConstants.invoiceStatus.cancelled
+        );
+      }),
+    );
+
+    if (hasResults || hasActiveInvoices) {
+      return Send.badRequest(
+        res,
+        null,
+        "Không thể xóa phiếu chỉ định đã có kết quả hoặc hóa đơn",
+      );
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.hoaDonChiTiet.deleteMany({
+        where: { ctpcdId: { in: relatedDetails.map((detail) => detail.id) } },
+      });
+
+      await tx.chiTietPhieuChiDinh.deleteMany({ where: { pcdId: id } });
+
+      await tx.phieuChiDinh.delete({ where: { id } });
     });
 
     return Send.success(res, null, "Xóa phiếu chỉ định thành công");

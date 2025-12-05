@@ -12,6 +12,15 @@ import { AlertCircle, Loader2 } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -64,6 +73,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useStatusHelpers } from './composables/useStatusHelpers'
 import { useFormatting } from './composables/useFormatting'
 import {
+  type DiagnosticOrderSummaryRow,
   type DiagnosticServiceRow,
   type ServiceOrderCategory,
 } from './composables/serviceOrderTypes'
@@ -292,6 +302,8 @@ const {
   canSendServiceOrder,
   canCancelServiceOrder,
   canUpdateServiceOrder,
+  canDeleteServiceOrder,
+  deleteServiceOrderById,
 } = useServiceOrders({
   selectedRecord,
   defaultOrderingStaffLabel,
@@ -302,6 +314,37 @@ const {
 const examinationDialogOpen = ref(false)
 const examinationSaving = ref(false)
 const servicesSaving = ref(false)
+const deleteOrderDialogOpen = ref(false)
+const deleteOrderTarget = ref<{ id: number; code: string; category: ServiceOrderCategory } | null>(
+  null,
+)
+const deleteOrderDisplay = computed(() => deleteOrderTarget.value?.code ?? '')
+const deleteOrderCategoryDisplay = computed(() => {
+  switch (deleteOrderTarget.value?.category) {
+    case 'lab':
+      return 'laboratory'
+    case 'imaging':
+      return 'imaging'
+    case 'procedure':
+      return 'procedure'
+    default:
+      return 'service'
+  }
+})
+const isDeletingOrder = computed(() => {
+  const targetId = deleteOrderTarget.value?.id ?? null
+  if (targetId === null) {
+    return false
+  }
+
+  return isOrderActionInProgress(targetId)
+})
+
+watch(deleteOrderDialogOpen, (open) => {
+  if (!open && !isDeletingOrder.value) {
+    deleteOrderTarget.value = null
+  }
+})
 
 const medicalRecordDetailLoading = ref(false)
 const medicalRecordPatientDetail = ref<PatientSummary | null>(null)
@@ -732,10 +775,12 @@ const submitServiceOrderCreate = async (payload: MedicalExaminationServicesSaveP
         serviceId: item.serviceId,
         quantity: item.quantity,
         amount: item.price * item.quantity,
-        requireResult: false,
+        requireResult: item.requireResult,
         isPaid: false,
       })
     }
+
+    await updateServiceOrder(serviceOrder.id, { status: 1 })
 
     toast.success('Service order saved.')
     await loadServiceOrders()
@@ -791,6 +836,7 @@ const submitServiceOrderUpdate = async (payload: MedicalExaminationServicesSaveP
         await updateServiceOrderDetail(item.detailId, {
           quantity: item.quantity,
           amount: totalAmount,
+          requireResult: item.requireResult,
         })
         retainedDetailIds.add(item.detailId)
       } else {
@@ -799,7 +845,7 @@ const submitServiceOrderUpdate = async (payload: MedicalExaminationServicesSaveP
           serviceId: item.serviceId,
           quantity: item.quantity,
           amount: totalAmount,
-          requireResult: false,
+          requireResult: item.requireResult,
           isPaid: false,
         })
       }
@@ -823,6 +869,8 @@ const submitServiceOrderUpdate = async (payload: MedicalExaminationServicesSaveP
       toast.warning('Some services were kept because results have already been recorded.')
     }
 
+    await updateServiceOrder(orderId, { status: 1 })
+
     toast.success('Service order updated.')
     await loadServiceOrders()
 
@@ -845,6 +893,52 @@ const submitServiceOrderUpdate = async (payload: MedicalExaminationServicesSaveP
     toast.error(message)
   } finally {
     servicesSaving.value = false
+  }
+}
+
+const handleDeleteDialogOpenChange = (value: boolean) => {
+  if (!value && isDeletingOrder.value) {
+    return
+  }
+
+  deleteOrderDialogOpen.value = value
+
+  if (!value) {
+    deleteOrderTarget.value = null
+  }
+}
+
+const handleRequestDeleteOrder = (
+  order: DiagnosticOrderSummaryRow,
+  category: ServiceOrderCategory,
+) => {
+  if (servicesSaving.value || isOrderActionInProgress(order.id)) {
+    return
+  }
+
+  if (!canDeleteServiceOrder(order.status)) {
+    toast.info('Only service orders that have not been received can be deleted.')
+    return
+  }
+
+  deleteOrderTarget.value = {
+    id: order.id,
+    code: order.code,
+    category,
+  }
+  deleteOrderDialogOpen.value = true
+}
+
+const handleConfirmDeleteOrder = async () => {
+  const target = deleteOrderTarget.value
+  if (!target || isDeletingOrder.value) {
+    return
+  }
+
+  const success = await deleteServiceOrderById(target.id)
+  if (success) {
+    deleteOrderDialogOpen.value = false
+    deleteOrderTarget.value = null
   }
 }
 
@@ -1584,6 +1678,18 @@ watch(filteredRecords, (list) => {
                               >
                                 Update order
                               </ContextMenuItem>
+                              <ContextMenuSeparator />
+                              <ContextMenuItem
+                                variant="destructive"
+                                :disabled="
+                                  !canDeleteServiceOrder(order.status) ||
+                                  isOrderActionInProgress(order.id) ||
+                                  servicesSaving
+                                "
+                                @select="handleRequestDeleteOrder(order, 'lab')"
+                              >
+                                Delete order
+                              </ContextMenuItem>
                             </ContextMenuContent>
                           </ContextMenu>
                         </TableBody>
@@ -1832,6 +1938,18 @@ watch(filteredRecords, (list) => {
                                 @select="requestUpdateServiceOrder(order, 'imaging')"
                               >
                                 Update order
+                              </ContextMenuItem>
+                              <ContextMenuSeparator />
+                              <ContextMenuItem
+                                variant="destructive"
+                                :disabled="
+                                  !canDeleteServiceOrder(order.status) ||
+                                  isOrderActionInProgress(order.id) ||
+                                  servicesSaving
+                                "
+                                @select="handleRequestDeleteOrder(order, 'imaging')"
+                              >
+                                Delete order
                               </ContextMenuItem>
                             </ContextMenuContent>
                           </ContextMenu>
@@ -2082,6 +2200,18 @@ watch(filteredRecords, (list) => {
                               >
                                 Update order
                               </ContextMenuItem>
+                              <ContextMenuSeparator />
+                              <ContextMenuItem
+                                variant="destructive"
+                                :disabled="
+                                  !canDeleteServiceOrder(order.status) ||
+                                  isOrderActionInProgress(order.id) ||
+                                  servicesSaving
+                                "
+                                @select="handleRequestDeleteOrder(order, 'procedure')"
+                              >
+                                Delete order
+                              </ContextMenuItem>
                             </ContextMenuContent>
                           </ContextMenu>
                         </TableBody>
@@ -2245,6 +2375,31 @@ watch(filteredRecords, (list) => {
         :initial-order="servicesDialogInitialOrder"
         @save="handleSaveServices"
       />
+      <AlertDialog :open="deleteOrderDialogOpen" @update:open="handleDeleteDialogOpenChange">
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete service order?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete
+              <span v-if="deleteOrderDisplay" class="font-medium">{{ deleteOrderDisplay }}</span>
+              <span v-else class="font-medium">this service order</span>
+              from the {{ deleteOrderCategoryDisplay }} queue. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel :disabled="isDeletingOrder" class="hover:text-primary-foreground">
+              Cancel
+            </AlertDialogCancel>
+            <Button
+              variant="destructive"
+              :disabled="isDeletingOrder"
+              @click="handleConfirmDeleteOrder"
+            >
+              {{ isDeletingOrder ? 'Deleting…' : 'Delete order' }}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   </section>
 </template>
