@@ -7,7 +7,7 @@ definePage({
 })
 
 import type { DateValue } from '@internationalized/date'
-import { getLocalTimeZone, today } from '@internationalized/date'
+import { getLocalTimeZone, parseDate, today } from '@internationalized/date'
 import { AlertCircle } from 'lucide-vue-next'
 import type { AcceptableValue } from 'reka-ui'
 import { toast } from 'vue-sonner'
@@ -23,6 +23,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Field, FieldLabel } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import ComboBox from '@/components/ComboBox.vue'
@@ -42,12 +44,18 @@ import { ApiError } from '@/services/http'
 import { getOccupations } from '@/services/occupation'
 import { getCities, getProvinces } from '@/services/location'
 import { getRooms } from '@/services/room'
-import { createPatient, deletePatient } from '@/services/patient'
+import { createPatient, deletePatient, getPatient, type PatientSummary } from '@/services/patient'
 import {
   createMedicalRecord,
   getMedicalRecords,
   updateMedicalRecord,
 } from '@/services/medicalRecord'
+import {
+  createMedicalExamination,
+  getMedicalExaminationByMedicalRecord,
+  updateMedicalExamination,
+  type MedicalExaminationDetail,
+} from '@/services/medicalExamination'
 import type { MedicalRecordSummary } from '@/services/medicalRecord'
 import type { PaginationMeta } from '@/services/types'
 import { useAuthStore } from '@/stores/auth'
@@ -73,6 +81,31 @@ const form = reactive<PatientFormState>({
 })
 
 const formErrors = ref<string[]>([])
+
+const vitalSignsDialogOpen = ref(false)
+const vitalSignsSubmitting = ref(false)
+const vitalSignsErrors = ref<string[]>([])
+const vitalSignsForm = reactive({
+  temperature: '',
+  pulse: '',
+  systolic: '',
+  diastolic: '',
+  respiratoryRate: '',
+  spo2: '',
+  weight: '',
+  height: '',
+  bmi: '',
+})
+
+const selectedMedicalRecord = ref<MedicalRecordSummary | null>(null)
+const selectingMedicalRecord = ref(false)
+const selectedPatientDetail = ref<PatientSummary | null>(null)
+const medicalExaminationDetail = ref<MedicalExaminationDetail | null>(null)
+const pendingWardId = ref<number | null>(null)
+
+const intakeSaveDisabled = computed(
+  () => selectedMedicalRecord.value !== null || selectingMedicalRecord.value,
+)
 
 const focusField = (fieldId: string) => {
   if (typeof window === 'undefined') {
@@ -389,6 +422,244 @@ const formatDateTime = (value: string | null | undefined): string => {
   return dateTimeFormatter.format(date)
 }
 
+const parseIsoDateToDateValue = (value: string | null | undefined): DateValue | undefined => {
+  if (!value) {
+    return undefined
+  }
+
+  const isoDate = value.slice(0, 10)
+
+  try {
+    return parseDate(isoDate)
+  } catch (error) {
+    console.error('Unable to parse date value:', error)
+    return undefined
+  }
+}
+
+const toGenderValue = (value: number | null | undefined): GenderValue | undefined => {
+  if (value === 1) {
+    return 'male'
+  }
+
+  if (value === 0) {
+    return 'female'
+  }
+
+  return undefined
+}
+
+const ensureComboboxOption = (
+  optionsRef: { value: ComboboxOption[] },
+  option: ComboboxOption | null,
+) => {
+  if (!option) {
+    return
+  }
+
+  const exists = optionsRef.value.some((item) => item.value === option.value)
+  if (!exists) {
+    optionsRef.value = [...optionsRef.value, option]
+  }
+}
+
+const toInputString = (value: number | null | undefined): string => {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return ''
+  }
+
+  return String(value)
+}
+
+const parseSpo2FromAssessment = (assessment: string | null | undefined): string => {
+  if (!assessment) {
+    return ''
+  }
+
+  const match = assessment.match(/SpO2:\s*(\d+(?:\.\d+)?)%/i)
+  if (match) {
+    return match[1]
+  }
+
+  return ''
+}
+
+const buildSystemAssessmentWithSpo2 = (
+  currentAssessment: string | null | undefined,
+  spo2: number | null,
+): string => {
+  const lines = (currentAssessment ?? '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0 && !/SpO2:\s*\d+(?:\.\d+)?%/i.test(line))
+
+  if (spo2 === null) {
+    return lines.join('\n')
+  }
+
+  const formatted = `SpO2: ${spo2}%`
+  lines.push(formatted)
+  return lines.join('\n')
+}
+
+const applyExaminationToVitalForm = (examination: MedicalExaminationDetail | null) => {
+  if (!examination) {
+    resetVitalSignsForm()
+    return
+  }
+
+  vitalSignsForm.temperature = toInputString(examination.temperature)
+  vitalSignsForm.pulse = toInputString(examination.pulse)
+  vitalSignsForm.systolic = toInputString(examination.systolicBloodPressure)
+  vitalSignsForm.diastolic = toInputString(examination.diastolicBloodPressure)
+  vitalSignsForm.respiratoryRate = toInputString(examination.respiratoryRate)
+  vitalSignsForm.spo2 = parseSpo2FromAssessment(examination.systemAssessment)
+  vitalSignsForm.weight = toInputString(examination.weight)
+  vitalSignsForm.height = toInputString(examination.height)
+  vitalSignsForm.bmi = toInputString(examination.bmi)
+}
+
+const applyRecordToForm = (record: MedicalRecordSummary) => {
+  selectedMedicalRecord.value = record
+  selectedPatientDetail.value = null
+  medicalExaminationDetail.value = null
+
+  form.code = record.patient.code ?? null
+  form.fullName = record.patient.fullName
+  form.gender = toGenderValue(record.patient.gender)
+  form.phone = record.patient.phone ?? ''
+  form.relativeName = ''
+  form.relativePhone = ''
+  form.reason = record.reason ?? ''
+  if (record.clinicRoom) {
+    ensureComboboxOption(roomOptions, {
+      value: record.clinicRoom.id,
+      label: record.clinicRoom.department
+        ? `${record.clinicRoom.name} · ${record.clinicRoom.department.name}`
+        : record.clinicRoom.name,
+    })
+  }
+  form.roomId = ensureOptionRetained(roomOptions.value, record.clinicRoom?.id ?? null)
+  form.occupationId = null
+
+  const birthDateValue = parseIsoDateToDateValue(record.patient.birthDate)
+  birthDateModel.value = birthDateValue
+
+  const cityOption = record.patient.city
+    ? {
+        value: record.patient.city.id,
+        label: record.patient.city.name,
+      }
+    : null
+
+  ensureComboboxOption(cityOptions, cityOption)
+
+  pendingWardId.value = record.patient.ward?.id ?? null
+  form.cityId = record.patient.city?.id ?? null
+}
+
+const applyPatientDetailToForm = (patient: PatientSummary) => {
+  selectedPatientDetail.value = patient
+
+  form.code = patient.code ?? form.code
+  form.fullName = patient.fullName
+  form.gender = toGenderValue(patient.gender) ?? form.gender
+  form.phone = patient.phone ?? ''
+  form.relativeName = patient.relativeName ?? ''
+  form.relativePhone = patient.relativePhone ?? ''
+
+  const occupationOption = patient.occupation
+    ? {
+        value: patient.occupation.id,
+        label: patient.occupation.name,
+      }
+    : null
+
+  ensureComboboxOption(occupationOptions, occupationOption)
+  form.occupationId = patient.occupation?.id ?? null
+
+  const city = patient.ward?.city
+  const ward = patient.ward
+
+  ensureComboboxOption(
+    cityOptions,
+    city
+      ? {
+          value: city.id,
+          label: city.name,
+        }
+      : null,
+  )
+
+  const nextCityId = city?.id ?? null
+  const nextWardId = ward?.id ?? null
+  pendingWardId.value = nextWardId
+
+  if (form.cityId !== nextCityId) {
+    form.cityId = nextCityId
+  } else if (nextCityId !== null) {
+    void loadWards(nextCityId, nextWardId)
+  } else {
+    form.wardId = null
+    wardOptions.value = []
+  }
+
+  const birthDateValue = parseIsoDateToDateValue(patient.birthDate)
+  birthDateModel.value = birthDateValue ?? birthDateModel.value
+}
+
+const loadMedicalExaminationForRecord = async (medicalRecordId: number) => {
+  try {
+    const examination = await getMedicalExaminationByMedicalRecord(medicalRecordId)
+    medicalExaminationDetail.value = examination
+    applyExaminationToVitalForm(examination)
+  } catch (error) {
+    console.error(error)
+    toast.error('Unable to load vital signs for the selected patient.')
+    medicalExaminationDetail.value = null
+    applyExaminationToVitalForm(null)
+  }
+}
+
+const loadPatientDetailForRecord = async (record: MedicalRecordSummary) => {
+  try {
+    const patient = await getPatient(record.patient.id)
+    applyPatientDetailToForm(patient)
+  } catch (error) {
+    console.error(error)
+    toast.error('Unable to load full patient details. Some fields may be unavailable.')
+  }
+}
+
+const handleRecordSelect = async (record: MedicalRecordSummary) => {
+  if (selectingMedicalRecord.value) {
+    return
+  }
+
+  selectingMedicalRecord.value = true
+
+  try {
+    clearFormErrors()
+    clearVitalSignsErrors()
+    if (vitalSignsDialogOpen.value) {
+      handleVitalSignsDialogOpenChange(false)
+    }
+
+    activeTab.value = 'intake'
+    applyRecordToForm(record)
+
+    await Promise.all([
+      loadPatientDetailForRecord(record),
+      loadMedicalExaminationForRecord(record.id),
+    ])
+  } catch (error) {
+    console.error(error)
+    toast.error('Unable to load patient intake data. Please try again.')
+  } finally {
+    selectingMedicalRecord.value = false
+  }
+}
+
 const filteredMedicalRecords = computed(() => {
   const { patientCode, patientName, status, roomId, from, to } = appliedRecordFilters.value
   const codeFilter = patientCode.trim().toLowerCase()
@@ -476,6 +747,28 @@ const loadMedicalRecords = async () => {
     medicalRecordsPagination.value = pagination
     recordsPage.value = pagination.page
     recordsPageSize.value = pagination.limit
+
+    if (selectedMedicalRecord.value) {
+      const refreshedRecord = records.find((item) => item.id === selectedMedicalRecord.value?.id)
+      if (refreshedRecord) {
+        selectedMedicalRecord.value = refreshedRecord
+        form.reason = refreshedRecord.reason ?? form.reason
+
+        if (refreshedRecord.clinicRoom) {
+          ensureComboboxOption(roomOptions, {
+            value: refreshedRecord.clinicRoom.id,
+            label: refreshedRecord.clinicRoom.department
+              ? `${refreshedRecord.clinicRoom.name} · ${refreshedRecord.clinicRoom.department.name}`
+              : refreshedRecord.clinicRoom.name,
+          })
+        }
+
+        form.roomId = ensureOptionRetained(
+          roomOptions.value,
+          refreshedRecord.clinicRoom?.id ?? null,
+        )
+      }
+    }
   } catch (error) {
     medicalRecords.value = []
     medicalRecordsPagination.value = null
@@ -703,6 +996,288 @@ const clearFormErrors = () => {
   formErrors.value = []
 }
 
+const resetVitalSignsForm = () => {
+  vitalSignsForm.temperature = ''
+  vitalSignsForm.pulse = ''
+  vitalSignsForm.systolic = ''
+  vitalSignsForm.diastolic = ''
+  vitalSignsForm.respiratoryRate = ''
+  vitalSignsForm.spo2 = ''
+  vitalSignsForm.weight = ''
+  vitalSignsForm.height = ''
+  vitalSignsForm.bmi = ''
+}
+
+const setVitalSignsError = (message: string, focusId?: string) => {
+  vitalSignsErrors.value = [message]
+  if (focusId) {
+    focusField(focusId)
+  }
+}
+
+const clearVitalSignsErrors = () => {
+  vitalSignsErrors.value = []
+}
+
+const openVitalSignsDialog = () => {
+  if (vitalSignsSubmitting.value) {
+    return
+  }
+
+  if (!selectedMedicalRecord.value) {
+    toast.error('Select a patient from Received Patients before updating vital signs.')
+    return
+  }
+
+  clearVitalSignsErrors()
+  applyExaminationToVitalForm(medicalExaminationDetail.value)
+
+  if (!vitalSignsDialogOpen.value) {
+    vitalSignsDialogOpen.value = true
+  }
+}
+
+const handleVitalSignsDialogOpenChange = (open: boolean) => {
+  if (vitalSignsSubmitting.value) {
+    vitalSignsDialogOpen.value = true
+    return
+  }
+
+  vitalSignsDialogOpen.value = open
+  if (!open) {
+    clearVitalSignsErrors()
+    if (medicalExaminationDetail.value) {
+      applyExaminationToVitalForm(medicalExaminationDetail.value)
+    } else {
+      resetVitalSignsForm()
+    }
+  }
+}
+
+const extractInput = (value: unknown): string => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(value)
+  }
+
+  if (typeof value === 'string') {
+    return value
+  }
+
+  return ''
+}
+
+const parseVitalSign = (value: unknown, label: string, focusId: string) => {
+  const raw = extractInput(value)
+  const trimmed = raw.trim()
+
+  if (!trimmed) {
+    setVitalSignsError(`Please enter ${label.toLowerCase()}.`, focusId)
+    return null
+  }
+
+  const parsed = Number.parseFloat(trimmed)
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    setVitalSignsError(`Please enter a valid ${label.toLowerCase()}.`, focusId)
+    return null
+  }
+
+  return parsed
+}
+
+const parseOptionalVitalSign = (value: unknown, label: string, focusId: string) => {
+  const raw = extractInput(value)
+  const trimmed = raw.trim()
+
+  if (!trimmed) {
+    return null
+  }
+
+  const parsed = Number.parseFloat(trimmed)
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    setVitalSignsError(`Please enter a valid ${label.toLowerCase()}.`, focusId)
+    return undefined
+  }
+
+  return parsed
+}
+
+const formatVitalValue = (value: number): string => {
+  const rounded = Number.parseFloat(value.toFixed(1))
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toString()
+}
+
+const handleVitalSignsSave = async () => {
+  if (vitalSignsSubmitting.value) {
+    return
+  }
+
+  clearVitalSignsErrors()
+
+  const record = selectedMedicalRecord.value
+  if (!record) {
+    setVitalSignsError('Select a patient from Received Patients before saving vital signs.')
+    return
+  }
+
+  const temperature = parseOptionalVitalSign(
+    vitalSignsForm.temperature,
+    'Temperature',
+    'vital-temperature',
+  )
+  if (temperature === undefined) {
+    return
+  }
+
+  const pulse = parseOptionalVitalSign(vitalSignsForm.pulse, 'Pulse rate', 'vital-pulse')
+  if (pulse === undefined) {
+    return
+  }
+
+  const systolic = parseOptionalVitalSign(
+    vitalSignsForm.systolic,
+    'Systolic blood pressure',
+    'vital-systolic',
+  )
+  if (systolic === undefined) {
+    return
+  }
+
+  const diastolic = parseOptionalVitalSign(
+    vitalSignsForm.diastolic,
+    'Diastolic blood pressure',
+    'vital-diastolic',
+  )
+  if (diastolic === undefined) {
+    return
+  }
+
+  const respiratoryRate = parseOptionalVitalSign(
+    vitalSignsForm.respiratoryRate,
+    'Respiratory rate',
+    'vital-respiratory',
+  )
+  if (respiratoryRate === undefined) {
+    return
+  }
+
+  const spo2 = parseOptionalVitalSign(vitalSignsForm.spo2, 'SpO2', 'vital-spo2')
+  if (spo2 === undefined) {
+    return
+  }
+
+  const weight = parseVitalSign(vitalSignsForm.weight, 'Weight', 'vital-weight')
+  if (weight === null) {
+    return
+  }
+
+  const height = parseVitalSign(vitalSignsForm.height, 'Height', 'vital-height')
+  if (height === null) {
+    return
+  }
+
+  let bmiValue = parseOptionalVitalSign(vitalSignsForm.bmi, 'BMI', 'vital-bmi')
+  if (bmiValue === undefined) {
+    return
+  }
+
+  if (bmiValue === null && weight !== null && height !== null) {
+    const heightMeters = height / 100
+    if (heightMeters > 0) {
+      const computed = Number.parseFloat((weight / (heightMeters * heightMeters)).toFixed(1))
+      bmiValue = computed
+      vitalSignsForm.bmi = formatVitalValue(computed)
+    }
+  }
+
+  const systemAssessment = buildSystemAssessmentWithSpo2(
+    medicalExaminationDetail.value?.systemAssessment,
+    spo2,
+  )
+
+  vitalSignsSubmitting.value = true
+
+  try {
+    const examinationPayload = {
+      mach: pulse,
+      nhietDo: temperature,
+      huyetApTThu: systolic,
+      huyetApTTr: diastolic,
+      nhipTho: respiratoryRate,
+      khamBoPhan: systemAssessment,
+      canNang: weight,
+      chieuCao: height,
+      bmi: bmiValue,
+    }
+
+    let updatedExamination: MedicalExaminationDetail
+
+    if (medicalExaminationDetail.value) {
+      updatedExamination = await updateMedicalExamination(
+        medicalExaminationDetail.value.id,
+        examinationPayload,
+      )
+    } else {
+      updatedExamination = await createMedicalExamination({
+        benhAnId: record.id,
+        thoiGianKham: new Date(),
+        ...examinationPayload,
+      })
+    }
+
+    medicalExaminationDetail.value = updatedExamination
+    applyExaminationToVitalForm(updatedExamination)
+    vitalSignsForm.spo2 = spo2 !== null ? formatVitalValue(spo2) : ''
+
+    const details: string[] = []
+
+    if (temperature !== null) {
+      details.push(`Temp ${formatVitalValue(temperature)} C`)
+    }
+
+    if (pulse !== null) {
+      details.push(`Pulse ${formatVitalValue(pulse)} bpm`)
+    }
+
+    if (systolic !== null && diastolic !== null) {
+      details.push(`BP ${formatVitalValue(systolic)}/${formatVitalValue(diastolic)} mmHg`)
+    } else {
+      if (systolic !== null) {
+        details.push(`Systolic ${formatVitalValue(systolic)} mmHg`)
+      }
+
+      if (diastolic !== null) {
+        details.push(`Diastolic ${formatVitalValue(diastolic)} mmHg`)
+      }
+    }
+
+    if (respiratoryRate !== null) {
+      details.push(`RR ${formatVitalValue(respiratoryRate)} breaths/min`)
+    }
+
+    if (spo2 !== null) {
+      details.push(`SpO2 ${formatVitalValue(spo2)}%`)
+    }
+
+    details.push(`Weight ${formatVitalValue(weight)} kg`)
+    details.push(`Height ${formatVitalValue(height)} cm`)
+
+    if (bmiValue !== null) {
+      details.push(`BMI ${formatVitalValue(bmiValue)}`)
+    }
+
+    const message = `Vital signs updated (${details.join(', ')}).`
+    toast.success(message)
+    handleVitalSignsDialogOpenChange(false)
+  } catch (error) {
+    const message =
+      error instanceof ApiError ? error.message : 'Unable to save vital signs, please try again.'
+    setVitalSignsError(message)
+    console.error(error)
+  } finally {
+    vitalSignsSubmitting.value = false
+  }
+}
+
 const setRecordError = (message: string) => {
   recordErrors.value = [message]
 }
@@ -713,6 +1288,10 @@ const clearRecordErrors = () => {
 
 const resetForm = () => {
   activeTab.value = 'intake'
+  selectedMedicalRecord.value = null
+  selectedPatientDetail.value = null
+  medicalExaminationDetail.value = null
+  pendingWardId.value = null
   form.code = null
   form.fullName = ''
   form.gender = undefined
@@ -726,6 +1305,7 @@ const resetForm = () => {
   form.roomId = storedRoom.value?.id ?? null
   birthDateRaw.value = undefined
   clearFormErrors()
+  applyExaminationToVitalForm(null)
 }
 
 const handleNewEntry = () => {
@@ -906,7 +1486,7 @@ const loadCities = async () => {
   }
 }
 
-const loadWards = async (cityId: number) => {
+const loadWards = async (cityId: number, preferredWardId: number | null = null) => {
   loadingWards.value = true
   try {
     const { provinces } = await getProvinces({ cityId, limit: FETCH_LIMIT })
@@ -915,10 +1495,20 @@ const loadWards = async (cityId: number) => {
       label: province.name,
     }))
     wardOptions.value = options
-    form.wardId = ensureOptionRetained(options, form.wardId)
+    const resolvedWardId = ensureOptionRetained(
+      options,
+      preferredWardId !== null ? preferredWardId : form.wardId,
+    )
+    form.wardId = resolvedWardId
+    if (preferredWardId !== null) {
+      pendingWardId.value = null
+    }
   } catch (error) {
     handleLoadError('Unable to load wards.')
     console.error(error)
+    if (preferredWardId !== null) {
+      pendingWardId.value = null
+    }
   } finally {
     loadingWards.value = false
   }
@@ -1051,11 +1641,15 @@ const handleSave = async () => {
 watch(
   () => form.cityId,
   (cityId) => {
+    const targetWardId = pendingWardId.value
     form.wardId = null
     wardOptions.value = []
 
     if (cityId) {
-      void loadWards(cityId)
+      pendingWardId.value = null
+      void loadWards(cityId, targetWardId ?? null)
+    } else {
+      pendingWardId.value = null
     }
   },
 )
@@ -1097,7 +1691,13 @@ onMounted(() => {
               <TabsTrigger value="history" class="w-full">Received Patients</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="intake" class="mt-6">
+            <TabsContent value="intake" class="mt-6 space-y-4">
+              <div class="flex justify-end">
+                <Button type="button" variant="outline" @click="openVitalSignsDialog">
+                  Update vital signs
+                </Button>
+              </div>
+
               <PatientIntakeForm
                 :form="form"
                 :form-errors="formErrors"
@@ -1118,6 +1718,7 @@ onMounted(() => {
                 :loading-wards="loadingWards"
                 :loading-rooms="loadingRooms"
                 :is-submitting="isSubmitting"
+                :save-disabled="intakeSaveDisabled"
                 @update:birth-date="handleBirthDateUpdate"
                 @occupation-search="handleOccupationSearch"
                 @occupation-load-more="handleOccupationLoadMore"
@@ -1125,6 +1726,171 @@ onMounted(() => {
                 @new-entry="handleNewEntry"
                 @save="handleSave"
               />
+
+              <Dialog :open="vitalSignsDialogOpen" @update:open="handleVitalSignsDialogOpenChange">
+                <DialogContent class="max-w-lg">
+                  <DialogHeader>
+                    <DialogTitle>Update vital signs</DialogTitle>
+                    <DialogDescription>
+                      Record the patient's latest vital signs.
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  <Alert v-if="vitalSignsErrors.length" variant="destructive" class="mb-3">
+                    <AlertCircle class="mr-2 h-4 w-4" />
+                    <AlertTitle>Unable to save vital signs</AlertTitle>
+                    <AlertDescription>
+                      <ul class="list-disc space-y-1 pl-5">
+                        <li
+                          v-for="message in vitalSignsErrors"
+                          :key="`vital-signs-error-${message}`"
+                        >
+                          {{ message }}
+                        </li>
+                      </ul>
+                    </AlertDescription>
+                  </Alert>
+
+                  <div class="grid gap-4 md:grid-cols-2">
+                    <Field>
+                      <FieldLabel for="vital-temperature">Temperature (°C)</FieldLabel>
+                      <Input
+                        id="vital-temperature"
+                        v-model="vitalSignsForm.temperature"
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        placeholder="Eg. 37.0"
+                        :disabled="vitalSignsSubmitting"
+                      />
+                    </Field>
+
+                    <Field>
+                      <FieldLabel for="vital-pulse">Pulse rate (bpm)</FieldLabel>
+                      <Input
+                        id="vital-pulse"
+                        v-model="vitalSignsForm.pulse"
+                        type="number"
+                        min="0"
+                        placeholder="Eg. 80"
+                        :disabled="vitalSignsSubmitting"
+                      />
+                    </Field>
+
+                    <Field>
+                      <FieldLabel for="vital-systolic">Systolic BP (mmHg)</FieldLabel>
+                      <Input
+                        id="vital-systolic"
+                        v-model="vitalSignsForm.systolic"
+                        type="number"
+                        min="0"
+                        placeholder="Eg. 120"
+                        :disabled="vitalSignsSubmitting"
+                      />
+                    </Field>
+
+                    <Field>
+                      <FieldLabel for="vital-diastolic">Diastolic BP (mmHg)</FieldLabel>
+                      <Input
+                        id="vital-diastolic"
+                        v-model="vitalSignsForm.diastolic"
+                        type="number"
+                        min="0"
+                        placeholder="Eg. 80"
+                        :disabled="vitalSignsSubmitting"
+                      />
+                    </Field>
+
+                    <Field>
+                      <FieldLabel for="vital-respiratory"
+                        >Respiratory rate (breaths/min)</FieldLabel
+                      >
+                      <Input
+                        id="vital-respiratory"
+                        v-model="vitalSignsForm.respiratoryRate"
+                        type="number"
+                        min="0"
+                        placeholder="Eg. 18"
+                        :disabled="vitalSignsSubmitting"
+                      />
+                    </Field>
+
+                    <Field>
+                      <FieldLabel for="vital-spo2">SpO2 (%)</FieldLabel>
+                      <Input
+                        id="vital-spo2"
+                        v-model="vitalSignsForm.spo2"
+                        type="number"
+                        min="0"
+                        max="100"
+                        placeholder="Eg. 98"
+                        :disabled="vitalSignsSubmitting"
+                      />
+                    </Field>
+
+                    <Field>
+                      <FieldLabel for="vital-weight">
+                        Weight (kg) <span class="text-destructive">*</span>
+                      </FieldLabel>
+                      <Input
+                        id="vital-weight"
+                        v-model="vitalSignsForm.weight"
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        placeholder="Eg. 70.5"
+                        :disabled="vitalSignsSubmitting"
+                      />
+                    </Field>
+
+                    <Field>
+                      <FieldLabel for="vital-height">
+                        Height (cm) <span class="text-destructive">*</span>
+                      </FieldLabel>
+                      <Input
+                        id="vital-height"
+                        v-model="vitalSignsForm.height"
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        placeholder="Eg. 172"
+                        :disabled="vitalSignsSubmitting"
+                      />
+                    </Field>
+
+                    <Field>
+                      <FieldLabel for="vital-bmi">BMI</FieldLabel>
+                      <Input
+                        id="vital-bmi"
+                        v-model="vitalSignsForm.bmi"
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        placeholder="Eg. 23.8"
+                        :disabled="vitalSignsSubmitting"
+                      />
+                    </Field>
+                  </div>
+
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      :disabled="vitalSignsSubmitting"
+                      @click="handleVitalSignsDialogOpenChange(false)"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      :disabled="vitalSignsSubmitting"
+                      @click="handleVitalSignsSave"
+                    >
+                      {{ vitalSignsSubmitting ? 'Saving...' : 'Save' }}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </TabsContent>
 
             <TabsContent value="history" class="mt-6">
@@ -1182,8 +1948,10 @@ onMounted(() => {
                   :get-gender-label="getGenderLabel"
                   :get-status-label="getStatusLabel"
                   :get-status-class="getStatusClass"
+                  :selected-record-id="selectedMedicalRecord?.id ?? null"
                   @page-change="handleRecordsPageChange"
                   @change-room="handleChangeRoom"
+                  @select="handleRecordSelect"
                   @delete="requestDeletePatient"
                 />
               </div>

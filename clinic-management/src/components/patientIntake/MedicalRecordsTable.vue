@@ -40,12 +40,14 @@ defineProps<{
   getGenderLabel: (value: number) => string
   getStatusLabel: (value: number) => string
   getStatusClass: (value: number) => string
+  selectedRecordId: number | null
 }>()
 
 const emit = defineEmits<{
   (e: 'page-change', page: number): void
   (e: 'delete', record: MedicalRecordSummary): void
   (e: 'change-room', record: MedicalRecordSummary): void
+  (e: 'select', record: MedicalRecordSummary): void
 }>()
 
 const formatPatientAddress = (patient: MedicalRecordSummary['patient']): string => {
@@ -93,7 +95,19 @@ const formatPatientAddress = (patient: MedicalRecordSummary['patient']): string 
           <template v-else>
             <ContextMenu v-for="record in filteredRecords" :key="record.id" :modal="false">
               <ContextMenuTrigger as-child>
-                <TableRow :class="{ 'opacity-60': deletingPatientId === record.patient.id }">
+                <TableRow
+                  :class="[
+                    'cursor-pointer outline-none transition-colors',
+                    deletingPatientId === record.patient.id ? 'opacity-60' : '',
+                    selectedRecordId === record.id ? 'bg-muted/60' : 'hover:bg-muted/40',
+                  ]"
+                  role="button"
+                  tabindex="0"
+                  :aria-selected="selectedRecordId === record.id"
+                  @click="emit('select', record)"
+                  @keydown.enter.prevent="emit('select', record)"
+                  @keydown.space.prevent="emit('select', record)"
+                >
                   <TableCell class="font-medium">
                     <div class="flex flex-col">
                       <span>{{ record.code }}</span>

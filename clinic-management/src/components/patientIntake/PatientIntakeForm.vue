@@ -35,6 +35,7 @@ const props = defineProps<{
   loadingWards: boolean
   loadingRooms: boolean
   isSubmitting: boolean
+  saveDisabled?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -67,6 +68,7 @@ const {
   loadingWards,
   loadingRooms,
   isSubmitting,
+  saveDisabled,
   maxBirthDate,
 } = toRefs(props)
 
@@ -265,7 +267,12 @@ const handleBirthDateUpdate = (value: DateValue | undefined) => {
         >
           New Entry
         </Button>
-        <Button type="button" class="cursor-pointer" :disabled="isSubmitting" @click="emit('save')">
+        <Button
+          type="button"
+          class="cursor-pointer"
+          :disabled="isSubmitting || saveDisabled"
+          @click="emit('save')"
+        >
           Save
         </Button>
       </div>
