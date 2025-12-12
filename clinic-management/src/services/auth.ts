@@ -10,6 +10,10 @@ export interface AuthUser {
   id: number
   tenDangNhap: string
   hoTen: string
+  role: {
+    id: number
+    name: string
+  } | null
 }
 
 export interface ChangePasswordPayload {
@@ -22,6 +26,10 @@ interface LoginResponsePayload {
   id: number
   tenDangNhap: string
   hoTen: string
+  role: {
+    id: number
+    name: string
+  } | null
 }
 
 export const login = async (payload: LoginPayload): Promise<AuthUser> => {
@@ -36,6 +44,7 @@ export const login = async (payload: LoginPayload): Promise<AuthUser> => {
     id: data.id,
     tenDangNhap: data.tenDangNhap,
     hoTen: data.hoTen,
+    role: data.role,
   }
 }
 

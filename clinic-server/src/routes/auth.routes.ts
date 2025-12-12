@@ -20,6 +20,12 @@ router
         authController.resetPassword,
     )
     .post(
+        "/update-account-status",
+        authMiddleware.authenticateUser,
+        ValidationMiddleware.validateBody(authSchema.updateAccountStatus),
+        authController.updateAccountStatus,
+    )
+    .post(
         "/change-password",
         authMiddleware.authenticateUser,
         ValidationMiddleware.validateBody(authSchema.changePassword),

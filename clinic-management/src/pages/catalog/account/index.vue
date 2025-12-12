@@ -7,7 +7,14 @@ definePage({
 })
 
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { KeyIcon, Loader2, PlusIcon, SearchIcon } from 'lucide-vue-next'
+import {
+  KeyIcon,
+  Loader2,
+  PlusIcon,
+  SearchIcon,
+  ShieldCheckIcon,
+  ShieldOffIcon,
+} from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 
 import { ApiError } from '@/services/http'
@@ -15,7 +22,7 @@ import { getEmployees, type EmployeeSummary, type GetEmployeesParams } from '@/s
 import { getDepartments } from '@/services/department'
 import type { DepartmentSummary } from '@/services/department'
 import { getRoles, type RoleSummary } from '@/services/role'
-import { createAccount, resetAccountPassword } from '@/services/account'
+import { createAccount, resetAccountPassword, updateAccountStatus } from '@/services/account'
 import ComboBox from '@/components/ComboBox.vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -41,8 +48,6 @@ import {
 } from '@/components/ui/table'
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
-const USERNAME_PATTERN = /^[A-Za-z0-9_-]+$/
-
 const formatDateDisplay = (value: string | null | undefined, emptyLabel = '—'): string => {
   if (!value) {
     return emptyLabel
@@ -127,7 +132,7 @@ const pendingSelectionId = ref<number | null>(null)
 
 const newUsername = ref('')
 const accountActionLoading = ref(false)
-const currentAccountAction = ref<'create' | 'reset' | null>(null)
+const currentAccountAction = ref<'create' | 'reset' | 'toggle' | null>(null)
 const accountErrors = ref<string[]>([])
 
 const departmentOptions = computed(() => {
@@ -152,26 +157,7 @@ const selectedEmployeeName = computed(() => selectedEmployee.value?.fullName ?? 
 const selectedEmployeeCode = computed(() => selectedEmployee.value?.code ?? '')
 const hasAccount = computed(() => selectedAccount.value !== null)
 
-const isUsernameValid = computed(() => {
-  const value = newUsername.value.trim()
-  if (!value) {
-    return false
-  }
-
-  if (value.length < 6 || value.length > 20) {
-    return false
-  }
-
-  if (!USERNAME_PATTERN.test(value)) {
-    return false
-  }
-
-  if (/^\d+$/.test(value)) {
-    return false
-  }
-
-  return true
-})
+const isUsernameValid = computed(() => newUsername.value.trim().length > 0)
 
 const isCreateDisabled = computed(() => {
   return (
@@ -184,6 +170,15 @@ const isCreateDisabled = computed(() => {
 })
 
 const isResetDisabled = computed(() => {
+  return (
+    !selectedEmployee.value ||
+    !hasAccount.value ||
+    accountActionLoading.value ||
+    employeesLoading.value
+  )
+})
+
+const isToggleDisabled = computed(() => {
   return (
     !selectedEmployee.value ||
     !hasAccount.value ||
@@ -292,6 +287,15 @@ const loadRoles = async () => {
   }
 }
 
+const USERNAME_PREFIX = 'ctu.'
+
+const ensurePrefix = (value: string): string => {
+  if (!value.startsWith(USERNAME_PREFIX)) {
+    return `${USERNAME_PREFIX}${value}`
+  }
+  return value
+}
+
 const suggestUsername = (employee: EmployeeSummary): string => {
   const normalize = (value: string) =>
     value
@@ -304,11 +308,13 @@ const suggestUsername = (employee: EmployeeSummary): string => {
   for (const candidate of candidates) {
     const normalized = normalize(candidate).replace(/^-+/, '')
     if (normalized.length >= 6) {
-      return normalized.slice(0, 20)
+      const trimmed = normalized.slice(0, Math.max(0, 20 - USERNAME_PREFIX.length))
+      return ensurePrefix(trimmed)
     }
   }
 
-  return `nv${String(employee.id).padStart(4, '0')}`
+  const fallback = `nv${String(employee.id).padStart(4, '0')}`
+  return ensurePrefix(fallback.slice(0, Math.max(0, 20 - USERNAME_PREFIX.length)))
 }
 
 const syncSelectedAccount = (employee: EmployeeSummary | null) => {
@@ -439,11 +445,9 @@ const handleCreateAccount = async () => {
     return
   }
 
-  const username = newUsername.value.trim()
+  const username = ensurePrefix(newUsername.value.trim())
   if (!isUsernameValid.value) {
-    accountErrors.value = [
-      'Enter a valid username (6-20 characters, letters, numbers, hyphen, underscore).',
-    ]
+    accountErrors.value = ['Enter a username before creating the account.']
     return
   }
 
@@ -499,6 +503,63 @@ const handleResetPassword = async () => {
       accountErrors.value = [error.message]
     } else {
       accountErrors.value = ['Unable to reset password.']
+    }
+  } finally {
+    accountActionLoading.value = false
+    currentAccountAction.value = null
+  }
+}
+
+const handleToggleAccountStatus = async () => {
+  if (!selectedEmployee.value || !hasAccount.value || isToggleDisabled.value) {
+    return
+  }
+
+  const targetState = !(selectedAccount.value?.isActive ?? false)
+
+  accountErrors.value = []
+  accountActionLoading.value = true
+  currentAccountAction.value = 'toggle'
+
+  try {
+    await updateAccountStatus({
+      nhanVienId: selectedEmployee.value.id,
+      isActive: targetState,
+    })
+
+    const current = selectedEmployee.value
+    if (current?.account) {
+      const updatedAccount = {
+        ...current.account,
+        isActive: targetState,
+        updatedAt: new Date().toISOString(),
+      }
+      const updatedEmployee: EmployeeSummary = {
+        ...current,
+        account: updatedAccount,
+      }
+
+      selectedEmployee.value = updatedEmployee
+      syncSelectedAccount(updatedEmployee)
+
+      const index = employees.value.findIndex((employee) => employee.id === updatedEmployee.id)
+      if (index !== -1) {
+        employees.value.splice(index, 1, updatedEmployee)
+      }
+    }
+
+    toast.success(targetState ? 'Account enabled successfully.' : 'Account disabled successfully.')
+    pendingSelectionId.value = selectedEmployee.value.id
+    await loadEmployees()
+  } catch (error) {
+    console.error(error)
+    if (error instanceof ApiError) {
+      const messages = extractValidationMessages(error.details)
+      accountErrors.value = messages.length ? messages : [error.message]
+    } else if (error instanceof Error) {
+      accountErrors.value = [error.message]
+    } else {
+      accountErrors.value = ['Unable to update account status.']
     }
   } finally {
     accountActionLoading.value = false
@@ -627,8 +688,7 @@ onMounted(() => {
                   placeholder="Enter username"
                 />
                 <p class="mt-1 text-xs text-muted-foreground">
-                  Usernames must be 6-20 characters and may include letters, numbers, hyphen, and
-                  underscore.
+                  Usernames are created with the "ctu." prefix automatically.
                 </p>
               </Field>
             </div>
@@ -643,6 +703,22 @@ onMounted(() => {
             </div>
 
             <div class="flex flex-wrap justify-end gap-3">
+              <Button
+                v-if="hasAccount"
+                type="button"
+                variant="outline"
+                class="flex items-center"
+                :disabled="isToggleDisabled"
+                @click="handleToggleAccountStatus"
+              >
+                <Loader2
+                  v-if="accountActionLoading && currentAccountAction === 'toggle'"
+                  class="mr-2 h-4 w-4 animate-spin"
+                />
+                <ShieldOffIcon v-else-if="selectedAccount?.isActive" class="mr-2 h-4 w-4" />
+                <ShieldCheckIcon v-else class="mr-2 h-4 w-4" />
+                {{ selectedAccount?.isActive ? 'Disable Account' : 'Enable Account' }}
+              </Button>
               <Button
                 type="button"
                 variant="outline"

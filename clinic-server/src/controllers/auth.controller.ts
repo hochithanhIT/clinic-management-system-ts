@@ -16,15 +16,26 @@ const login = async (req: Request, res: Response) => {
                 tenDangNhap: true,
                 matKhau: true,
                 nhanVienId: true,
+                trangThai: true,
                 nhanVien: {
                     select: {
                         hoTen: true,
-                    }
-                }
-            }
+                        vaiTro: {
+                            select: {
+                                id: true,
+                                tenVaiTro: true,
+                            },
+                        },
+                    },
+                },
+            },
         });
         if (!user) {
             return Send.error(res, null, "Invalid username or password.");
+        }
+
+        if (user.trangThai === false) {
+            return Send.error(res, null, "Tài khoản đã bị vô hiệu hóa.");
         }
 
         const isPasswordValid = await bcrypt.compare(matKhau, user.matKhau);
@@ -67,6 +78,12 @@ const login = async (req: Request, res: Response) => {
             id: user.nhanVienId,
             tenDangNhap: user.tenDangNhap,
             hoTen: user.nhanVien?.hoTen ?? "",
+            role: user.nhanVien?.vaiTro
+                ? {
+                    id: user.nhanVien.vaiTro.id,
+                    name: user.nhanVien.vaiTro.tenVaiTro,
+                }
+                : null,
         })
     } catch (error) {
         console.error("Login failed:", error);
@@ -104,7 +121,8 @@ const createAccount = async (req: Request, res: Response) => {
                 nhanVienId,
                 tenDangNhap,
                 matKhau: hashedPassword,
-            }
+                trangThai: true,
+            },
         })
 
         return Send.success(res, {
@@ -116,6 +134,48 @@ const createAccount = async (req: Request, res: Response) => {
         return Send.error(res, null, "Account creation failed.");
     }
 
+}
+
+const updateAccountStatus = async (req: Request, res: Response) => {
+    try {
+        const { nhanVienId, isActive } = authSchema.updateAccountStatus.parse(req.body);
+
+        const account = await prisma.taiKhoan.findUnique({
+            where: { nhanVienId },
+            select: {
+                nhanVienId: true,
+                trangThai: true,
+            },
+        });
+
+        if (!account) {
+            return Send.notFound(res, null, "User account not found.");
+        }
+
+        await prisma.taiKhoan.update({
+            where: { nhanVienId },
+            data: {
+                trangThai: isActive,
+                ...(isActive ? {} : { refreshToken: null }),
+            },
+        });
+
+        return Send.success(
+            res,
+            {
+                nhanVienId,
+                isActive,
+            },
+            isActive ? "Account enabled successfully." : "Account disabled successfully.",
+        );
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            return Send.validationErrors(res, error.flatten().fieldErrors);
+        }
+
+        console.error("Update account status failed:", error);
+        return Send.error(res, null, "Unable to update account status.");
+    }
 }
 
 const resetPassword = async (req: Request, res: Response) => {
@@ -216,11 +276,11 @@ const changePassword = async (req: Request, res: Response) => {
 
 const logout = async (req: Request, res: Response) => {
     try {
-        const { nhanVienId }= req.body;
+        const { nhanVienId } = req.body;
         if (nhanVienId) {
             await prisma.taiKhoan.updateMany({
-            where: { nhanVienId },
-            data: { refreshToken: null }
+                where: { nhanVienId },
+                data: { refreshToken: null },
             });
         }
 
@@ -269,7 +329,7 @@ const refreshToken = async (req: Request, res: Response) => {
         console.error("Token refresh failed:", error);
         return Send.error(res, null, "Token refresh failed.");
     }
-} 
+}
 
 const getAccountInfo = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -282,7 +342,6 @@ const getAccountInfo = async (req: Request, res: Response, next: NextFunction) =
                 tenDangNhap: true,
                 createdAt: true,
                 updatedAt: true,
-                // Add other fields you want to return
             }
         });
 
@@ -299,9 +358,10 @@ const getAccountInfo = async (req: Request, res: Response, next: NextFunction) =
 export default {
     login,
     createAccount,
+    updateAccountStatus,
     resetPassword,
     changePassword,
     logout,
     refreshToken,
-    getAccountInfo
+    getAccountInfo,
 }

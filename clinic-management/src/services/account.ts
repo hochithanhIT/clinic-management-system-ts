@@ -19,6 +19,16 @@ export interface ResetPasswordPayload {
   nhanVienId: number
 }
 
+export interface UpdateAccountStatusPayload {
+  nhanVienId: number
+  isActive: boolean
+}
+
+type UpdateAccountStatusResponse = {
+  nhanVienId: number
+  isActive: boolean
+}
+
 export const createAccount = async (
   payload: CreateAccountPayload,
 ): Promise<CreateAccountResponse> => {
@@ -37,6 +47,20 @@ export const resetAccountPassword = async (
     method: "POST",
     json: payload,
   })
+
+  return response.data
+}
+
+export const updateAccountStatus = async (
+  payload: UpdateAccountStatusPayload,
+): Promise<UpdateAccountStatusResponse> => {
+  const response = await apiFetch<ApiSuccessResponse<UpdateAccountStatusResponse>>(
+    "/auth/update-account-status",
+    {
+      method: "POST",
+      json: payload,
+    },
+  )
 
   return response.data
 }

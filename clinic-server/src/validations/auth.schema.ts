@@ -8,15 +8,8 @@ import { z } from "zod";
 //     .regex(/[@$!%*?&]/, "Password must include at least one special character");
 
 const usernameSchema = z.string()
-    .min(6, "Username must be at least 6 characters long")
-    .max(20, "Username must not exceed 20 characters")
-    .regex(/^[a-zA-Z0-9_-]+$/, "Username can only contain letters, numbers, hyphens, and underscores")
-    .refine((value) => !/^\d+$/.test(value), {
-        message: "Username cannot be only numbers",
-    })
-    .refine((value) => !/[@$!%*?&]/.test(value), {
-        message: "Username cannot contain special characters like @$!%*?&",
-    });
+    .trim()
+    .min(1, "Username is required");
 
 const login = z.object({
     tenDangNhap: z.string().trim().min(1, "Username is required"),
@@ -30,6 +23,11 @@ const createAccount = z.object({
 
 const resetPassword = z.object({
     nhanVienId: z.number().min(1, "Employee ID is required"),
+})
+
+const updateAccountStatus = z.object({
+    nhanVienId: z.number().min(1, "Employee ID is required"),
+    isActive: z.boolean(),
 })
 
 // const createAccount = z.object({
@@ -69,6 +67,7 @@ const authSchema = {
     createAccount,
     changePassword,
     resetPassword,
+    updateAccountStatus,
 };
 
 export default authSchema;

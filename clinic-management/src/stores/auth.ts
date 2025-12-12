@@ -16,10 +16,21 @@ const normalizeUser = (value: Partial<AuthUser> | null): AuthUser | null => {
     return null
   }
 
+  const role =
+    value.role && typeof value.role === "object" && value.role !== null
+      ? typeof value.role.id === "number" && typeof value.role.name === "string"
+        ? {
+            id: value.role.id,
+            name: value.role.name,
+          }
+        : null
+      : null
+
   return {
     id: value.id,
     tenDangNhap: value.tenDangNhap,
     hoTen: typeof value.hoTen === "string" ? value.hoTen : "",
+    role,
   }
 }
 

@@ -61,6 +61,39 @@ const handleMenuItemClick = async (item: MenuItem) => {
   await item.action()
 }
 
+type RoleKey = 'admin' | 'doctor' | 'nurse' | 'technician' | 'accountant' | 'other'
+
+const toRoleKey = (roleName: string | null | undefined): RoleKey => {
+  if (!roleName) {
+    return 'other'
+  }
+
+  const normalized = roleName.trim().toLowerCase()
+
+  switch (normalized) {
+    case 'admin':
+      return 'admin'
+    case 'bác sĩ':
+      return 'doctor'
+    case 'điều dưỡng':
+      return 'nurse'
+    case 'kỹ thuật viên':
+      return 'technician'
+    case 'kế toán':
+      return 'accountant'
+    default:
+      return 'other'
+  }
+}
+
+const roleKey = computed<RoleKey>(() => toRoleKey(authStore.user?.role?.name ?? null))
+const isAdmin = computed(() => roleKey.value === 'admin')
+const canSeeReception = computed(() => isAdmin.value || roleKey.value === 'nurse')
+const canSeeMedicalExamination = computed(() => isAdmin.value || roleKey.value === 'doctor')
+const canSeeDiagnostics = computed(() => isAdmin.value || roleKey.value === 'technician')
+const canSeeBilling = computed(() => isAdmin.value || roleKey.value === 'accountant')
+const canSeeCatalogs = computed(() => isAdmin.value)
+
 const systemMenu: MenuItem[] = [
   { name: 'Room Configuration', path: '/room-configuration/' },
   { name: 'Change Password', path: '/change-password/' },
@@ -133,7 +166,7 @@ const catalogMenu: MenuRouteItem[] = [
             </NavigationMenuContent>
           </NavigationMenuItem>
 
-          <NavigationMenuItem>
+          <NavigationMenuItem v-if="canSeeReception">
             <NavigationMenuTrigger>Reception</NavigationMenuTrigger>
             <NavigationMenuContent>
               <ul class="grid w-[200px] gap-2">
@@ -151,7 +184,7 @@ const catalogMenu: MenuRouteItem[] = [
             </NavigationMenuContent>
           </NavigationMenuItem>
 
-          <NavigationMenuItem>
+          <NavigationMenuItem v-if="canSeeMedicalExamination">
             <NavigationMenuTrigger>Medical Examination</NavigationMenuTrigger>
             <NavigationMenuContent>
               <ul class="grid w-[200px] gap-2">
@@ -169,7 +202,7 @@ const catalogMenu: MenuRouteItem[] = [
             </NavigationMenuContent>
           </NavigationMenuItem>
 
-          <NavigationMenuItem>
+          <NavigationMenuItem v-if="canSeeDiagnostics">
             <NavigationMenuTrigger>Diagnostics</NavigationMenuTrigger>
             <NavigationMenuContent>
               <ul class="grid w-[200px] gap-2">
@@ -187,7 +220,7 @@ const catalogMenu: MenuRouteItem[] = [
             </NavigationMenuContent>
           </NavigationMenuItem>
 
-          <NavigationMenuItem>
+          <NavigationMenuItem v-if="canSeeCatalogs">
             <NavigationMenuTrigger>Catalogs</NavigationMenuTrigger>
             <NavigationMenuContent>
               <ul class="grid w-[220px] gap-2">
@@ -205,7 +238,7 @@ const catalogMenu: MenuRouteItem[] = [
             </NavigationMenuContent>
           </NavigationMenuItem>
 
-          <NavigationMenuItem class="bg-white rounded-md">
+          <NavigationMenuItem v-if="canSeeBilling" class="bg-white rounded-md">
             <NavigationMenuLink
               as-child
               class="px-4 hover:rounded-md hover:text-primary-foreground"

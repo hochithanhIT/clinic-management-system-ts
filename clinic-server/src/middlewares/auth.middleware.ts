@@ -29,8 +29,11 @@ class AuthMiddleware {
                 req.body = {} as typeof req.body;
             }
 
-            // If the token is valid, attach user information to the request object
-            (req.body as Record<string, unknown>).nhanVienId = decodedToken.userId; // Attach userId to the request object
+            const body = req.body as Record<string, unknown>;
+            if (body.nhanVienId === undefined) {
+                body.nhanVienId = decodedToken.userId;
+            }
+            body.authenticatedNhanVienId = decodedToken.userId;
 
             // Proceed to the next middleware or route handler
             next();
@@ -58,8 +61,11 @@ class AuthMiddleware {
                 req.body = {} as typeof req.body;
             }
 
-            // If the token is valid, attach user information to the request object
-            (req.body as Record<string, unknown>).nhanVienId = decodedToken.userId;
+            const body = req.body as Record<string, unknown>;
+            if (body.nhanVienId === undefined) {
+                body.nhanVienId = decodedToken.userId;
+            }
+            body.authenticatedNhanVienId = decodedToken.userId;
 
             // Proceed to the next middleware or route handler
             next();
