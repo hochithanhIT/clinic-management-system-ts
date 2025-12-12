@@ -28,6 +28,10 @@ const createAccount = z.object({
     tenDangNhap: usernameSchema,
 })
 
+const resetPassword = z.object({
+    nhanVienId: z.number().min(1, "Employee ID is required"),
+})
+
 // const createAccount = z.object({
 //     username: usernameSchema,
 //     email: z.string().email("Invalid email format"),
@@ -64,6 +68,7 @@ const authSchema = {
     login,
     createAccount,
     changePassword,
+    resetPassword,
 };
 
 export default authSchema;

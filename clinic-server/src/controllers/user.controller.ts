@@ -53,7 +53,64 @@ const userSelect = {
 
 type GetUsersQuery = z.infer<typeof userSchema.getUsersQuery>;
 type GetUserParam = z.infer<typeof userSchema.getUserParam>;
+type CreateUserBody = z.infer<typeof userSchema.createUserBody>;
 type UpdateUserBody = z.infer<typeof userSchema.updateUserBody>;
+
+const EMPLOYEE_CODE_PREFIX = "NV";
+const EMPLOYEE_CODE_PADDING = 4;
+
+const generateEmployeeCode = async (): Promise<string> => {
+	const latestEmployee = await prisma.nhanVien.findFirst({
+		select: { maNV: true },
+		orderBy: { id: "desc" },
+	});
+
+	let nextNumber = 1;
+	if (latestEmployee?.maNV) {
+		const match = latestEmployee.maNV.match(/(\d+)$/);
+		if (match) {
+			nextNumber = Number.parseInt(match[1], 10) + 1;
+		}
+	}
+
+	let candidateNumber = nextNumber;
+	while (candidateNumber < nextNumber + 1000) {
+		const candidate = `${EMPLOYEE_CODE_PREFIX}${candidateNumber
+			.toString()
+			.padStart(EMPLOYEE_CODE_PADDING, "0")}`;
+		const existing = await prisma.nhanVien.findUnique({
+			where: { maNV: candidate },
+			select: { id: true },
+		});
+		if (!existing) {
+			return candidate;
+		}
+		candidateNumber += 1;
+	}
+
+	return `${EMPLOYEE_CODE_PREFIX}${Date.now()}`;
+};
+
+const resolveReferenceId = async <T extends { id: number }>(
+	value: number | undefined,
+	fallbackQuery: () => Promise<T | null>,
+	entityName: string
+): Promise<number> => {
+	if (typeof value === "number") {
+		const entity = await fallbackQuery();
+		if (entity) {
+			return entity.id;
+		}
+		throw new ReferenceError(`${entityName} không tồn tại`);
+	}
+
+	const fallback = await fallbackQuery();
+	if (!fallback) {
+		throw new ReferenceError(`Không tìm thấy ${entityName.toLowerCase()}`);
+	}
+
+	return fallback.id;
+};
 
 const getUsers = async (
 	req: Request,
@@ -135,6 +192,128 @@ const getUser = async (
 	} catch (error) {
 		if (error instanceof z.ZodError) {
 			return Send.validationErrors(res, error.flatten().fieldErrors);
+		}
+
+		return next(error);
+	}
+};
+
+const createUser = async (
+	req: Request,
+	res: Response,
+	next: NextFunction
+) => {
+	try {
+		const payload: CreateUserBody = userSchema.createUserBody.parse(req.body);
+
+		const [phoneConflict, certConflict] = await Promise.all([
+			payload.sdt
+				? prisma.nhanVien.findFirst({
+					where: { sdt: payload.sdt },
+					select: { id: true },
+				})
+				: Promise.resolve(null),
+			payload.soChungChiHanhNghe
+				? prisma.nhanVien.findFirst({
+					where: { soChungChiHanhNghe: payload.soChungChiHanhNghe },
+					select: { id: true },
+				})
+				: Promise.resolve(null),
+		]);
+
+		if (phoneConflict) {
+			return Send.badRequest(res, null, "Số điện thoại đã được sử dụng");
+		}
+
+		if (certConflict) {
+			return Send.badRequest(res, null, "Số chứng chỉ đã được sử dụng");
+		}
+
+		const [department, role] = await Promise.all([
+			prisma.khoa.findUnique({
+				where: { id: payload.khoaId },
+				select: { id: true },
+			}),
+			prisma.vaiTro.findUnique({
+				where: { id: payload.vaiTroId },
+				select: { id: true },
+			}),
+		]);
+
+		if (!department) {
+			return Send.badRequest(res, null, "Khoa không tồn tại");
+		}
+
+		if (!role) {
+			return Send.badRequest(res, null, "Vai trò không tồn tại");
+		}
+
+		const [titleId, positionId] = await Promise.all([
+			resolveReferenceId(
+				payload.chucDanhId,
+				() =>
+					payload.chucDanhId
+						? prisma.chucDanh.findUnique({
+							where: { id: payload.chucDanhId },
+							select: { id: true },
+						})
+						: prisma.chucDanh.findFirst({
+							select: { id: true },
+							orderBy: { id: "asc" },
+						}),
+				"Chức danh"
+			),
+			resolveReferenceId(
+				payload.chucVuId,
+				() =>
+					payload.chucVuId
+						? prisma.chucVu.findUnique({
+							where: { id: payload.chucVuId },
+							select: { id: true },
+						})
+						: prisma.chucVu.findFirst({
+							select: { id: true },
+							orderBy: { id: "asc" },
+						}),
+				"Chức vụ"
+			),
+		]);
+
+		const code = await generateEmployeeCode();
+
+		const createdUser = await prisma.nhanVien.create({
+			data: {
+				maNV: code,
+				hoTen: payload.hoTen,
+				ngaySinh: payload.ngaySinh,
+				gioiTinh: payload.gioiTinh,
+				sdt: payload.sdt,
+				soChungChiHanhNghe: payload.soChungChiHanhNghe,
+				ngayCapChungChi: payload.ngayCapChungChi,
+				ngayHetHanChungChi: payload.ngayHetHanChungChi,
+				daXoa: payload.daXoa ?? false,
+				khoa: { connect: { id: department.id } },
+				chucDanh: { connect: { id: titleId } },
+				chucVu: { connect: { id: positionId } },
+				vaiTro: { connect: { id: role.id } },
+			},
+			select: userSelect,
+		});
+
+		return Send.success(res, { user: createdUser }, "Tạo người dùng thành công");
+	} catch (error) {
+		if (error instanceof z.ZodError) {
+			return Send.validationErrors(res, error.flatten().fieldErrors);
+		}
+
+		if (error instanceof ReferenceError) {
+			return Send.badRequest(res, null, error.message);
+		}
+
+		if (error instanceof Prisma.PrismaClientKnownRequestError) {
+			if (error.code === "P2002") {
+				return Send.badRequest(res, null, "Thông tin người dùng bị trùng lặp");
+			}
 		}
 
 		return next(error);
@@ -333,6 +512,7 @@ const deleteUser = async (
 export default {
 	getUsers,
 	getUser,
+	createUser,
 	updateUser,
 	deleteUser,
 };

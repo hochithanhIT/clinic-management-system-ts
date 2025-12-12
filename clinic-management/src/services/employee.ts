@@ -90,6 +90,21 @@ export interface UpdateEmployeePayload {
   vaiTroId?: number
 }
 
+export interface CreateEmployeePayload {
+  hoTen: string
+  ngaySinh: Date
+  gioiTinh: number
+  sdt: string
+  soChungChiHanhNghe?: string
+  ngayCapChungChi?: Date
+  ngayHetHanChungChi?: Date
+  daXoa?: boolean
+  khoaId: number
+  chucDanhId?: number
+  chucVuId?: number
+  vaiTroId: number
+}
+
 const mapReference = (
   value: { id: number; [key: string]: unknown } | null,
   labelKey: string,
@@ -175,6 +190,17 @@ export const updateEmployee = async (
 ): Promise<EmployeeSummary> => {
   const response = await apiFetch<ApiSuccessResponse<EmployeeSingleResponse>>(`/user/${id}`, {
     method: "PUT",
+    json: payload,
+  })
+
+  return mapEmployee(response.data.user)
+}
+
+export const createEmployee = async (
+  payload: CreateEmployeePayload,
+): Promise<EmployeeSummary> => {
+  const response = await apiFetch<ApiSuccessResponse<EmployeeSingleResponse>>("/user", {
+    method: "POST",
     json: payload,
   })
 

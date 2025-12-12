@@ -8,6 +8,13 @@ const router = express.Router();
 
 router.get("/", authMiddleware.authenticateUser, userController.getUsers);
 
+router.post(
+	"/",
+	authMiddleware.authenticateUser,
+	ValidationMiddleware.validateBody(userSchema.createUserBody),
+	userController.createUser
+);
+
 router.get(
 	"/:id",
 	authMiddleware.authenticateUser,

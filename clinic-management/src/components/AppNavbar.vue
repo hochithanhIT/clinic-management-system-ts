@@ -80,7 +80,7 @@ const diagnosticsMenu: MenuRouteItem[] = [
 ]
 
 const catalogMenu: MenuRouteItem[] = [
-  { name: 'Accounts', path: '/catalog/accounts/' },
+  { name: 'Accounts', path: '/catalog/account/' },
   { name: 'Employee', path: '/catalog/employee/' },
   { name: 'Departments & Rooms', path: '/' },
   { name: 'Services', path: '/' },

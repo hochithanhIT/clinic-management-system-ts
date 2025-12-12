@@ -118,6 +118,46 @@ const createAccount = async (req: Request, res: Response) => {
 
 }
 
+const resetPassword = async (req: Request, res: Response) => {
+    try {
+        const { nhanVienId } = authSchema.resetPassword.parse(req.body);
+
+        const account = await prisma.taiKhoan.findUnique({
+            where: { nhanVienId },
+            select: { nhanVienId: true },
+        });
+
+        if (!account) {
+            return Send.notFound(res, null, "User account not found.");
+        }
+
+        const DEFAULT_PASSWORD = process.env.DEFAULT_PASSWORD;
+        if (!DEFAULT_PASSWORD) {
+            console.error("DEFAULT_PASSWORD environment variable is missing.");
+            return Send.error(res, null, "Password reset failed.");
+        }
+
+        const hashedPassword = await bcrypt.hash(DEFAULT_PASSWORD, 10);
+
+        await prisma.taiKhoan.update({
+            where: { nhanVienId },
+            data: {
+                matKhau: hashedPassword,
+                refreshToken: null,
+            },
+        });
+
+        return Send.success(res, null, "Password has been reset to the default value.");
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            return Send.validationErrors(res, error.flatten().fieldErrors);
+        }
+
+        console.error("Password reset failed:", error);
+        return Send.error(res, null, "Password reset failed.");
+    }
+}
+
 const changePassword = async (req: Request, res: Response) => {
     try {
         const nhanVienId: number | undefined = req.body.nhanVienId;
@@ -259,6 +299,7 @@ const getAccountInfo = async (req: Request, res: Response, next: NextFunction) =
 export default {
     login,
     createAccount,
+    resetPassword,
     changePassword,
     logout,
     refreshToken,

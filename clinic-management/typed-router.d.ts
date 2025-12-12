@@ -51,6 +51,13 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/catalog/account/': RouteRecordInfo<
+      '/catalog/account/',
+      '/catalog/account',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
     '/catalog/employee/': RouteRecordInfo<
       '/catalog/employee/',
       '/catalog/employee',
@@ -134,6 +141,12 @@ declare module 'vue-router/auto-routes' {
     'src/pages/billing/index.vue': {
       routes:
         | '/billing/'
+      views:
+        | never
+    }
+    'src/pages/catalog/account/index.vue': {
+      routes:
+        | '/catalog/account/'
       views:
         | never
     }

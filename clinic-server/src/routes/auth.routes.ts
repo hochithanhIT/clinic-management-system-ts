@@ -14,6 +14,12 @@ router
         authController.createAccount,
     )
     .post(
+        "/reset-password",
+        authMiddleware.authenticateUser,
+        ValidationMiddleware.validateBody(authSchema.resetPassword),
+        authController.resetPassword,
+    )
+    .post(
         "/change-password",
         authMiddleware.authenticateUser,
         ValidationMiddleware.validateBody(authSchema.changePassword),

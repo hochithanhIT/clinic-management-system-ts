@@ -7,7 +7,7 @@ definePage({
 })
 
 import { computed, onMounted, reactive, ref } from 'vue'
-import { CalendarIcon, Loader2, SearchIcon } from 'lucide-vue-next'
+import { CalendarIcon, Loader2, PlusIcon, SearchIcon } from 'lucide-vue-next'
 import type { DateValue } from 'reka-ui'
 import { parseDate } from '@internationalized/date'
 import { toast } from 'vue-sonner'
@@ -39,8 +39,10 @@ import {
 } from '@/components/ui/table'
 import { ApiError } from '@/services/http'
 import {
+  createEmployee,
   getEmployees,
   updateEmployee,
+  type CreateEmployeePayload,
   type GetEmployeesParams,
   type EmployeeSummary,
   type UpdateEmployeePayload,
@@ -181,6 +183,9 @@ const roleFilterOptions = computed(() => {
 })
 
 const selectedEmployee = ref<EmployeeSummary | null>(null)
+const isCreating = ref(false)
+const lastSelectedEmployeeId = ref<number | null>(null)
+const pendingSelectionId = ref<number | null>(null)
 
 const createEmptyFormState = (): EmployeeFormState => ({
   code: '',
@@ -337,6 +342,8 @@ const isSaveDisabled = computed(
 )
 
 const applyEmployeeToForm = (employee: EmployeeSummary) => {
+  isCreating.value = false
+  lastSelectedEmployeeId.value = employee.id
   form.code = employee.code ?? ''
   form.fullName = employee.fullName ?? ''
   form.gender =
@@ -488,15 +495,15 @@ const loadEmployees = async () => {
       search,
     }
 
-    if (filters.departmentId !== 'all') {
-      const parsed = Number(filters.departmentId)
+    if (appliedFilters.departmentId !== 'all') {
+      const parsed = Number(appliedFilters.departmentId)
       if (Number.isFinite(parsed)) {
         requestParams.departmentId = parsed
       }
     }
 
-    if (filters.roleId !== 'all') {
-      const parsed = Number(filters.roleId)
+    if (appliedFilters.roleId !== 'all') {
+      const parsed = Number(appliedFilters.roleId)
       if (Number.isFinite(parsed)) {
         requestParams.roleId = parsed
       }
@@ -504,32 +511,52 @@ const loadEmployees = async () => {
 
     const { employees: list, pagination } = await getEmployees(requestParams)
 
-    employees.value = [...list].sort((a, b) =>
+    const sortedEmployees = [...list].sort((a, b) =>
       a.code.localeCompare(b.code, 'vi', { numeric: true }),
     )
+    employees.value = sortedEmployees
     employeesPagination.value = pagination
     page.value = pagination.page
     pageSize.value = pagination.limit
 
-    if (list.length === 0) {
-      selectedEmployee.value = null
-      resetForm()
+    if (sortedEmployees.length === 0) {
+      if (!isCreating.value) {
+        selectedEmployee.value = null
+        resetForm()
+      }
       return
     }
 
-    const currentId = selectedEmployee.value?.id ?? null
-    const nextSelection =
-      currentId !== null ? (list.find((employee) => employee.id === currentId) ?? list[0]) : list[0]
+    const requestedSelectionId = pendingSelectionId.value
+    const currentSelectionId =
+      requestedSelectionId ?? (isCreating.value ? null : (selectedEmployee.value?.id ?? null))
+    pendingSelectionId.value = null
 
-    if (!nextSelection) {
+    if (typeof currentSelectionId === 'number') {
+      const matchedEmployee = sortedEmployees.find((employee) => employee.id === currentSelectionId)
+      if (matchedEmployee) {
+        selectedEmployee.value = matchedEmployee
+        applyEmployeeToForm(matchedEmployee)
+        formErrors.value = []
+        return
+      }
+    }
+
+    if (isCreating.value) {
       selectedEmployee.value = null
-      resetForm()
       return
     }
 
-    selectedEmployee.value = nextSelection
-    applyEmployeeToForm(nextSelection)
-    formErrors.value = []
+    const fallbackEmployee = sortedEmployees[0]
+    if (fallbackEmployee) {
+      selectedEmployee.value = fallbackEmployee
+      applyEmployeeToForm(fallbackEmployee)
+      formErrors.value = []
+      return
+    }
+
+    selectedEmployee.value = null
+    resetForm()
   } catch (error) {
     console.error(error)
     if (error instanceof ApiError) {
@@ -544,15 +571,17 @@ const loadEmployees = async () => {
   }
 }
 
-const validateForm = (): boolean => {
+const validateForm = (mode: 'create' | 'update'): boolean => {
   const errors: string[] = []
 
-  if (!selectedEmployee.value) {
-    errors.push('Select an employee to edit.')
-  }
+  if (mode === 'update') {
+    if (!selectedEmployee.value) {
+      errors.push('Select an employee to edit.')
+    }
 
-  if (!form.code.trim()) {
-    errors.push('Employee code is required.')
+    if (!form.code.trim()) {
+      errors.push('Employee code is required.')
+    }
   }
 
   if (!form.fullName.trim()) {
@@ -657,6 +686,49 @@ const buildUpdatePayload = (): UpdateEmployeePayload => {
   return payload
 }
 
+const buildCreatePayload = (): CreateEmployeePayload => {
+  const gender = Number(form.gender)
+  if (!Number.isFinite(gender)) {
+    throw new Error('Selected gender is invalid.')
+  }
+
+  const departmentId = Number(form.departmentId)
+  if (!Number.isFinite(departmentId)) {
+    throw new Error('Selected department is invalid.')
+  }
+
+  const roleId = Number(form.roleId)
+  if (!Number.isFinite(roleId)) {
+    throw new Error('Selected role is invalid.')
+  }
+
+  const payload: CreateEmployeePayload = {
+    hoTen: form.fullName.trim(),
+    ngaySinh: new Date(form.birthDate),
+    gioiTinh: gender,
+    sdt: form.phone.trim(),
+    khoaId: departmentId,
+    vaiTroId: roleId,
+  }
+
+  const certificateCode = form.certificateCode.trim()
+  if (certificateCode) {
+    payload.soChungChiHanhNghe = certificateCode
+  }
+
+  if (form.certificateIssuedAt) {
+    payload.ngayCapChungChi = new Date(form.certificateIssuedAt)
+  }
+
+  if (form.certificateExpiredAt) {
+    payload.ngayHetHanChungChi = new Date(form.certificateExpiredAt)
+  }
+
+  payload.daXoa = form.status === 'inactive'
+
+  return payload
+}
+
 const handleSearch = async () => {
   appliedFilters.name = filters.name
   appliedFilters.code = filters.code
@@ -680,6 +752,54 @@ const handleResetFilters = async () => {
   await loadEmployees()
 }
 
+const handleAddEmployee = async () => {
+  if (!isCreating.value) {
+    if (hasFormChanges.value) {
+      toast.info('Save or cancel current changes before adding a new employee.')
+      return
+    }
+
+    lastSelectedEmployeeId.value = selectedEmployee.value?.id ?? null
+    pendingSelectionId.value = null
+    isCreating.value = true
+    selectedEmployee.value = null
+    resetForm()
+    formErrors.value = []
+    return
+  }
+
+  if (!validateForm('create')) {
+    return
+  }
+
+  saving.value = true
+
+  try {
+    const payload = buildCreatePayload()
+    const created = await createEmployee(payload)
+
+    toast.success('Employee added.')
+    pendingSelectionId.value = created.id
+    isCreating.value = false
+    lastSelectedEmployeeId.value = null
+    formErrors.value = []
+
+    await loadEmployees()
+  } catch (error) {
+    console.error(error)
+    if (error instanceof ApiError) {
+      const messages = extractValidationMessages(error.details)
+      formErrors.value = messages.length ? messages : [error.message]
+    } else if (error instanceof Error) {
+      formErrors.value = [error.message]
+    } else {
+      formErrors.value = ['Unable to add employee.']
+    }
+  } finally {
+    saving.value = false
+  }
+}
+
 const handlePageChange = async (nextPage: number) => {
   if (employeesLoading.value || nextPage === page.value) {
     return
@@ -695,7 +815,38 @@ const handleSelectEmployee = (employee: EmployeeSummary) => {
   formErrors.value = []
 }
 
-const handleCancelEdit = () => {
+const handleCancel = () => {
+  if (isCreating.value) {
+    isCreating.value = false
+    formErrors.value = []
+
+    if (lastSelectedEmployeeId.value !== null) {
+      const previous = employees.value.find(
+        (employee) => employee.id === lastSelectedEmployeeId.value,
+      )
+      lastSelectedEmployeeId.value = null
+
+      if (previous) {
+        selectedEmployee.value = previous
+        applyEmployeeToForm(previous)
+        return
+      }
+    }
+
+    lastSelectedEmployeeId.value = null
+
+    const fallback = employees.value[0]
+    if (fallback) {
+      selectedEmployee.value = fallback
+      applyEmployeeToForm(fallback)
+    } else {
+      selectedEmployee.value = null
+      resetForm()
+    }
+
+    return
+  }
+
   const employee = selectedEmployee.value
   if (employee) {
     applyEmployeeToForm(employee)
@@ -711,7 +862,7 @@ const handleSave = async () => {
     return
   }
 
-  if (!validateForm()) {
+  if (!validateForm('update')) {
     return
   }
 
@@ -765,10 +916,11 @@ onMounted(() => {
           <p v-if="selectedEmployee" class="text-sm text-muted-foreground">
             Editing {{ selectedEmployee.fullName }} ({{ selectedEmployee.code }})
           </p>
+          <p v-else-if="isCreating" class="text-sm text-muted-foreground">Adding a new employee</p>
         </CardHeader>
         <CardContent class="space-y-5">
           <div
-            v-if="!selectedEmployee"
+            v-if="!selectedEmployee && !isCreating"
             class="rounded-md border border-dashed px-4 py-6 text-sm text-muted-foreground"
           >
             Select an employee from the list below to view and edit details.
@@ -781,8 +933,9 @@ onMounted(() => {
                 <Input
                   id="employee-code"
                   v-model="form.code"
-                  :disabled="saving"
-                  placeholder="Eg. NV001"
+                  disabled
+                  readonly
+                  placeholder="Auto generated"
                 />
               </Field>
 
@@ -959,10 +1112,24 @@ onMounted(() => {
             </div>
 
             <div class="flex flex-wrap justify-end gap-3">
-              <Button type="button" variant="outline" :disabled="saving" @click="handleCancelEdit">
+              <Button
+                type="button"
+                class="flex items-center"
+                :disabled="saving"
+                @click="handleAddEmployee"
+              >
+                <PlusIcon class="mr-2 h-4 w-4" />
+                {{ isCreating ? (saving ? 'Adding...' : 'Add Employee') : 'New Employee' }}
+              </Button>
+              <Button type="button" variant="outline" :disabled="saving" @click="handleCancel">
                 Cancel
               </Button>
-              <Button type="button" :disabled="isSaveDisabled" @click="handleSave">
+              <Button
+                v-if="!isCreating"
+                type="button"
+                :disabled="isSaveDisabled"
+                @click="handleSave"
+              >
                 {{ saving ? 'Saving…' : 'Save Changes' }}
               </Button>
             </div>
