@@ -73,12 +73,19 @@ const receptionMenu: MenuRouteItem[] = [
 ]
 const medicalExaminationMenu: MenuRouteItem[] = [
   { name: 'Medical Examination', path: '/medical-examination/' },
-  { name: 'Off-schedule Examination', path: '/' },
 ]
 const diagnosticsMenu: MenuRouteItem[] = [
   { name: 'Laboratory', path: '/laboratory/' },
   { name: 'Diagnostic Imaging', path: '/diagnostic-imaging/' },
-  { name: 'Surgery & Procedures', path: '/' },
+]
+
+const catalogMenu: MenuRouteItem[] = [
+  { name: 'Accounts', path: '/catalog/accounts/' },
+  { name: 'Employee', path: '/catalog/employee/' },
+  { name: 'Departments & Rooms', path: '/' },
+  { name: 'Services', path: '/' },
+  { name: 'Diseases', path: '/' },
+  { name: 'Addresses', path: '/' },
 ]
 </script>
 <template>
@@ -180,8 +187,29 @@ const diagnosticsMenu: MenuRouteItem[] = [
             </NavigationMenuContent>
           </NavigationMenuItem>
 
+          <NavigationMenuItem>
+            <NavigationMenuTrigger>Catalogs</NavigationMenuTrigger>
+            <NavigationMenuContent>
+              <ul class="grid w-[220px] gap-2">
+                <li v-for="item in catalogMenu" :key="item.name">
+                  <NavigationMenuLink as-child>
+                    <router-link
+                      :to="item.path"
+                      class="block rounded-md px-3 py-2 text-sm font-medium hover:bg-primary/10"
+                    >
+                      {{ item.name }}
+                    </router-link>
+                  </NavigationMenuLink>
+                </li>
+              </ul>
+            </NavigationMenuContent>
+          </NavigationMenuItem>
+
           <NavigationMenuItem class="bg-white rounded-md">
-            <NavigationMenuLink as-child class="px-4 hover:rounded-md hover:text-primary-foreground">
+            <NavigationMenuLink
+              as-child
+              class="px-4 hover:rounded-md hover:text-primary-foreground"
+            >
               <router-link to="/billing" class="font-medium">Billing</router-link>
             </NavigationMenuLink>
           </NavigationMenuItem>

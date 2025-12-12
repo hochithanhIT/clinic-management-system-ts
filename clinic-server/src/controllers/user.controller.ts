@@ -61,7 +61,8 @@ const getUsers = async (
 	next: NextFunction
 ) => {
 	try {
-		const { page, limit, search }: GetUsersQuery = userSchema.getUsersQuery.parse(req.query);
+		const { page, limit, search, departmentId, roleId }: GetUsersQuery =
+			userSchema.getUsersQuery.parse(req.query);
 
 		const skip = (page - 1) * limit;
 		const where: Prisma.NhanVienWhereInput = {};
@@ -74,13 +75,21 @@ const getUsers = async (
 			];
 		}
 
+		if (typeof departmentId === "number") {
+			where.khoaId = departmentId;
+		}
+
+		if (typeof roleId === "number") {
+			where.vaiTroId = roleId;
+		}
+
 		const [users, total] = await Promise.all([
 			prisma.nhanVien.findMany({
 				where,
 				select: userSelect,
 				skip,
 				take: limit,
-				orderBy: { id: "desc" },
+				orderBy: { id: "asc" },
 			}),
 			prisma.nhanVien.count({ where }),
 		]);

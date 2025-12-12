@@ -19,6 +19,16 @@ const getUsersQuery = z.object({
     .max(100, "Từ khóa tìm kiếm không được vượt quá 100 ký tự")
     .optional()
     .transform((value) => (value ? value : undefined)),
+  departmentId: z.coerce
+    .number()
+    .int("Khoa không hợp lệ")
+    .min(1, "Khoa không hợp lệ")
+    .optional(),
+  roleId: z.coerce
+    .number()
+    .int("Vai trò không hợp lệ")
+    .min(1, "Vai trò không hợp lệ")
+    .optional(),
 });
 
 const getUserParam = z.object({
