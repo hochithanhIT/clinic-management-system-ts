@@ -20,6 +20,7 @@ import occupationRoutes from "./routes/occupation.routes";
 import serviceOrderRoutes from "./routes/serviceOrder.routes";
 import resultRoutes from "./routes/result.routes";
 import invoiceRoutes from "./routes/invoice.routes";
+import appointmentRoutes from "./routes/appointment.routes";
 import { errorHandler } from "./middlewares/errorHandler";
 
 const app = express();
@@ -54,6 +55,7 @@ app.use("/api/service-type", serviceTypeRoutes);
 app.use("/api/service-order", serviceOrderRoutes);
 app.use("/api/result", resultRoutes);
 app.use("/api/invoice", invoiceRoutes);
+app.use("/api/appointment", appointmentRoutes);
 
 app.use(errorHandler);
 

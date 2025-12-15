@@ -30,6 +30,7 @@ import { Textarea } from '@/components/ui/textarea'
 import type { MedicalRecordSummary } from '@/services/medicalRecord'
 import type { PatientSummary } from '@/services/patient'
 import type { MedicalExaminationDetail } from '@/services/medicalExamination'
+import type { FollowUpAppointmentDetails } from './types'
 
 interface DispositionOrderRow {
   id: number
@@ -49,10 +50,12 @@ interface DispositionDiagnosisRow {
   isPrimary: boolean
 }
 
+const FOLLOW_UP_VALUE = 'Hẹn khám'
+
 const DISPOSITION_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
   { value: 'Khám xong cho về', label: 'Discharge after examination' },
   { value: 'Cấp toa cho về', label: 'Provide prescription and discharge' },
-  { value: 'Hẹn khám', label: 'Schedule follow-up appointment' },
+  { value: FOLLOW_UP_VALUE, label: 'Schedule follow-up appointment' },
 ]
 
 const props = defineProps<{
@@ -63,11 +66,21 @@ const props = defineProps<{
   examinationDetail: MedicalExaminationDetail | null
   serviceGroups: DispositionServiceGroup[]
   defaultEndTime: string | null
+  followUpAppointment: FollowUpAppointmentDetails | null
 }>()
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
-  save: [payload: { endTime: string; treatmentMethod: string; disposition: string }]
+  save: [
+    payload: {
+      endTime: string
+      treatmentMethod: string
+      disposition: string
+      followUpAppointment: FollowUpAppointmentDetails | null
+    },
+  ]
+  'follow-up-requested': []
+  'follow-up-cleared': []
 }>()
 
 const timeZone = getLocalTimeZone()
@@ -76,6 +89,7 @@ const endDateValue = ref<CalendarDate | undefined>(undefined)
 const endTimeValue = ref('')
 const disposition = ref<string | null>(null)
 const treatmentMethod = ref('')
+const lastDispositionValue = ref<string | null>(null)
 
 const dateFormatter = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium' })
 const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', {
@@ -153,6 +167,8 @@ const currentTreatmentMethod = computed(
 )
 const currentDisposition = computed(() => props.examinationDetail?.disposition?.trim() || '—')
 
+const isFollowUpSelected = computed(() => disposition.value === FOLLOW_UP_VALUE)
+
 const diagnosisRows = computed<DispositionDiagnosisRow[]>(() => {
   const source = props.examinationDetail?.diagnoses ?? []
   if (!source.length) {
@@ -172,6 +188,20 @@ const diagnosisRows = computed<DispositionDiagnosisRow[]>(() => {
 })
 
 const hasDiagnoses = computed(() => diagnosisRows.value.length > 0)
+
+const followUpSummary = computed(() => {
+  if (!props.followUpAppointment) {
+    return null
+  }
+
+  const scheduledDate = formatDate(props.followUpAppointment.scheduledAt)
+  return {
+    scheduledAt: scheduledDate,
+    reason: props.followUpAppointment.reason,
+    roomName: props.followUpAppointment.roomName,
+    notes: props.followUpAppointment.notes,
+  }
+})
 
 const formatVitalNumber = (
   value: number | null | undefined,
@@ -326,6 +356,11 @@ const syncFormState = () => {
   endDatePopoverOpen.value = false
   treatmentMethod.value = props.examinationDetail?.treatmentMethod ?? ''
   disposition.value = props.examinationDetail?.disposition ?? null
+  lastDispositionValue.value = disposition.value
+
+  if (disposition.value === FOLLOW_UP_VALUE && !props.followUpAppointment) {
+    emit('follow-up-requested')
+  }
 }
 
 watch(
@@ -361,6 +396,11 @@ watch(
 
     treatmentMethod.value = detail?.treatmentMethod ?? ''
     disposition.value = detail?.disposition ?? null
+    lastDispositionValue.value = disposition.value
+
+    if (disposition.value === FOLLOW_UP_VALUE && !props.followUpAppointment) {
+      emit('follow-up-requested')
+    }
   },
   { deep: true },
 )
@@ -372,10 +412,20 @@ const handleClose = () => {
 const handleDispositionChange = (value: AcceptableValue) => {
   if (value === null || value === undefined) {
     disposition.value = null
+    if (lastDispositionValue.value === FOLLOW_UP_VALUE) {
+      emit('follow-up-cleared')
+    }
+    lastDispositionValue.value = null
     return
   }
 
   disposition.value = String(value)
+  if (disposition.value === FOLLOW_UP_VALUE) {
+    emit('follow-up-requested')
+  } else if (lastDispositionValue.value === FOLLOW_UP_VALUE) {
+    emit('follow-up-cleared')
+  }
+  lastDispositionValue.value = disposition.value
 }
 
 const handleSave = () => {
@@ -419,6 +469,7 @@ const handleSave = () => {
     endTime: payloadEndTime,
     treatmentMethod: trimmedTreatment,
     disposition: disposition.value,
+    followUpAppointment: props.followUpAppointment,
   })
 }
 </script>
@@ -574,6 +625,36 @@ const handleSave = () => {
               </span>
             </li>
           </ul>
+        </section>
+
+        <section v-if="isFollowUpSelected" class="space-y-3">
+          <h3 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Follow-up Appointment
+          </h3>
+          <div
+            v-if="!followUpSummary"
+            class="rounded-md border border-dashed p-4 text-sm text-muted-foreground"
+          >
+            Select appointment details to finalize the follow-up disposition.
+          </div>
+          <div v-else class="space-y-2 rounded-md border p-4 text-sm text-foreground">
+            <div class="flex flex-wrap items-baseline justify-between gap-2">
+              <span class="font-medium">Scheduled For</span>
+              <span>{{ followUpSummary.scheduledAt }}</span>
+            </div>
+            <div>
+              <span class="font-medium">Reason:</span>
+              <span class="ml-1">{{ followUpSummary.reason }}</span>
+            </div>
+            <div v-if="followUpSummary.roomName">
+              <span class="font-medium">Room:</span>
+              <span class="ml-1">{{ followUpSummary.roomName }}</span>
+            </div>
+            <div v-if="followUpSummary.notes">
+              <span class="font-medium">Notes:</span>
+              <span class="ml-1">{{ followUpSummary.notes }}</span>
+            </div>
+          </div>
         </section>
 
         <section class="space-y-3">

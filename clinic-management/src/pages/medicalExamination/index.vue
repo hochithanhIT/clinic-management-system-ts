@@ -49,6 +49,8 @@ import MedicalExaminationServicesDialog, {
   type MedicalExaminationServicesSavePayload,
 } from '@/components/medicalExamination/MedicalExaminationServicesDialog.vue'
 import MedicalExaminationDispositionDialog from '@/components/medicalExamination/MedicalExaminationDispositionDialog.vue'
+import MedicalExaminationFollowUpDialog from '@/components/medicalExamination/MedicalExaminationFollowUpDialog.vue'
+import type { FollowUpAppointmentDetails } from '@/components/medicalExamination/types'
 import type { GetMedicalRecordsParams, MedicalRecordSummary } from '@/services/medicalRecord'
 import { getMedicalRecords, updateMedicalRecord } from '@/services/medicalRecord'
 import {
@@ -69,6 +71,13 @@ import {
   updateServiceOrderDetail,
 } from '@/services/serviceOrder'
 import { getPatient, type PatientSummary } from '@/services/patient'
+import {
+  createAppointment,
+  deleteAppointment,
+  updateAppointment,
+  type AppointmentSummary,
+} from '@/services/appointment'
+import { getRooms, type RoomSummary } from '@/services/room'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useAuthStore } from '@/stores/auth'
 import { useStatusHelpers } from './composables/useStatusHelpers'
@@ -360,6 +369,14 @@ const servicesSaving = ref(false)
 const dispositionDialogOpen = ref(false)
 const dispositionSaving = ref(false)
 const dispositionDefaultEndTime = ref<string | null>(null)
+const FOLLOW_UP_DISPOSITION_VALUE = 'Hẹn khám'
+const followUpAppointment = ref<FollowUpAppointmentDetails | null>(null)
+const followUpAppointmentToDeleteId = ref<number | null>(null)
+const followUpDialogOpen = ref(false)
+const followUpRooms = ref<RoomSummary[]>([])
+const followUpRoomsLoading = ref(false)
+const followUpRoomsLoaded = ref(false)
+const followUpDialogSaving = computed(() => dispositionSaving.value)
 const deleteOrderDialogOpen = ref(false)
 const deleteOrderTarget = ref<{ id: number; code: string; category: ServiceOrderCategory } | null>(
   null,
@@ -391,6 +408,20 @@ watch(deleteOrderDialogOpen, (open) => {
     deleteOrderTarget.value = null
   }
 })
+
+watch(dispositionDialogOpen, (open) => {
+  if (!open) {
+    followUpDialogOpen.value = false
+  }
+})
+
+watch(
+  () => selectedRecordId.value,
+  () => {
+    followUpAppointment.value = null
+    followUpAppointmentToDeleteId.value = null
+  },
+)
 
 const medicalRecordDetailLoading = ref(false)
 const medicalRecordPatientDetail = ref<PatientSummary | null>(null)
@@ -527,6 +558,9 @@ const handleOpenDispositionDialog = () => {
     return
   }
 
+  followUpAppointment.value = null
+  followUpDialogOpen.value = false
+
   const completedAtValue = selectedRecord.value.completedAt
   const fallback = completedAtValue ? new Date(completedAtValue) : new Date()
   dispositionDefaultEndTime.value = toDateTimeLocalInput(fallback)
@@ -537,7 +571,13 @@ const handleSaveDisposition = async (payload: {
   endTime: string
   treatmentMethod: string
   disposition: string
+  followUpAppointment: FollowUpAppointmentDetails | null
 }) => {
+  if (payload.followUpAppointment) {
+    followUpAppointment.value = payload.followUpAppointment
+    followUpAppointmentToDeleteId.value = null
+  }
+
   if (!selectedRecord.value || !medicalRecordExamination.value) {
     toast.error('Medical record or examination details are missing.')
     return
@@ -552,6 +592,18 @@ const handleSaveDisposition = async (payload: {
     return
   }
 
+  const isFollowUpDisposition = payload.disposition === FOLLOW_UP_DISPOSITION_VALUE
+
+  if (isFollowUpDisposition && !followUpAppointment.value) {
+    toast.error('Please schedule a follow-up appointment before saving.')
+    return
+  }
+
+  if (isFollowUpDisposition && followUpAppointment.value?.roomId === null) {
+    toast.error('Please choose a clinic room for the follow-up appointment.')
+    return
+  }
+
   const parsedEndTime = new Date(payload.endTime)
   if (Number.isNaN(parsedEndTime.getTime())) {
     toast.error('The examination end time is invalid.')
@@ -563,7 +615,45 @@ const handleSaveDisposition = async (payload: {
 
   dispositionSaving.value = true
 
+  let appointmentWasCreated = false
+  let createdAppointmentId: number | null = null
+  let persistedAppointment: FollowUpAppointmentDetails | null = null
+  const appointmentSnapshot = followUpAppointment.value
+  const appointmentIdToDelete = !isFollowUpDisposition ? followUpAppointmentToDeleteId.value : null
+
   try {
+    if (isFollowUpDisposition && appointmentSnapshot) {
+      if (appointmentSnapshot.roomId === null) {
+        throw new Error('Follow-up appointment is missing room information.')
+      }
+
+      const appointmentRoomId = appointmentSnapshot.roomId
+
+      if (appointmentSnapshot.id) {
+        const updatedAppointment = await updateAppointment(appointmentSnapshot.id, {
+          scheduledAt: appointmentSnapshot.scheduledAt,
+          reason: appointmentSnapshot.reason,
+          roomId: appointmentRoomId,
+          notes: appointmentSnapshot.notes ?? null,
+        })
+        persistedAppointment = mapAppointmentToFollowUpDetails(updatedAppointment)
+      } else {
+        const createdAppointment = await createAppointment({
+          patientId: selectedRecord.value.patient.id,
+          roomId: appointmentRoomId,
+          scheduledAt: appointmentSnapshot.scheduledAt,
+          reason: appointmentSnapshot.reason,
+          notes: appointmentSnapshot.notes ?? null,
+        })
+        appointmentWasCreated = true
+        createdAppointmentId = createdAppointment.id
+        persistedAppointment = mapAppointmentToFollowUpDetails(createdAppointment)
+      }
+    } else if (appointmentIdToDelete !== null) {
+      await deleteAppointment(appointmentIdToDelete)
+      followUpAppointmentToDeleteId.value = null
+    }
+
     const [updatedRecord, updatedExam] = await Promise.all([
       updateMedicalRecord(selectedRecord.value.id, {
         trangThai: 2,
@@ -582,11 +672,32 @@ const handleSaveDisposition = async (payload: {
     medicalRecordExamination.value = updatedExam
     dispositionDefaultEndTime.value = payload.endTime
 
+    if (persistedAppointment) {
+      followUpAppointment.value = persistedAppointment
+      followUpAppointmentToDeleteId.value = null
+    } else if (!isFollowUpDisposition) {
+      followUpAppointment.value = null
+      followUpAppointmentToDeleteId.value = null
+    }
+
     await loadSelectedRecordDetail()
 
     toast.success('Disposition saved successfully.')
     dispositionDialogOpen.value = false
+    followUpDialogOpen.value = false
   } catch (error) {
+    if (appointmentWasCreated && createdAppointmentId !== null) {
+      try {
+        await deleteAppointment(createdAppointmentId)
+      } catch {
+        // Ignore cleanup errors to avoid masking the original failure.
+      }
+    }
+
+    if (appointmentIdToDelete !== null) {
+      followUpAppointmentToDeleteId.value = appointmentIdToDelete
+    }
+
     const message =
       error instanceof ApiError ? error.message : 'Unable to save disposition. Please try again.'
     toast.error(message)
@@ -893,6 +1004,56 @@ const notifyIncompleteServiceOrders = (): boolean => {
   toast.error(formatIncompleteServiceOrdersMessage(incompleteOrders))
   return true
 }
+
+const ensureFollowUpRoomsLoaded = async () => {
+  if (followUpRoomsLoaded.value || followUpRoomsLoading.value) {
+    return
+  }
+
+  followUpRoomsLoading.value = true
+
+  try {
+    const { rooms } = await getRooms({ limit: 100, status: 'active' })
+    followUpRooms.value = rooms
+    followUpRoomsLoaded.value = true
+  } catch (error) {
+    const message =
+      error instanceof ApiError ? error.message : 'Unable to load clinic rooms. Please try again.'
+    toast.error(message)
+  } finally {
+    followUpRoomsLoading.value = false
+  }
+}
+
+const handleFollowUpRequested = async () => {
+  await ensureFollowUpRoomsLoaded()
+  followUpDialogOpen.value = true
+}
+
+const handleFollowUpCleared = () => {
+  if (followUpAppointment.value?.id !== undefined && followUpAppointment.value.id !== null) {
+    followUpAppointmentToDeleteId.value = followUpAppointment.value.id
+  }
+  followUpAppointment.value = null
+}
+
+const handleFollowUpDialogSave = (appointment: FollowUpAppointmentDetails) => {
+  followUpAppointment.value = appointment
+  followUpAppointmentToDeleteId.value = null
+  followUpDialogOpen.value = false
+  toast.success('Follow-up appointment details saved.')
+}
+
+const mapAppointmentToFollowUpDetails = (
+  appointment: AppointmentSummary,
+): FollowUpAppointmentDetails => ({
+  id: appointment.id,
+  scheduledAt: appointment.scheduledAt,
+  reason: appointment.reason,
+  roomId: appointment.room ? appointment.room.id : null,
+  roomName: appointment.room ? appointment.room.name : null,
+  notes: appointment.notes,
+})
 
 const handleSaveExamination = async (payload: MedicalExaminationDialogSavePayload) => {
   if (!selectedRecord.value) {
@@ -2649,7 +2810,18 @@ watch(filteredRecords, (list) => {
         :examination-detail="medicalRecordExamination"
         :service-groups="dispositionServiceGroups"
         :default-end-time="dispositionDefaultEndTime"
+        :follow-up-appointment="followUpAppointment"
         @save="handleSaveDisposition"
+        @follow-up-requested="handleFollowUpRequested"
+        @follow-up-cleared="handleFollowUpCleared"
+      />
+      <MedicalExaminationFollowUpDialog
+        v-model:open="followUpDialogOpen"
+        :saving="followUpDialogSaving"
+        :rooms="followUpRooms"
+        :rooms-loading="followUpRoomsLoading"
+        :initial-value="followUpAppointment"
+        @save="handleFollowUpDialogSave"
       />
       <AlertDialog :open="deleteOrderDialogOpen" @update:open="handleDeleteDialogOpenChange">
         <AlertDialogContent>

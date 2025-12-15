@@ -143,7 +143,7 @@ watch(
     </PopoverTrigger>
     <PopoverContent
       :align="props.align"
-      class="p-0"
+      class="p-0 z-[70]"
       :style="{
         width: 'var(--radix-popover-trigger-width)',
         maxWidth: props.listMaxWidth,

@@ -54,6 +54,7 @@ model BenhNhan {
   xaPhuongId Int @map("XaPhuong_ID")
 
   benhAns BenhAn[]
+  appointments Appointment[]
 
   @@map("BenhNhan")
 }
@@ -159,6 +160,7 @@ model Phong {
 
   benhAns BenhAn[]
   dichVus DichVu[] @relation("PhongDichVu")
+  appointments Appointment[]
 
   @@map("Phong")
 }
@@ -377,4 +379,19 @@ model HoaDonChiTiet {
   ctpcdId     Int      @map("CTPCD_ID")
 
   @@map("HoaDonChiTiet")
+}
+
+model Appointment {
+  id           Int       @id @default(autoincrement()) @map("APPT_ID")
+  scheduledAt  DateTime  @map("APPT_ScheduledAt")
+  reason       String    @map("APPT_Reason")
+  notes        String?   @db.Text @map("APPT_Notes")
+
+  phong        Phong     @relation(fields: [phongId], references: [id])
+  phongId      Int       @map("Phong_ID")
+
+  benhNhan     BenhNhan  @relation(fields: [benhNhanId], references: [id])
+  benhNhanId   Int       @map("BN_ID")
+
+  @@map("Appointment")
 }
