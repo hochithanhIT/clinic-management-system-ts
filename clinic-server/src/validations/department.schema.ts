@@ -19,6 +19,10 @@ const getDepartmentsQuery = z.object({
     .max(100, "Từ khóa tìm kiếm không được vượt quá 100 ký tự")
     .optional()
     .transform((value) => (value ? value : undefined)),
+  status: z
+    .enum(["active", "inactive"])
+    .optional()
+    .transform((value) => (value ? value : undefined)),
 });
 
 const addDepartmentBody = z.object({

@@ -115,10 +115,8 @@ const diagnosticsMenu: MenuRouteItem[] = [
 const catalogMenu: MenuRouteItem[] = [
   { name: 'Accounts', path: '/catalog/account/' },
   { name: 'Employee', path: '/catalog/employee/' },
-  { name: 'Departments & Rooms', path: '/' },
-  { name: 'Services', path: '/' },
-  { name: 'Diseases', path: '/' },
-  { name: 'Addresses', path: '/' },
+  { name: 'Departments & Rooms', path: '/catalog/department-room/' },
+  { name: 'Services', path: '/catalog/service/' },
 ]
 </script>
 <template>

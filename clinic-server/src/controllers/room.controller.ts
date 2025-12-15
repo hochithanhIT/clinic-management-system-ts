@@ -8,6 +8,7 @@ import { z } from "zod";
 const roomSelect = {
   id: true,
   tenPhong: true,
+  isActive: true,
   khoa: {
     select: {
       id: true,
@@ -26,6 +27,7 @@ type RoomResult = Prisma.PhongGetPayload<{ select: typeof roomSelect }>;
 const mapRoom = (room: RoomResult) => ({
   id: room.id,
   tenPhong: room.tenPhong,
+  isActive: room.isActive,
   khoa: room.khoa,
 });
 
@@ -35,11 +37,14 @@ const getRooms = async (
   next: NextFunction
 ) => {
   try {
-    const { page, limit, search, khoaId }: GetRoomsQuery =
+    const { page, limit, search, khoaId, status }: GetRoomsQuery =
       roomSchema.getRoomsQuery.parse(req.query);
 
     const skip = (page - 1) * limit;
-    const where: Prisma.PhongWhereInput = {};
+    const effectiveStatus = status === "inactive" ? "inactive" : "active";
+    const where: Prisma.PhongWhereInput = {
+      isActive: effectiveStatus === "active",
+    };
 
     if (search) {
       where.tenPhong = { contains: search, mode: "insensitive" };
@@ -92,10 +97,10 @@ const addRoom = async (
 
     const department = await prisma.khoa.findUnique({
       where: { id: payload.khoaId },
-      select: { id: true },
+      select: { id: true, isActive: true },
     });
 
-    if (!department) {
+    if (!department || !department.isActive) {
       return Send.badRequest(res, null, "Khoa không tồn tại");
     }
 
@@ -146,11 +151,15 @@ const updateRoom = async (
 
     const existingRoom = await prisma.phong.findUnique({
       where: { id },
-      select: { id: true, khoaId: true },
+      select: { id: true, khoaId: true, isActive: true },
     });
 
     if (!existingRoom) {
       return Send.notFound(res, null, "Không tìm thấy phòng");
+    }
+
+    if (!existingRoom.isActive) {
+      return Send.badRequest(res, null, "Phòng đã bị vô hiệu");
     }
 
     const updateData: Prisma.PhongUpdateInput = {};
@@ -160,10 +169,10 @@ const updateRoom = async (
     if (payload.khoaId !== undefined) {
       const department = await prisma.khoa.findUnique({
         where: { id: payload.khoaId },
-        select: { id: true },
+        select: { id: true, isActive: true },
       });
 
-      if (!department) {
+      if (!department || !department.isActive) {
         return Send.badRequest(res, null, "Khoa không tồn tại");
       }
 
@@ -223,8 +232,18 @@ const deleteRoom = async (
   try {
     const { id }: RoomParam = roomSchema.roomParam.parse(req.params);
 
-    await prisma.phong.delete({
+    const existingRoom = await prisma.phong.findUnique({
       where: { id },
+      select: { id: true, isActive: true },
+    });
+
+    if (!existingRoom || !existingRoom.isActive) {
+      return Send.notFound(res, null, "Không tìm thấy phòng");
+    }
+
+    await prisma.phong.update({
+      where: { id },
+      data: { isActive: false },
     });
 
     return Send.success(res, null, "Xóa phòng thành công");
@@ -247,9 +266,61 @@ const deleteRoom = async (
   }
 };
 
+const restoreRoom = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id }: RoomParam = roomSchema.roomParam.parse(req.params);
+
+    const existingRoom = await prisma.phong.findUnique({
+      where: { id },
+      select: { id: true, isActive: true, khoaId: true },
+    });
+
+    if (!existingRoom) {
+      return Send.notFound(res, null, "Không tìm thấy phòng");
+    }
+
+    if (existingRoom.isActive) {
+      return Send.badRequest(res, null, "Phòng đang hoạt động");
+    }
+
+    const department = await prisma.khoa.findUnique({
+      where: { id: existingRoom.khoaId },
+      select: { id: true, isActive: true },
+    });
+
+    if (!department || !department.isActive) {
+      return Send.badRequest(res, null, "Khoa không tồn tại hoặc đã bị vô hiệu");
+    }
+
+    await prisma.phong.update({
+      where: { id },
+      data: { isActive: true },
+    });
+
+    return Send.success(res, null, "Khôi phục phòng thành công");
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return Send.validationErrors(res, error.flatten().fieldErrors);
+    }
+
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2025") {
+        return Send.notFound(res, null, "Không tìm thấy phòng");
+      }
+    }
+
+    return next(error);
+  }
+};
+
 export default {
   getRooms,
   addRoom,
   updateRoom,
   deleteRoom,
+  restoreRoom,
 };

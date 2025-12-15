@@ -48,6 +48,7 @@ import MedicalExaminationDialog, {
 import MedicalExaminationServicesDialog, {
   type MedicalExaminationServicesSavePayload,
 } from '@/components/medicalExamination/MedicalExaminationServicesDialog.vue'
+import MedicalExaminationDispositionDialog from '@/components/medicalExamination/MedicalExaminationDispositionDialog.vue'
 import type { GetMedicalRecordsParams, MedicalRecordSummary } from '@/services/medicalRecord'
 import { getMedicalRecords, updateMedicalRecord } from '@/services/medicalRecord'
 import {
@@ -222,12 +223,21 @@ const startExamDisabled = computed(() => {
   return selectedRecord.value.status !== 0
 })
 
+const MEDICAL_RECORD_LOCK_MESSAGE =
+  'This medical record has been completed and can no longer be modified.'
+
+const recordLocked = computed(() => selectedRecord.value?.status === 2)
+
 const secondaryActionsDisabled = computed(() => {
   if (!selectedRecord.value) {
     return true
   }
 
-  return selectedRecord.value.status === 0
+  if (recordLocked.value) {
+    return true
+  }
+
+  return selectedRecord.value.status !== 1
 })
 
 const selectedDoctorDisplay = computed(() => {
@@ -295,15 +305,15 @@ const {
   isProcedureResultsLoading,
   loadServiceOrders,
   openServicesDialog: openServiceOrderDialog,
-  requestCancelServiceOrder,
-  requestUpdateServiceOrder,
-  handleSendServiceOrder,
+  requestCancelServiceOrder: requestCancelServiceOrderInternal,
+  requestUpdateServiceOrder: requestUpdateServiceOrderInternal,
+  handleSendServiceOrder: sendServiceOrderInternal,
   isOrderActionInProgress,
   canSendServiceOrder,
   canCancelServiceOrder,
   canUpdateServiceOrder,
   canDeleteServiceOrder,
-  deleteServiceOrderById,
+  deleteServiceOrderById: deleteServiceOrderByIdInternal,
 } = useServiceOrders({
   selectedRecord,
   defaultOrderingStaffLabel,
@@ -311,9 +321,45 @@ const {
   resolveServiceOrderCategory,
 })
 
+const ensureRecordEditable = (): boolean => {
+  if (recordLocked.value) {
+    toast.error(MEDICAL_RECORD_LOCK_MESSAGE)
+    return false
+  }
+
+  return true
+}
+
+const sendServiceOrder = (orderId: number) => {
+  if (!ensureRecordEditable()) {
+    return
+  }
+
+  void sendServiceOrderInternal(orderId)
+}
+
+const cancelServiceOrder = (order: DiagnosticOrderSummaryRow) => {
+  if (!ensureRecordEditable()) {
+    return
+  }
+
+  requestCancelServiceOrderInternal(order)
+}
+
+const updateServiceOrder = (order: DiagnosticOrderSummaryRow, category: ServiceOrderCategory) => {
+  if (!ensureRecordEditable()) {
+    return
+  }
+
+  requestUpdateServiceOrderInternal(order, category)
+}
+
 const examinationDialogOpen = ref(false)
 const examinationSaving = ref(false)
 const servicesSaving = ref(false)
+const dispositionDialogOpen = ref(false)
+const dispositionSaving = ref(false)
+const dispositionDefaultEndTime = ref<string | null>(null)
 const deleteOrderDialogOpen = ref(false)
 const deleteOrderTarget = ref<{ id: number; code: string; category: ServiceOrderCategory } | null>(
   null,
@@ -459,6 +505,103 @@ const openServicesDialog = () => {
   }
 
   openServiceOrderDialog()
+}
+
+const handleOpenDispositionDialog = () => {
+  if (!selectedRecord.value) {
+    toast.error('Please select a patient before setting disposition.')
+    return
+  }
+
+  if (recordLocked.value) {
+    toast.error(MEDICAL_RECORD_LOCK_MESSAGE)
+    return
+  }
+
+  if (notifyIncompleteServiceOrders()) {
+    return
+  }
+
+  if (!medicalRecordExamination.value) {
+    toast.error('Please save the examination before setting disposition.')
+    return
+  }
+
+  const completedAtValue = selectedRecord.value.completedAt
+  const fallback = completedAtValue ? new Date(completedAtValue) : new Date()
+  dispositionDefaultEndTime.value = toDateTimeLocalInput(fallback)
+  dispositionDialogOpen.value = true
+}
+
+const handleSaveDisposition = async (payload: {
+  endTime: string
+  treatmentMethod: string
+  disposition: string
+}) => {
+  if (!selectedRecord.value || !medicalRecordExamination.value) {
+    toast.error('Medical record or examination details are missing.')
+    return
+  }
+
+  if (recordLocked.value) {
+    toast.error(MEDICAL_RECORD_LOCK_MESSAGE)
+    return
+  }
+
+  if (notifyIncompleteServiceOrders()) {
+    return
+  }
+
+  const parsedEndTime = new Date(payload.endTime)
+  if (Number.isNaN(parsedEndTime.getTime())) {
+    toast.error('The examination end time is invalid.')
+    return
+  }
+
+  const trimmedTreatment = payload.treatmentMethod.trim()
+  const treatmentValue = trimmedTreatment.length ? trimmedTreatment : null
+
+  dispositionSaving.value = true
+
+  try {
+    const [updatedRecord, updatedExam] = await Promise.all([
+      updateMedicalRecord(selectedRecord.value.id, {
+        trangThai: 2,
+        thoiGianKetThuc: parsedEndTime,
+      }),
+      updateMedicalExamination(medicalRecordExamination.value.id, {
+        phuongPhapDieuTri: treatmentValue,
+        xuTri: payload.disposition,
+      }),
+    ])
+
+    records.value = records.value.map((record) =>
+      record.id === updatedRecord.id ? updatedRecord : record,
+    )
+    selectedRecordId.value = updatedRecord.id
+    medicalRecordExamination.value = updatedExam
+    dispositionDefaultEndTime.value = payload.endTime
+
+    await loadSelectedRecordDetail()
+
+    toast.success('Disposition saved successfully.')
+    dispositionDialogOpen.value = false
+  } catch (error) {
+    const message =
+      error instanceof ApiError ? error.message : 'Unable to save disposition. Please try again.'
+    toast.error(message)
+  } finally {
+    dispositionSaving.value = false
+  }
+}
+
+const toDateTimeLocalInput = (value: Date): string => {
+  const year = value.getFullYear()
+  const month = String(value.getMonth() + 1).padStart(2, '0')
+  const day = String(value.getDate()).padStart(2, '0')
+  const hours = String(value.getHours()).padStart(2, '0')
+  const minutes = String(value.getMinutes()).padStart(2, '0')
+  return `${year}-${month}-${day}T${hours}:${minutes}`
 }
 
 const toNullableString = (value: string): string | null => {
@@ -629,6 +772,127 @@ const medicalRecordExamRespiratoryRate = computed(() => {
   const display = toDisplayNumber(medicalRecordExamination.value?.respiratoryRate)
   return display ? `${display} breaths/min` : '—'
 })
+
+interface DispositionOrderView {
+  id: number
+  label: string
+}
+
+const dispositionServiceGroups = computed(() => {
+  const buildGroup = (
+    category: ServiceOrderCategory,
+    label: string,
+    summaries: DiagnosticOrderSummaryRow[],
+    detailsMap: Record<number, DiagnosticServiceRow[]>,
+  ) => {
+    if (!summaries.length) {
+      return null
+    }
+
+    const orders = summaries
+      .map<DispositionOrderView | null>((order) => {
+        const services = (detailsMap[order.id] ?? [])
+          .map((detail) => detail.serviceName)
+          .filter(Boolean)
+
+        if (!services.length) {
+          return null
+        }
+
+        return {
+          id: order.id,
+          label: `${order.code} - ${formatDateTime(order.createdAt)} - ${services.join(', ')}`,
+        }
+      })
+      .filter((value): value is DispositionOrderView => value !== null)
+
+    if (!orders.length) {
+      return null
+    }
+
+    return { category, label, orders }
+  }
+
+  const groups: Array<{
+    category: ServiceOrderCategory
+    label: string
+    orders: DispositionOrderView[]
+  }> = []
+
+  const labGroup = buildGroup(
+    'lab',
+    'Laboratory',
+    laboratoryOrderSummaries.value,
+    laboratoryOrderDetailsByOrder.value,
+  )
+  if (labGroup) {
+    groups.push(labGroup)
+  }
+
+  const imagingGroup = buildGroup(
+    'imaging',
+    'Imaging',
+    imagingOrderSummaries.value,
+    imagingOrderDetailsByOrder.value,
+  )
+  if (imagingGroup) {
+    groups.push(imagingGroup)
+  }
+
+  const procedureGroup = buildGroup(
+    'procedure',
+    'Procedures',
+    procedureOrderSummaries.value,
+    procedureOrderDetailsByOrder.value,
+  )
+  if (procedureGroup) {
+    groups.push(procedureGroup)
+  }
+
+  return groups
+})
+
+const collectAllServiceOrders = (): DiagnosticOrderSummaryRow[] => {
+  const sources = [
+    laboratoryOrderSummaries.value,
+    imagingOrderSummaries.value,
+    procedureOrderSummaries.value,
+  ]
+
+  const unique = new Map<number, DiagnosticOrderSummaryRow>()
+
+  for (const orders of sources) {
+    for (const order of orders) {
+      if (!unique.has(order.id)) {
+        unique.set(order.id, order)
+      }
+    }
+  }
+
+  return Array.from(unique.values())
+}
+
+const findIncompleteServiceOrders = (): DiagnosticOrderSummaryRow[] => {
+  return collectAllServiceOrders().filter((order) => order.status !== 3)
+}
+
+const formatIncompleteServiceOrdersMessage = (orders: DiagnosticOrderSummaryRow[]): string => {
+  const details = orders
+    .map((order) => `${order.code} (${getServiceOrderStatusLabel(order.status)})`)
+    .join(', ')
+
+  return `Cannot finalize disposition while service orders remain incomplete: ${details}.`
+}
+
+const notifyIncompleteServiceOrders = (): boolean => {
+  const incompleteOrders = findIncompleteServiceOrders()
+  if (!incompleteOrders.length) {
+    return false
+  }
+
+  toast.error(formatIncompleteServiceOrdersMessage(incompleteOrders))
+  return true
+}
 
 const handleSaveExamination = async (payload: MedicalExaminationDialogSavePayload) => {
   if (!selectedRecord.value) {
@@ -1200,6 +1464,8 @@ watch(filteredRecords, (list) => {
           variant="outline"
           :disabled="secondaryActionsDisabled"
           class="hover:text-primary-foreground"
+          type="button"
+          @click="handleOpenDispositionDialog"
           >Disposition</Button
         >
       </div>
@@ -2374,6 +2640,16 @@ watch(filteredRecords, (list) => {
         :mode="servicesDialogMode"
         :initial-order="servicesDialogInitialOrder"
         @save="handleSaveServices"
+      />
+      <MedicalExaminationDispositionDialog
+        v-model:open="dispositionDialogOpen"
+        :saving="dispositionSaving"
+        :selected-record="selectedRecord"
+        :patient-detail="medicalRecordPatientDetail"
+        :examination-detail="medicalRecordExamination"
+        :service-groups="dispositionServiceGroups"
+        :default-end-time="dispositionDefaultEndTime"
+        @save="handleSaveDisposition"
       />
       <AlertDialog :open="deleteOrderDialogOpen" @update:open="handleDeleteDialogOpenChange">
         <AlertDialogContent>

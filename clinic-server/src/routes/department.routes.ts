@@ -26,6 +26,12 @@ router.put(
   departmentController.updateDepartment
 );
 
+router.patch(
+  "/:id/restore",
+  authMiddleware.authenticateUser,
+  departmentController.restoreDepartment
+);
+
 router.delete(
   "/:id",
   authMiddleware.authenticateUser,

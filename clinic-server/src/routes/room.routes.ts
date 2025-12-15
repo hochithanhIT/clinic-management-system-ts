@@ -22,6 +22,12 @@ router.put(
 	roomController.updateRoom
 );
 
+router.patch(
+	"/:id/restore",
+	authMiddleware.authenticateUser,
+	roomController.restoreRoom
+);
+
 router.delete(
 	"/:id",
 	authMiddleware.authenticateUser,

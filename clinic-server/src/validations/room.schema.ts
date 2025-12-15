@@ -24,6 +24,10 @@ const getRoomsQuery = z.object({
     .int("Khoa không hợp lệ")
     .min(1, "Khoa không hợp lệ")
     .optional(),
+  status: z
+    .enum(["active", "inactive"])
+    .optional()
+    .transform((value) => (value ? value : undefined)),
 });
 
 const roomParam = z.object({

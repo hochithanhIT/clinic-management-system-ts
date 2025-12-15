@@ -7,6 +7,13 @@ export interface ServiceTypeSummary {
   name: string
 }
 
+interface ServiceTypeResponse {
+  serviceType: {
+    id: number
+    tenLoai: string
+  }
+}
+
 export interface ServiceGroupSummary {
   id: number
   name: string
@@ -52,6 +59,29 @@ export const getServiceTypes = async (): Promise<ServiceTypeSummary[]> => {
   }))
 }
 
+export interface UpdateServiceTypePayload {
+  name: string
+}
+
+export const updateServiceType = async (
+  id: number,
+  payload: UpdateServiceTypePayload,
+): Promise<ServiceTypeSummary> => {
+  const response = await apiFetch<ApiSuccessResponse<ServiceTypeResponse>>(`/service-type/${id}`, {
+    method: "PUT",
+    json: {
+      tenLoai: payload.name.trim(),
+    },
+  })
+
+  const { serviceType } = response.data
+
+  return {
+    id: serviceType.id,
+    name: serviceType.tenLoai,
+  }
+}
+
 interface GetServiceGroupsResponse {
   serviceGroups: Array<{
     id: number
@@ -69,6 +99,17 @@ export interface GetServiceGroupsParams {
   limit?: number
   search?: string
   serviceTypeId?: number
+}
+
+interface ServiceGroupResponse {
+  serviceGroup: {
+    id: number
+    tenNhomDV: string
+    loaiDichVu: {
+      id: number
+      tenLoai: string
+    }
+  }
 }
 
 export const getServiceGroups = async (
@@ -98,6 +139,42 @@ export const getServiceGroups = async (
       },
     })),
     pagination,
+  }
+}
+
+export interface UpdateServiceGroupPayload {
+  name?: string
+  serviceTypeId?: number
+}
+
+export const updateServiceGroup = async (
+  id: number,
+  payload: UpdateServiceGroupPayload,
+): Promise<ServiceGroupSummary> => {
+  const body: Record<string, unknown> = {}
+
+  if (payload.name !== undefined) {
+    body.tenNhomDV = payload.name.trim()
+  }
+
+  if (payload.serviceTypeId !== undefined) {
+    body.loaiDichVuId = payload.serviceTypeId
+  }
+
+  const response = await apiFetch<ApiSuccessResponse<ServiceGroupResponse>>(`/service-group/${id}`, {
+    method: "PUT",
+    json: body,
+  })
+
+  const { serviceGroup } = response.data
+
+  return {
+    id: serviceGroup.id,
+    name: serviceGroup.tenNhomDV,
+    serviceType: {
+      id: serviceGroup.loaiDichVu.id,
+      name: serviceGroup.loaiDichVu.tenLoai,
+    },
   }
 }
 
@@ -193,5 +270,121 @@ export const getServices = async (
         : null,
     })),
     pagination,
+  }
+}
+
+interface ServiceResponse {
+  service: {
+    id: number
+    maDV: string
+    tenDV: string
+    donVi: string | null
+    donGia: string | number
+    thamChieuMin: string | null
+    thamChieuMax: string | null
+    phongThucHienId: number | null
+    phongThucHien: {
+      id: number
+      tenPhong: string
+      khoa: {
+        id: number
+        tenKhoa: string
+      } | null
+    } | null
+    nhomDichVu: {
+      id: number
+      tenNhomDV: string
+      loaiDichVu: {
+        id: number
+        tenLoai: string
+      }
+    }
+  }
+}
+
+export interface UpdateServicePayload {
+  code?: string
+  name?: string
+  unit?: string | null
+  price?: number
+  referenceMin?: string | null
+  referenceMax?: string | null
+  serviceGroupId?: number
+  executionRoomId?: number | null
+}
+
+export const updateService = async (
+  id: number,
+  payload: UpdateServicePayload,
+): Promise<ServiceSummary> => {
+  const body: Record<string, unknown> = {}
+
+  if (payload.code !== undefined) {
+    body.maDV = payload.code.trim()
+  }
+
+  if (payload.name !== undefined) {
+    body.tenDV = payload.name.trim()
+  }
+
+  if (payload.unit !== undefined) {
+    body.donVi = payload.unit?.trim() || null
+  }
+
+  if (payload.price !== undefined) {
+    body.donGia = payload.price
+  }
+
+  if (payload.referenceMin !== undefined) {
+    body.thamChieuMin = payload.referenceMin?.trim() || null
+  }
+
+  if (payload.referenceMax !== undefined) {
+    body.thamChieuMax = payload.referenceMax?.trim() || null
+  }
+
+  if (payload.serviceGroupId !== undefined) {
+    body.nhomDichVuId = payload.serviceGroupId
+  }
+
+  if (payload.executionRoomId !== undefined) {
+    body.phongThucHienId = payload.executionRoomId
+  }
+
+  const response = await apiFetch<ApiSuccessResponse<ServiceResponse>>(`/service/${id}`, {
+    method: "PUT",
+    json: body,
+  })
+
+  const { service } = response.data
+
+  return {
+    id: service.id,
+    code: service.maDV,
+    name: service.tenDV,
+    unit: service.donVi ?? null,
+    price: parsePrice(service.donGia),
+    referenceMin: service.thamChieuMin ?? null,
+    referenceMax: service.thamChieuMax ?? null,
+    serviceGroup: {
+      id: service.nhomDichVu.id,
+      name: service.nhomDichVu.tenNhomDV,
+      serviceType: {
+        id: service.nhomDichVu.loaiDichVu.id,
+        name: service.nhomDichVu.loaiDichVu.tenLoai,
+      },
+    },
+    executionRoom: service.phongThucHien
+      ? {
+          id: service.phongThucHien.id,
+          name: service.phongThucHien.tenPhong,
+          department: service.phongThucHien.khoa
+            ? {
+                id: service.phongThucHien.khoa.id,
+                name: service.phongThucHien.khoa.tenKhoa,
+              }
+            : null,
+        }
+      : null,
   }
 }

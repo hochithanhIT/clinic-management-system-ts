@@ -62,6 +62,8 @@ export interface MedicalExaminationDetail {
   diseaseProgression: string | null
   personalHistory: string | null
   familyHistory: string | null
+  treatmentMethod: string | null
+  disposition: string | null
   diagnoses: MedicalExaminationDiagnosis[]
 }
 
@@ -82,6 +84,8 @@ export interface CreateMedicalExaminationPayload {
   huyetApTTr?: number | null
   bmi?: number | null
   chanDoanBanDau?: string | null
+  phuongPhapDieuTri?: string | null
+  xuTri?: string | null
 }
 
 export interface UpdateMedicalExaminationPayload {
@@ -101,6 +105,8 @@ export interface UpdateMedicalExaminationPayload {
   huyetApTTr?: number | null
   bmi?: number | null
   chanDoanBanDau?: string | null
+  phuongPhapDieuTri?: string | null
+  xuTri?: string | null
 }
 
 export interface UpdateMedicalExaminationDiagnosisPayload {
@@ -147,6 +153,8 @@ const mapMedicalExamination = (exam: MedicalExaminationResponse): MedicalExamina
   diseaseProgression: exam.quaTrinhBenhLy,
   personalHistory: exam.tienSuBanThan,
   familyHistory: exam.tienSuGiaDinh,
+  treatmentMethod: exam.phuongPhapDieuTri,
+  disposition: exam.xuTri,
   diagnoses: mapDiagnoses(exam.chanDoans ?? []),
 })
 

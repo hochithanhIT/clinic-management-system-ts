@@ -58,9 +58,23 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/catalog/department-room/': RouteRecordInfo<
+      '/catalog/department-room/',
+      '/catalog/department-room',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
     '/catalog/employee/': RouteRecordInfo<
       '/catalog/employee/',
       '/catalog/employee',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
+    '/catalog/service/': RouteRecordInfo<
+      '/catalog/service/',
+      '/catalog/service',
       Record<never, never>,
       Record<never, never>,
       | never
@@ -150,9 +164,21 @@ declare module 'vue-router/auto-routes' {
       views:
         | never
     }
+    'src/pages/catalog/department-room/index.vue': {
+      routes:
+        | '/catalog/department-room/'
+      views:
+        | never
+    }
     'src/pages/catalog/employee/index.vue': {
       routes:
         | '/catalog/employee/'
+      views:
+        | never
+    }
+    'src/pages/catalog/service/index.vue': {
+      routes:
+        | '/catalog/service/'
       views:
         | never
     }

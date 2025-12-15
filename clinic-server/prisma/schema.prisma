@@ -142,6 +142,7 @@ model ChucDanh {
 model Khoa {
   id Int @id @default(autoincrement()) @map("Khoa_ID")
   tenKhoa String @unique @map("Khoa_TenKhoa")
+  isActive Boolean @default(true) @map("Khoa_IsActive")
   nhanViens NhanVien[]
   phongs Phong[]
 
@@ -151,6 +152,7 @@ model Khoa {
 model Phong {
   id Int @id @default(autoincrement()) @map("Phong_ID")
   tenPhong String @map("Phong_TenPhong")
+  isActive Boolean @default(true) @map("Phong_IsActive")
 
   khoa Khoa @relation(fields: [khoaId], references: [id])
   khoaId Int @map("Khoa_ID")

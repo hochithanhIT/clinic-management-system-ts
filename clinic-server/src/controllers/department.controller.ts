@@ -8,7 +8,9 @@ import { z } from "zod";
 const departmentSelect = {
   id: true,
   tenKhoa: true,
+  isActive: true,
   phongs: {
+    where: { isActive: true },
     select: { id: true },
   },
 } satisfies Prisma.KhoaSelect;
@@ -29,6 +31,7 @@ type DepartmentResult = Prisma.KhoaGetPayload<{
 const mapDepartment = (department: DepartmentResult) => ({
   id: department.id,
   tenKhoa: department.tenKhoa,
+  isActive: department.isActive,
   soPhong: department.phongs.length,
 });
 
@@ -38,11 +41,14 @@ const getDepartments = async (
   next: NextFunction
 ) => {
   try {
-    const { page, limit, search }: GetDepartmentsQuery =
+    const { page, limit, search, status }: GetDepartmentsQuery =
       departmentSchema.getDepartmentsQuery.parse(req.query);
 
     const skip = (page - 1) * limit;
-    const where: Prisma.KhoaWhereInput = {};
+    const effectiveStatus = status === "inactive" ? "inactive" : "active";
+    const where: Prisma.KhoaWhereInput = {
+      isActive: effectiveStatus === "active",
+    };
 
     if (search) {
       where.tenKhoa = { contains: search, mode: "insensitive" };
@@ -206,9 +212,25 @@ const deleteDepartment = async (
       req.params,
     );
 
-    await prisma.khoa.delete({
+    const existingDepartment = await prisma.khoa.findUnique({
       where: { id },
+      select: { id: true, isActive: true },
     });
+
+    if (!existingDepartment || !existingDepartment.isActive) {
+      return Send.notFound(res, null, "Không tìm thấy khoa");
+    }
+
+    await prisma.$transaction([
+      prisma.phong.updateMany({
+        where: { khoaId: id },
+        data: { isActive: false },
+      }),
+      prisma.khoa.update({
+        where: { id },
+        data: { isActive: false },
+      }),
+    ]);
 
     return Send.success(res, null, "Xóa khoa thành công");
   } catch (error) {
@@ -217,10 +239,6 @@ const deleteDepartment = async (
     }
 
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      if (error.code === "P2025") {
-        return Send.notFound(res, null, "Không tìm thấy khoa");
-      }
-
       if (error.code === "P2003") {
         return Send.badRequest(
           res,
@@ -234,9 +252,60 @@ const deleteDepartment = async (
   }
 };
 
+const restoreDepartment = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id }: DepartmentParam = departmentSchema.departmentParam.parse(
+      req.params,
+    );
+
+    const existingDepartment = await prisma.khoa.findUnique({
+      where: { id },
+      select: { id: true, isActive: true },
+    });
+
+    if (!existingDepartment) {
+      return Send.notFound(res, null, "Không tìm thấy khoa");
+    }
+
+    if (existingDepartment.isActive) {
+      return Send.badRequest(res, null, "Khoa đang hoạt động");
+    }
+
+    await prisma.$transaction([
+      prisma.khoa.update({
+        where: { id },
+        data: { isActive: true },
+      }),
+      prisma.phong.updateMany({
+        where: { khoaId: id },
+        data: { isActive: true },
+      }),
+    ]);
+
+    return Send.success(res, null, "Khôi phục khoa thành công");
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return Send.validationErrors(res, error.flatten().fieldErrors);
+    }
+
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2025") {
+        return Send.notFound(res, null, "Không tìm thấy khoa");
+      }
+    }
+
+    return next(error);
+  }
+};
+
 export default {
   getDepartments,
   addDepartment,
   updateDepartment,
   deleteDepartment,
+  restoreDepartment,
 };
