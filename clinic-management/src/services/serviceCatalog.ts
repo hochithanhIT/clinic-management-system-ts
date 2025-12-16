@@ -82,6 +82,28 @@ export const updateServiceType = async (
   }
 }
 
+export interface CreateServiceTypePayload {
+  name: string
+}
+
+export const createServiceType = async (
+  payload: CreateServiceTypePayload,
+): Promise<ServiceTypeSummary> => {
+  const response = await apiFetch<ApiSuccessResponse<ServiceTypeResponse>>("/service-type", {
+    method: "POST",
+    json: {
+      tenLoai: payload.name.trim(),
+    },
+  })
+
+  const { serviceType } = response.data
+
+  return {
+    id: serviceType.id,
+    name: serviceType.tenLoai,
+  }
+}
+
 interface GetServiceGroupsResponse {
   serviceGroups: Array<{
     id: number
@@ -164,6 +186,34 @@ export const updateServiceGroup = async (
   const response = await apiFetch<ApiSuccessResponse<ServiceGroupResponse>>(`/service-group/${id}`, {
     method: "PUT",
     json: body,
+  })
+
+  const { serviceGroup } = response.data
+
+  return {
+    id: serviceGroup.id,
+    name: serviceGroup.tenNhomDV,
+    serviceType: {
+      id: serviceGroup.loaiDichVu.id,
+      name: serviceGroup.loaiDichVu.tenLoai,
+    },
+  }
+}
+
+export interface CreateServiceGroupPayload {
+  name: string
+  serviceTypeId: number
+}
+
+export const createServiceGroup = async (
+  payload: CreateServiceGroupPayload,
+): Promise<ServiceGroupSummary> => {
+  const response = await apiFetch<ApiSuccessResponse<ServiceGroupResponse>>("/service-group", {
+    method: "POST",
+    json: {
+      tenNhomDV: payload.name.trim(),
+      loaiDichVuId: payload.serviceTypeId,
+    },
   })
 
   const { serviceGroup } = response.data
@@ -354,6 +404,65 @@ export const updateService = async (
   const response = await apiFetch<ApiSuccessResponse<ServiceResponse>>(`/service/${id}`, {
     method: "PUT",
     json: body,
+  })
+
+  const { service } = response.data
+
+  return {
+    id: service.id,
+    code: service.maDV,
+    name: service.tenDV,
+    unit: service.donVi ?? null,
+    price: parsePrice(service.donGia),
+    referenceMin: service.thamChieuMin ?? null,
+    referenceMax: service.thamChieuMax ?? null,
+    serviceGroup: {
+      id: service.nhomDichVu.id,
+      name: service.nhomDichVu.tenNhomDV,
+      serviceType: {
+        id: service.nhomDichVu.loaiDichVu.id,
+        name: service.nhomDichVu.loaiDichVu.tenLoai,
+      },
+    },
+    executionRoom: service.phongThucHien
+      ? {
+          id: service.phongThucHien.id,
+          name: service.phongThucHien.tenPhong,
+          department: service.phongThucHien.khoa
+            ? {
+                id: service.phongThucHien.khoa.id,
+                name: service.phongThucHien.khoa.tenKhoa,
+              }
+            : null,
+        }
+      : null,
+  }
+}
+
+export interface CreateServicePayload {
+  code: string
+  name: string
+  unit?: string | null
+  price: number
+  referenceMin?: string | null
+  referenceMax?: string | null
+  serviceGroupId: number
+  executionRoomId?: number | null
+}
+
+export const createService = async (payload: CreateServicePayload): Promise<ServiceSummary> => {
+  const response = await apiFetch<ApiSuccessResponse<ServiceResponse>>("/service", {
+    method: "POST",
+    json: {
+      maDV: payload.code.trim(),
+      tenDV: payload.name.trim(),
+      donVi: payload.unit?.trim() || null,
+      donGia: payload.price,
+      thamChieuMin: payload.referenceMin?.trim() || null,
+      thamChieuMax: payload.referenceMax?.trim() || null,
+      nhomDichVuId: payload.serviceGroupId,
+      phongThucHienId: payload.executionRoomId ?? null,
+    },
   })
 
   const { service } = response.data

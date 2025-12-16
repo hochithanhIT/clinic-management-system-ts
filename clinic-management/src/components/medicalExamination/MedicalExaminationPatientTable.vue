@@ -19,6 +19,12 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination'
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu'
 
 const props = defineProps<{
   records: MedicalRecordSummary[]
@@ -38,6 +44,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'select', record: MedicalRecordSummary): void
   (e: 'page-change', page: number): void
+  (e: 'reopen-requested', record: MedicalRecordSummary): void
 }>()
 
 const handleSelect = (record: MedicalRecordSummary) => {
@@ -46,6 +53,18 @@ const handleSelect = (record: MedicalRecordSummary) => {
 
 const handlePageChange = (page: number) => {
   emit('page-change', page)
+}
+
+const handleContextMenu = (record: MedicalRecordSummary) => {
+  handleSelect(record)
+}
+
+const handleReopenSelect = (record: MedicalRecordSummary) => {
+  if (record.status !== 2) {
+    return
+  }
+
+  emit('reopen-requested', record)
 }
 
 const totalPages = computed(() =>
@@ -88,32 +107,43 @@ const paginationSummary = computed(() => {
             }}
           </TableEmpty>
           <template v-else>
-            <TableRow
-              v-for="record in props.records"
-              :key="record.id"
-              :class="[
-                'cursor-pointer transition-colors',
-                record.id === props.selectedRecordId ? 'bg-primary/10' : 'hover:bg-muted/50',
-              ]"
-              :aria-selected="record.id === props.selectedRecordId"
-              @click="handleSelect(record)"
-            >
-              <TableCell>
-                <span
+            <ContextMenu v-for="record in props.records" :key="record.id" :modal="false">
+              <ContextMenuTrigger as-child>
+                <TableRow
                   :class="[
-                    'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold',
-                    props.getStatusClass(record.status),
+                    'cursor-pointer transition-colors',
+                    record.id === props.selectedRecordId ? 'bg-primary/10' : 'hover:bg-muted/50',
                   ]"
+                  :aria-selected="record.id === props.selectedRecordId"
+                  @click="handleSelect(record)"
+                  @contextmenu="handleContextMenu(record)"
                 >
-                  {{ props.getStatusLabel(record.status) }}
-                </span>
-              </TableCell>
-              <TableCell class="font-medium">{{ record.code || '—' }}</TableCell>
-              <TableCell>{{ record.patient.fullName }}</TableCell>
-              <TableCell>{{ props.formatBirthYear(record.patient.birthDate) }}</TableCell>
-              <TableCell>{{ props.getDispositionLabel(record) }}</TableCell>
-              <TableCell>{{ props.formatDateTime(record.enteredAt) }}</TableCell>
-            </TableRow>
+                  <TableCell>
+                    <span
+                      :class="[
+                        'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold',
+                        props.getStatusClass(record.status),
+                      ]"
+                    >
+                      {{ props.getStatusLabel(record.status) }}
+                    </span>
+                  </TableCell>
+                  <TableCell class="font-medium">{{ record.code || '—' }}</TableCell>
+                  <TableCell>{{ record.patient.fullName }}</TableCell>
+                  <TableCell>{{ props.formatBirthYear(record.patient.birthDate) }}</TableCell>
+                  <TableCell>{{ props.getDispositionLabel(record) }}</TableCell>
+                  <TableCell>{{ props.formatDateTime(record.enteredAt) }}</TableCell>
+                </TableRow>
+              </ContextMenuTrigger>
+              <ContextMenuContent class="w-48">
+                <ContextMenuItem
+                  :disabled="record.status !== 2"
+                  @select="handleReopenSelect(record)"
+                >
+                  Reopen medical record
+                </ContextMenuItem>
+              </ContextMenuContent>
+            </ContextMenu>
           </template>
         </TableBody>
       </Table>

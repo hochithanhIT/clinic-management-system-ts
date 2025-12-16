@@ -74,6 +74,7 @@ import { getPatient, type PatientSummary } from '@/services/patient'
 import {
   createAppointment,
   deleteAppointment,
+  getAppointments,
   updateAppointment,
   type AppointmentSummary,
 } from '@/services/appointment'
@@ -161,6 +162,7 @@ interface AppliedFiltersState {
   to: Date | null
   code: string
   name: string
+  status: number | null
 }
 
 const filters = reactive({
@@ -168,6 +170,7 @@ const filters = reactive({
   to: getDefaultFromDate(),
   code: '',
   name: '',
+  status: 'all',
 })
 
 const appliedFilters = ref<AppliedFiltersState>({
@@ -175,14 +178,19 @@ const appliedFilters = ref<AppliedFiltersState>({
   to: endOfDay(new Date()),
   code: '',
   name: '',
+  status: null,
 })
 
 const filteredRecords = computed(() => {
   const codeTerm = appliedFilters.value.code.trim().toLowerCase()
   const nameTerm = appliedFilters.value.name.trim().toLowerCase()
-  const { from, to } = appliedFilters.value
+  const { from, to, status } = appliedFilters.value
 
   return records.value.filter((record) => {
+    if (status !== null && record.status !== status) {
+      return false
+    }
+
     const enteredAt = new Date(record.enteredAt)
 
     if (from && !Number.isNaN(enteredAt.getTime()) && enteredAt < from) {
@@ -403,6 +411,30 @@ const isDeletingOrder = computed(() => {
   return isOrderActionInProgress(targetId)
 })
 
+const reopenRecordDialogOpen = ref(false)
+const reopenRecordLoading = ref(false)
+const reopenRecordTarget = ref<MedicalRecordSummary | null>(null)
+const reopenRecordDisplayCode = computed(() => reopenRecordTarget.value?.code ?? '')
+const reopenRecordPatientName = computed(() => reopenRecordTarget.value?.patient.fullName ?? '')
+const reopenRecordDisplayLabel = computed(() => {
+  const name = reopenRecordPatientName.value
+  const code = reopenRecordDisplayCode.value
+
+  if (name && code) {
+    return `${name} (${code})`
+  }
+
+  if (name) {
+    return name
+  }
+
+  if (code) {
+    return code
+  }
+
+  return 'this medical record'
+})
+
 watch(deleteOrderDialogOpen, (open) => {
   if (!open && !isDeletingOrder.value) {
     deleteOrderTarget.value = null
@@ -538,7 +570,7 @@ const openServicesDialog = () => {
   openServiceOrderDialog()
 }
 
-const handleOpenDispositionDialog = () => {
+const handleOpenDispositionDialog = async () => {
   if (!selectedRecord.value) {
     toast.error('Please select a patient before setting disposition.')
     return
@@ -558,8 +590,9 @@ const handleOpenDispositionDialog = () => {
     return
   }
 
-  followUpAppointment.value = null
   followUpDialogOpen.value = false
+
+  await loadLatestFollowUpAppointment(selectedRecord.value.patient.id)
 
   const completedAtValue = selectedRecord.value.completedAt
   const fallback = completedAtValue ? new Date(completedAtValue) : new Date()
@@ -1025,6 +1058,56 @@ const ensureFollowUpRoomsLoaded = async () => {
   }
 }
 
+const loadLatestFollowUpAppointment = async (patientId: number) => {
+  try {
+    const now = new Date()
+    const { appointments: upcomingAppointments } = await getAppointments({
+      patientId,
+      limit: 1,
+      from: now,
+    })
+
+    let selectedAppointment: AppointmentSummary | null =
+      upcomingAppointments.length > 0 ? upcomingAppointments[0] : null
+
+    if (!selectedAppointment) {
+      const { appointments: historicalAppointments, pagination } = await getAppointments({
+        patientId,
+        limit: 1,
+      })
+
+      selectedAppointment = historicalAppointments.length > 0 ? historicalAppointments[0] : null
+
+      if (pagination.totalPages > 1) {
+        const { appointments: lastPageAppointments } = await getAppointments({
+          patientId,
+          limit: 1,
+          page: pagination.totalPages,
+        })
+
+        selectedAppointment =
+          lastPageAppointments.length > 0 ? lastPageAppointments[0] : selectedAppointment
+      }
+    }
+
+    if (selectedAppointment) {
+      followUpAppointment.value = mapAppointmentToFollowUpDetails(selectedAppointment)
+      followUpAppointmentToDeleteId.value = null
+    } else {
+      followUpAppointment.value = null
+      followUpAppointmentToDeleteId.value = null
+    }
+  } catch (error) {
+    const message =
+      error instanceof ApiError
+        ? error.message
+        : 'Unable to load follow-up appointment. Please try again.'
+    toast.error(message)
+    followUpAppointment.value = null
+    followUpAppointmentToDeleteId.value = null
+  }
+}
+
 const handleFollowUpRequested = async () => {
   await ensureFollowUpRoomsLoaded()
   followUpDialogOpen.value = true
@@ -1354,6 +1437,58 @@ const handleRequestDeleteOrder = (
   deleteOrderDialogOpen.value = true
 }
 
+const handleRequestReopenRecord = (record: MedicalRecordSummary) => {
+  reopenRecordTarget.value = record
+  reopenRecordDialogOpen.value = true
+  selectedRecordId.value = record.id
+}
+
+const handleReopenDialogOpenChange = (value: boolean) => {
+  if (!value && reopenRecordLoading.value) {
+    return
+  }
+
+  reopenRecordDialogOpen.value = value
+
+  if (!value) {
+    reopenRecordTarget.value = null
+  }
+}
+
+const handleConfirmReopenRecord = async () => {
+  const target = reopenRecordTarget.value
+  if (!target) {
+    return
+  }
+
+  reopenRecordLoading.value = true
+
+  try {
+    const updatedRecord = await updateMedicalRecord(target.id, {
+      trangThai: 1,
+      thoiGianKetThuc: null,
+    })
+
+    records.value = records.value.map((record) =>
+      record.id === updatedRecord.id ? updatedRecord : record,
+    )
+    selectedRecordId.value = updatedRecord.id
+
+    toast.success('Medical record reopened and set to In Progress.')
+
+    reopenRecordDialogOpen.value = false
+    reopenRecordTarget.value = null
+  } catch (error) {
+    const message =
+      error instanceof ApiError
+        ? error.message
+        : 'Unable to reopen medical record. Please try again.'
+    toast.error(message)
+  } finally {
+    reopenRecordLoading.value = false
+  }
+}
+
 const handleConfirmDeleteOrder = async () => {
   const target = deleteOrderTarget.value
   if (!target || isDeletingOrder.value) {
@@ -1378,6 +1513,7 @@ const loadRecords = async () => {
 
   const departmentId = selectedRoom.value?.departmentId ?? selectedDepartment.value?.id ?? null
   const roomId = selectedRoom.value?.id ?? null
+  const statusFilter = appliedFilters.value.status
   const requestId = ++fetchToken
 
   recordsLoading.value = true
@@ -1387,6 +1523,7 @@ const loadRecords = async () => {
     const baseParams: GetMedicalRecordsParams = {
       page: 1,
       limit: 100,
+      status: statusFilter ?? undefined,
       enteredFrom: appliedFilters.value.from ?? undefined,
       enteredTo: appliedFilters.value.to ?? undefined,
       roomId: roomId ?? undefined,
@@ -1521,10 +1658,17 @@ const handleStartExamination = async () => {
 const applyFilters = async () => {
   const fromDateRaw = parseDateInput(filters.from)
   const toDateRaw = parseDateInput(filters.to)
+  const statusRaw = filters.status
 
   if (fromDateRaw && toDateRaw && fromDateRaw > toDateRaw) {
     toast.error('The start date must be before or equal to the end date.')
     return
+  }
+
+  let statusValue: number | null = null
+  if (statusRaw !== 'all') {
+    const numericStatus = Number(statusRaw)
+    statusValue = Number.isNaN(numericStatus) ? null : numericStatus
   }
 
   appliedFilters.value = {
@@ -1532,6 +1676,7 @@ const applyFilters = async () => {
     to: toDateRaw ? endOfDay(toDateRaw) : null,
     code: filters.code.trim(),
     name: filters.name.trim(),
+    status: statusValue,
   }
 
   selectedRecordId.value = null
@@ -1549,6 +1694,7 @@ const handleResetFilters = async () => {
   filters.to = getDefaultFromDate()
   filters.code = ''
   filters.name = ''
+  filters.status = 'all'
   await applyFilters()
 }
 
@@ -1665,6 +1811,7 @@ watch(filteredRecords, (list) => {
                   v-model:name="filters.name"
                   v-model:from="filters.from"
                   v-model:to="filters.to"
+                  v-model:status="filters.status"
                   :loading="recordsLoading"
                   :records-page-size="pageSize"
                   :page-size-options="pageSizeOptions"
@@ -1689,6 +1836,7 @@ watch(filteredRecords, (list) => {
                     :format-date-time="formatDateTime"
                     @select="handleRowSelect"
                     @page-change="handlePageChange"
+                    @reopen-requested="handleRequestReopenRecord"
                   />
 
                   <MedicalExaminationDetailCard
@@ -2844,6 +2992,29 @@ watch(filteredRecords, (list) => {
               @click="handleConfirmDeleteOrder"
             >
               {{ isDeletingOrder ? 'Deleting…' : 'Delete order' }}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog :open="reopenRecordDialogOpen" @update:open="handleReopenDialogOpenChange">
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reopen medical record?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will move
+              <span class="font-medium">{{ reopenRecordDisplayLabel }}</span>
+              back to In Progress so the examination can continue.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              :disabled="reopenRecordLoading"
+              class="hover:text-primary-foreground"
+            >
+              Cancel
+            </AlertDialogCancel>
+            <Button :disabled="reopenRecordLoading" @click="handleConfirmReopenRecord">
+              {{ reopenRecordLoading ? 'Reopening…' : 'Reopen record' }}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

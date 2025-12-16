@@ -10,6 +10,23 @@ const codeSchema = z
     "Mã bệnh án chỉ được chứa chữ cái, số, dấu gạch ngang và gạch dưới",
   );
 
+const nullableCoercedDate = z.preprocess((value) => {
+  if (value === null || value === undefined) {
+    return value;
+  }
+
+  if (value instanceof Date) {
+    return value;
+  }
+
+  if (typeof value === "string" || typeof value === "number") {
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? value : parsed;
+  }
+
+  return value;
+}, z.date().or(z.null()));
+
 const baseMedicalRecordBody = z.object({
   maBA: codeSchema.optional(),
   benhNhanId: z.coerce
@@ -49,12 +66,7 @@ const baseMedicalRecordBody = z.object({
     .int("Trạng thái không hợp lệ")
     .min(0, "Trạng thái không hợp lệ")
     .optional(),
-  thoiGianKetThuc: z
-    .union([
-      z.coerce.date(),
-      z.null(),
-    ])
-    .optional(),
+  thoiGianKetThuc: nullableCoercedDate.optional(),
 });
 
 const createMedicalRecordBody = baseMedicalRecordBody.superRefine((data, ctx) => {

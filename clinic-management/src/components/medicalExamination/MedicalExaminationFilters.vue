@@ -23,18 +23,20 @@ const props = defineProps<{
   name: string
   from: string
   to: string
+  status: string
   loading: boolean
   recordsPageSize: number
   pageSizeOptions: number[]
 }>()
 
-const { code, name, from, to, loading, recordsPageSize, pageSizeOptions } = toRefs(props)
+const { code, name, from, to, status, loading, recordsPageSize, pageSizeOptions } = toRefs(props)
 
 const emit = defineEmits<{
   (e: 'update:code', value: string): void
   (e: 'update:name', value: string): void
   (e: 'update:from', value: string): void
   (e: 'update:to', value: string): void
+  (e: 'update:status', value: string): void
   (e: 'update:pageSize', value: AcceptableValue): void
   (e: 'search'): void
   (e: 'reset'): void
@@ -119,6 +121,13 @@ const handleToUpdate = (value: DateValue | undefined) => {
 const handlePageSizeChange = (value: AcceptableValue) => {
   emit('update:pageSize', value)
 }
+
+const statusOptions = [
+  { label: 'All statuses', value: 'all' },
+  { label: 'Pending', value: '0' },
+  { label: 'In progress', value: '1' },
+  { label: 'Completed', value: '2' },
+]
 </script>
 
 <template>
@@ -147,6 +156,24 @@ const handlePageSizeChange = (value: AcceptableValue) => {
         placeholder="Enter patient name"
         @update:model-value="emit('update:name', $event as string)"
       />
+    </Field>
+
+    <Field>
+      <FieldLabel>Status</FieldLabel>
+      <Select
+        :model-value="status"
+        :disabled="loading"
+        @update:model-value="emit('update:status', $event as string)"
+      >
+        <SelectTrigger class="w-full">
+          <SelectValue placeholder="All statuses" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem v-for="option in statusOptions" :key="option.value" :value="option.value">
+            {{ option.label }}
+          </SelectItem>
+        </SelectContent>
+      </Select>
     </Field>
 
     <Field>

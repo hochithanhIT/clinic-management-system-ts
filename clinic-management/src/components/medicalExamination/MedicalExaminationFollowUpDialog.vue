@@ -210,7 +210,7 @@ const handleSave = () => {
 
 <template>
   <Dialog :open="open" @update:open="emit('update:open', $event)">
-    <DialogContent class="sm:max-w-lg z-[60]" overlay-class="z-[55]">
+    <DialogContent class="sm:max-w-lg z-60" overlay-class="z-[55]">
       <DialogHeader>
         <DialogTitle>Schedule Follow-up Appointment</DialogTitle>
         <DialogDescription>
@@ -239,7 +239,7 @@ const handleSave = () => {
                 </span>
               </Button>
             </PopoverTrigger>
-            <PopoverContent class="w-auto p-0 z-[70]" align="start">
+            <PopoverContent class="w-auto p-0 z-70" align="start">
               <Calendar
                 :model-value="appointmentDateValueForCalendar"
                 layout="month-and-year"

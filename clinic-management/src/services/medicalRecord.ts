@@ -159,6 +159,10 @@ export interface UpdateMedicalRecordPayload {
 }
 
 const serializeDateInput = (value: string | Date | null | undefined): string | null | undefined => {
+  if (value === null) {
+    return null
+  }
+
   if (value instanceof Date) {
     return value.toISOString()
   }

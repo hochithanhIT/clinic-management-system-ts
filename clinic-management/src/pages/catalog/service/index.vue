@@ -8,13 +8,16 @@ definePage({
 
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
-import { Loader2, RotateCcw, SearchIcon } from 'lucide-vue-next'
+import { Loader2, PlusIcon, RotateCcw, SearchIcon } from 'lucide-vue-next'
 
 import { ApiError } from '@/services/http'
 import {
   getServiceTypes,
   getServiceGroups,
   getServices,
+  createServiceType,
+  createServiceGroup,
+  createService,
   type ServiceTypeSummary,
   type ServiceGroupSummary,
   type ServiceSummary,
@@ -53,6 +56,11 @@ const serviceTypesError = ref<string | null>(null)
 
 const serviceTypeSearch = ref('')
 const selectedServiceTypeId = ref<number | null>(null)
+const isCreatingServiceType = ref(false)
+const serviceTypeCreateLoading = ref(false)
+const serviceTypeFormError = ref<string | null>(null)
+const pendingServiceTypeId = ref<number | null>(null)
+const previousSelectedServiceTypeId = ref<number | null>(null)
 const serviceTypeUpdateLoading = ref(false)
 
 const serviceTypeForm = reactive({
@@ -78,6 +86,11 @@ const serviceGroupPage = ref(1)
 const serviceGroupPageSize = ref(PAGE_SIZE_OPTIONS[0])
 const serviceGroupUpdateLoading = ref(false)
 const selectedServiceGroupId = ref<number | null>(null)
+const isCreatingServiceGroup = ref(false)
+const serviceGroupCreateLoading = ref(false)
+const serviceGroupFormError = ref<string | null>(null)
+const pendingServiceGroupId = ref<number | null>(null)
+const previousSelectedServiceGroupId = ref<number | null>(null)
 
 const serviceGroupForm = reactive({
   id: '',
@@ -109,6 +122,11 @@ const servicePage = ref(1)
 const servicePageSize = ref(PAGE_SIZE_OPTIONS[0])
 const serviceUpdateLoading = ref(false)
 const selectedServiceId = ref<number | null>(null)
+const isCreatingService = ref(false)
+const serviceCreateLoading = ref(false)
+const serviceFormErrors = ref<string[]>([])
+const pendingServiceId = ref<number | null>(null)
+const previousSelectedServiceId = ref<number | null>(null)
 
 const serviceForm = reactive({
   id: '',
@@ -311,9 +329,27 @@ const setServiceForm = (service: ServiceSummary | null) => {
 
 const applyServiceTypeSelection = () => {
   if (!serviceTypeRecords.value.length) {
-    selectedServiceTypeId.value = null
-    setServiceTypeForm(null)
+    if (!isCreatingServiceType.value) {
+      selectedServiceTypeId.value = null
+      setServiceTypeForm(null)
+    }
+    pendingServiceTypeId.value = null
     return
+  }
+
+  if (isCreatingServiceType.value) {
+    return
+  }
+
+  const pendingId = pendingServiceTypeId.value
+  if (pendingId !== null) {
+    const pendingItem = serviceTypeRecords.value.find((item) => item.id === pendingId)
+    if (pendingItem) {
+      selectedServiceTypeId.value = pendingItem.id
+      setServiceTypeForm(pendingItem)
+      pendingServiceTypeId.value = null
+      return
+    }
   }
 
   const currentId = selectedServiceTypeId.value
@@ -333,9 +369,27 @@ const applyServiceTypeSelection = () => {
 
 const applyServiceGroupSelection = (list: ServiceGroupSummary[], preserveSelection: boolean) => {
   if (list.length === 0) {
-    selectedServiceGroupId.value = null
-    setServiceGroupForm(null)
+    if (!isCreatingServiceGroup.value) {
+      selectedServiceGroupId.value = null
+      setServiceGroupForm(null)
+    }
+    pendingServiceGroupId.value = null
     return
+  }
+
+  if (isCreatingServiceGroup.value) {
+    return
+  }
+
+  const pendingId = pendingServiceGroupId.value
+  if (pendingId !== null) {
+    const pendingItem = list.find((item) => item.id === pendingId)
+    if (pendingItem) {
+      selectedServiceGroupId.value = pendingItem.id
+      setServiceGroupForm(pendingItem)
+      pendingServiceGroupId.value = null
+      return
+    }
   }
 
   const currentId = selectedServiceGroupId.value
@@ -356,9 +410,27 @@ const applyServiceGroupSelection = (list: ServiceGroupSummary[], preserveSelecti
 
 const applyServiceSelection = (list: ServiceSummary[], preserveSelection: boolean) => {
   if (list.length === 0) {
-    selectedServiceId.value = null
-    setServiceForm(null)
+    if (!isCreatingService.value) {
+      selectedServiceId.value = null
+      setServiceForm(null)
+    }
+    pendingServiceId.value = null
     return
+  }
+
+  if (isCreatingService.value) {
+    return
+  }
+
+  const pendingId = pendingServiceId.value
+  if (pendingId !== null) {
+    const pendingItem = list.find((item) => item.id === pendingId)
+    if (pendingItem) {
+      selectedServiceId.value = pendingItem.id
+      setServiceForm(pendingItem)
+      pendingServiceId.value = null
+      return
+    }
   }
 
   const currentId = selectedServiceId.value
@@ -588,18 +660,113 @@ const loadServices = async (options: { preserveSelection?: boolean } = {}) => {
 }
 
 const handleServiceTypeSelect = (item: ServiceTypeSummary) => {
+  if (isCreatingServiceType.value) {
+    isCreatingServiceType.value = false
+    serviceTypeFormError.value = null
+    pendingServiceTypeId.value = null
+    previousSelectedServiceTypeId.value = null
+  }
   selectedServiceTypeId.value = item.id
   setServiceTypeForm(item)
 }
 
 const handleServiceGroupSelect = (group: ServiceGroupSummary) => {
+  if (isCreatingServiceGroup.value) {
+    isCreatingServiceGroup.value = false
+    serviceGroupFormError.value = null
+    pendingServiceGroupId.value = null
+    previousSelectedServiceGroupId.value = null
+  }
   selectedServiceGroupId.value = group.id
   setServiceGroupForm(group)
 }
 
 const handleServiceSelect = (service: ServiceSummary) => {
+  if (isCreatingService.value) {
+    isCreatingService.value = false
+    serviceFormErrors.value = []
+    pendingServiceId.value = null
+    previousSelectedServiceId.value = null
+  }
   selectedServiceId.value = service.id
   setServiceForm(service)
+}
+
+const handleServiceTypeCancel = () => {
+  if (!isCreatingServiceType.value) {
+    if (selectedServiceTypeId.value !== null) {
+      const current = serviceTypes.value.find((item) => item.id === selectedServiceTypeId.value)
+      setServiceTypeForm(current ?? null)
+    }
+    return
+  }
+
+  isCreatingServiceType.value = false
+  serviceTypeCreateLoading.value = false
+  serviceTypeFormError.value = null
+
+  const previousId = previousSelectedServiceTypeId.value
+  previousSelectedServiceTypeId.value = null
+
+  if (previousId !== null) {
+    const previousItem = serviceTypes.value.find((item) => item.id === previousId) ?? null
+    selectedServiceTypeId.value = previousItem?.id ?? null
+    setServiceTypeForm(previousItem)
+  } else {
+    selectedServiceTypeId.value = null
+    setServiceTypeForm(null)
+  }
+
+  pendingServiceTypeId.value = null
+}
+
+const handleServiceTypeCreate = async () => {
+  if (serviceTypeCreateLoading.value) {
+    return
+  }
+
+  if (!isCreatingServiceType.value) {
+    previousSelectedServiceTypeId.value = selectedServiceTypeId.value
+    selectedServiceTypeId.value = null
+    setServiceTypeForm(null)
+    serviceTypeFormError.value = null
+    isCreatingServiceType.value = true
+    return
+  }
+
+  const trimmedName = serviceTypeForm.name.trim()
+
+  if (!trimmedName) {
+    serviceTypeFormError.value = 'Service type name cannot be empty.'
+    toast.error('Service type name cannot be empty.')
+    return
+  }
+
+  try {
+    serviceTypeCreateLoading.value = true
+    const created = await createServiceType({ name: trimmedName })
+    toast.success('Service type created successfully.')
+    isCreatingServiceType.value = false
+    serviceTypeFormError.value = null
+    pendingServiceTypeId.value = created.id
+    previousSelectedServiceTypeId.value = null
+    selectedServiceTypeId.value = created.id
+    setServiceTypeForm(created)
+    await Promise.all([
+      loadServiceTypes(),
+      loadServiceGroupOptions(),
+      loadServiceGroups({ preserveSelection: true }),
+      loadServices({ preserveSelection: true }),
+    ])
+  } catch (error) {
+    console.error(error)
+    const message =
+      error instanceof ApiError ? error.message : 'Unable to create service type. Please try again.'
+    serviceTypeFormError.value = message
+    toast.error(message)
+  } finally {
+    serviceTypeCreateLoading.value = false
+  }
 }
 
 const handleServiceTypeUpdate = async () => {
@@ -662,6 +829,108 @@ const handleServiceGroupPageChange = async (page: number) => {
 
   serviceGroupPage.value = page
   await loadServiceGroups({ preserveSelection: true })
+}
+
+const handleServiceGroupCancel = () => {
+  if (!isCreatingServiceGroup.value) {
+    if (selectedServiceGroupId.value !== null) {
+      const current = serviceGroups.value.find((group) => group.id === selectedServiceGroupId.value)
+      setServiceGroupForm(current ?? null)
+    }
+    return
+  }
+
+  isCreatingServiceGroup.value = false
+  serviceGroupCreateLoading.value = false
+  serviceGroupFormError.value = null
+
+  const previousId = previousSelectedServiceGroupId.value
+  previousSelectedServiceGroupId.value = null
+
+  if (previousId !== null) {
+    const previousGroup = serviceGroups.value.find((group) => group.id === previousId) ?? null
+    selectedServiceGroupId.value = previousGroup?.id ?? null
+    setServiceGroupForm(previousGroup)
+  } else {
+    selectedServiceGroupId.value = null
+    setServiceGroupForm(null)
+  }
+
+  pendingServiceGroupId.value = null
+}
+
+const handleServiceGroupCreate = async () => {
+  if (serviceGroupCreateLoading.value || serviceTypesLoading.value) {
+    return
+  }
+
+  if (!isCreatingServiceGroup.value) {
+    previousSelectedServiceGroupId.value = selectedServiceGroupId.value
+    selectedServiceGroupId.value = null
+    setServiceGroupForm(null)
+    serviceGroupFormError.value = null
+
+    if (appliedServiceGroupFilters.serviceTypeId !== SERVICE_TYPE_OPTION_ALL) {
+      serviceGroupForm.serviceTypeId = appliedServiceGroupFilters.serviceTypeId
+    }
+
+    isCreatingServiceGroup.value = true
+    return
+  }
+
+  const errors: string[] = []
+  const trimmedName = serviceGroupForm.name.trim()
+
+  if (!trimmedName) {
+    errors.push('Service group name cannot be empty.')
+  }
+
+  const typeIdValue = serviceGroupForm.serviceTypeId
+  const parsedTypeId = typeIdValue !== null ? Number(typeIdValue) : NaN
+
+  if (!Number.isFinite(parsedTypeId) || parsedTypeId <= 0) {
+    errors.push('Please select a valid service type.')
+  }
+
+  if (errors.length > 0) {
+    serviceGroupFormError.value = errors.join(' ')
+    toast.error(errors[0])
+    return
+  }
+
+  try {
+    serviceGroupCreateLoading.value = true
+    const created = await createServiceGroup({ name: trimmedName, serviceTypeId: parsedTypeId })
+    toast.success('Service group created successfully.')
+    isCreatingServiceGroup.value = false
+    serviceGroupFormError.value = null
+    pendingServiceGroupId.value = created.id
+    previousSelectedServiceGroupId.value = null
+    selectedServiceGroupId.value = created.id
+    setServiceGroupForm(created)
+
+    await loadServiceGroups({ preserveSelection: true })
+
+    const exists = serviceGroups.value.some((group) => group.id === created.id)
+    const totalPages = serviceGroupsPagination.value?.totalPages ?? null
+
+    if (!exists && totalPages && totalPages !== serviceGroupPage.value) {
+      serviceGroupPage.value = totalPages
+      await loadServiceGroups({ preserveSelection: true })
+    }
+
+    await Promise.all([loadServiceGroupOptions(), loadServices({ preserveSelection: true })])
+  } catch (error) {
+    console.error(error)
+    const message =
+      error instanceof ApiError
+        ? error.message
+        : 'Unable to create service group. Please try again.'
+    serviceGroupFormError.value = message
+    toast.error(message)
+  } finally {
+    serviceGroupCreateLoading.value = false
+  }
 }
 
 const handleServiceGroupUpdate = async () => {
@@ -758,6 +1027,156 @@ const handleServicePageChange = async (page: number) => {
 
   servicePage.value = page
   await loadServices({ preserveSelection: true })
+}
+
+const handleServiceCancel = () => {
+  if (!isCreatingService.value) {
+    if (selectedServiceId.value !== null) {
+      const current = services.value.find((service) => service.id === selectedServiceId.value)
+      setServiceForm(current ?? null)
+    }
+    return
+  }
+
+  isCreatingService.value = false
+  serviceCreateLoading.value = false
+  serviceFormErrors.value = []
+
+  const previousId = previousSelectedServiceId.value
+  previousSelectedServiceId.value = null
+
+  if (previousId !== null) {
+    const previousService = services.value.find((item) => item.id === previousId) ?? null
+    selectedServiceId.value = previousService?.id ?? null
+    setServiceForm(previousService)
+  } else {
+    selectedServiceId.value = null
+    setServiceForm(null)
+  }
+
+  pendingServiceId.value = null
+}
+
+const handleServiceCreate = async () => {
+  if (
+    serviceCreateLoading.value ||
+    serviceGroupOptionsLoading.value ||
+    executionRoomOptionsLoading.value
+  ) {
+    return
+  }
+
+  if (!isCreatingService.value) {
+    previousSelectedServiceId.value = selectedServiceId.value
+    selectedServiceId.value = null
+    setServiceForm(null)
+    serviceFormErrors.value = []
+
+    if (appliedServiceFilters.serviceGroupId !== SERVICE_GROUP_OPTION_ALL) {
+      serviceForm.serviceGroupId = appliedServiceFilters.serviceGroupId
+    } else if (appliedServiceFilters.serviceTypeId !== SERVICE_TYPE_OPTION_ALL) {
+      const preferredGroup = serviceGroupOptions.value.find(
+        (option) => option.serviceTypeId === Number(appliedServiceFilters.serviceTypeId),
+      )
+      if (preferredGroup) {
+        serviceForm.serviceGroupId = preferredGroup.value
+      }
+    }
+
+    isCreatingService.value = true
+    return
+  }
+
+  const errors: string[] = []
+  const trimmedCode = serviceForm.code.trim()
+  const trimmedName = serviceForm.name.trim()
+  const unitValue = serviceForm.unit.trim()
+  const priceValue = serviceForm.price.trim()
+  const referenceMinValue = serviceForm.referenceMin.trim()
+  const referenceMaxValue = serviceForm.referenceMax.trim()
+
+  if (!trimmedCode) {
+    errors.push('Service code is required.')
+  }
+
+  if (!trimmedName) {
+    errors.push('Service name is required.')
+  }
+
+  if (!priceValue) {
+    errors.push('Service price is required.')
+  }
+
+  const parsedPrice = Number(priceValue)
+
+  if (priceValue && (!Number.isFinite(parsedPrice) || parsedPrice < 0)) {
+    errors.push('Service price must be a valid number.')
+  }
+
+  const groupValue = serviceForm.serviceGroupId
+  const parsedGroupId = groupValue !== null ? Number(groupValue) : NaN
+
+  if (!Number.isFinite(parsedGroupId) || parsedGroupId <= 0) {
+    errors.push('Please select a valid service group.')
+  }
+
+  let parsedRoomId: number | null = null
+  if (serviceForm.executionRoomId !== null && serviceForm.executionRoomId !== '') {
+    const parsedValue = Number(serviceForm.executionRoomId)
+    if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
+      errors.push('Please select a valid execution room.')
+    } else {
+      parsedRoomId = parsedValue
+    }
+  }
+
+  if (errors.length > 0) {
+    serviceFormErrors.value = errors
+    toast.error(errors[0])
+    return
+  }
+
+  try {
+    serviceCreateLoading.value = true
+    const created = await createService({
+      code: trimmedCode,
+      name: trimmedName,
+      unit: unitValue ? unitValue : null,
+      price: parsedPrice,
+      referenceMin: referenceMinValue ? referenceMinValue : null,
+      referenceMax: referenceMaxValue ? referenceMaxValue : null,
+      serviceGroupId: parsedGroupId,
+      executionRoomId: parsedRoomId,
+    })
+
+    toast.success('Service created successfully.')
+    isCreatingService.value = false
+    serviceFormErrors.value = []
+    pendingServiceId.value = created.id
+    previousSelectedServiceId.value = null
+    selectedServiceId.value = created.id
+    setServiceForm(created)
+
+    await loadServices({ preserveSelection: true })
+
+    const exists = services.value.some((item) => item.id === created.id)
+    const totalPages = servicesPagination.value?.totalPages ?? null
+
+    if (!exists && totalPages && totalPages !== servicePage.value) {
+      servicePage.value = totalPages
+      await loadServices({ preserveSelection: true })
+    }
+
+    await loadServiceGroupOptions()
+  } catch (error) {
+    console.error(error)
+    const message =
+      error instanceof ApiError ? error.message : 'Unable to create service. Please try again.'
+    serviceFormErrors.value = [message]
+    toast.error(message)
+  } finally {
+    serviceCreateLoading.value = false
+  }
 }
 
 const handleServiceUpdate = async () => {
@@ -938,14 +1357,39 @@ onMounted(() => {
                         id="service-type-name"
                         v-model="serviceTypeForm.name"
                         placeholder="Enter service type name"
-                        :disabled="selectedServiceTypeId === null"
+                        :disabled="!isCreatingServiceType && selectedServiceTypeId === null"
                       />
+                      <p v-if="serviceTypeFormError" class="mt-1 text-sm text-destructive">
+                        {{ serviceTypeFormError }}
+                      </p>
                     </Field>
                   </div>
-                  <div class="mt-4 flex justify-end">
+                  <div class="mt-4 flex flex-wrap justify-end gap-2">
+                    <Button
+                      v-if="isCreatingServiceType"
+                      type="button"
+                      variant="outline"
+                      :disabled="serviceTypeCreateLoading"
+                      @click="handleServiceTypeCancel"
+                    >
+                      Cancel
+                    </Button>
                     <Button
                       type="button"
-                      :disabled="serviceTypeUpdateLoading || selectedServiceTypeId === null"
+                      :disabled="serviceTypeCreateLoading"
+                      @click="handleServiceTypeCreate"
+                    >
+                      <Loader2 v-if="serviceTypeCreateLoading" class="mr-2 h-4 w-4 animate-spin" />
+                      <PlusIcon v-else-if="!isCreatingServiceType" class="mr-2 h-4 w-4" />
+                      {{ isCreatingServiceType ? 'Add Service Type' : 'New Service Type' }}
+                    </Button>
+                    <Button
+                      type="button"
+                      :disabled="
+                        serviceTypeUpdateLoading ||
+                        selectedServiceTypeId === null ||
+                        isCreatingServiceType
+                      "
                       @click="handleServiceTypeUpdate"
                     >
                       <Loader2 v-if="serviceTypeUpdateLoading" class="mr-2 h-4 w-4 animate-spin" />
@@ -1032,7 +1476,7 @@ onMounted(() => {
                         id="service-group-name"
                         v-model="serviceGroupForm.name"
                         placeholder="Enter group name"
-                        :disabled="selectedServiceGroupId === null"
+                        :disabled="!isCreatingServiceGroup && selectedServiceGroupId === null"
                       />
                     </Field>
                     <Field>
@@ -1044,18 +1488,43 @@ onMounted(() => {
                         placeholder="Select service type"
                         search-placeholder="Search service type"
                         empty-message="No service types found."
-                        :disabled="selectedServiceGroupId === null || serviceTypesLoading"
+                        :disabled="
+                          (!isCreatingServiceGroup && selectedServiceGroupId === null) ||
+                          serviceTypesLoading
+                        "
                         :loading="serviceTypesLoading"
                       />
                     </Field>
                   </div>
-                  <div class="mt-4 flex justify-end">
+                  <p v-if="serviceGroupFormError" class="mt-1 text-sm text-destructive">
+                    {{ serviceGroupFormError }}
+                  </p>
+                  <div class="mt-4 flex flex-wrap justify-end gap-2">
+                    <Button
+                      v-if="isCreatingServiceGroup"
+                      type="button"
+                      variant="outline"
+                      :disabled="serviceGroupCreateLoading"
+                      @click="handleServiceGroupCancel"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      :disabled="serviceGroupCreateLoading || serviceTypesLoading"
+                      @click="handleServiceGroupCreate"
+                    >
+                      <Loader2 v-if="serviceGroupCreateLoading" class="mr-2 h-4 w-4 animate-spin" />
+                      <PlusIcon v-else-if="!isCreatingServiceGroup" class="mr-2 h-4 w-4" />
+                      {{ isCreatingServiceGroup ? 'Add Service Group' : 'New Service Group' }}
+                    </Button>
                     <Button
                       type="button"
                       :disabled="
                         serviceGroupUpdateLoading ||
                         selectedServiceGroupId === null ||
-                        serviceTypesLoading
+                        serviceTypesLoading ||
+                        isCreatingServiceGroup
                       "
                       @click="handleServiceGroupUpdate"
                     >
@@ -1232,7 +1701,7 @@ onMounted(() => {
                         id="service-code"
                         v-model="serviceForm.code"
                         placeholder="Enter service code"
-                        :disabled="selectedServiceId === null"
+                        :disabled="!isCreatingService && selectedServiceId === null"
                       />
                     </Field>
                     <Field>
@@ -1241,7 +1710,7 @@ onMounted(() => {
                         id="service-name"
                         v-model="serviceForm.name"
                         placeholder="Enter service name"
-                        :disabled="selectedServiceId === null"
+                        :disabled="!isCreatingService && selectedServiceId === null"
                       />
                     </Field>
                     <Field>
@@ -1250,7 +1719,7 @@ onMounted(() => {
                         id="service-unit"
                         v-model="serviceForm.unit"
                         placeholder="Enter unit"
-                        :disabled="selectedServiceId === null"
+                        :disabled="!isCreatingService && selectedServiceId === null"
                       />
                     </Field>
                     <Field>
@@ -1259,7 +1728,7 @@ onMounted(() => {
                         id="service-price"
                         v-model="serviceForm.price"
                         placeholder="Enter price"
-                        :disabled="selectedServiceId === null"
+                        :disabled="!isCreatingService && selectedServiceId === null"
                       />
                     </Field>
                     <Field>
@@ -1268,7 +1737,7 @@ onMounted(() => {
                         id="service-ref-min"
                         v-model="serviceForm.referenceMin"
                         placeholder="Enter reference minimum"
-                        :disabled="selectedServiceId === null"
+                        :disabled="!isCreatingService && selectedServiceId === null"
                       />
                     </Field>
                     <Field>
@@ -1277,7 +1746,7 @@ onMounted(() => {
                         id="service-ref-max"
                         v-model="serviceForm.referenceMax"
                         placeholder="Enter reference maximum"
-                        :disabled="selectedServiceId === null"
+                        :disabled="!isCreatingService && selectedServiceId === null"
                       />
                     </Field>
                     <Field>
@@ -1289,7 +1758,10 @@ onMounted(() => {
                         placeholder="Select service group"
                         search-placeholder="Search service group"
                         empty-message="No service groups found."
-                        :disabled="selectedServiceId === null || serviceGroupOptionsLoading"
+                        :disabled="
+                          (!isCreatingService && selectedServiceId === null) ||
+                          serviceGroupOptionsLoading
+                        "
                         :loading="serviceGroupOptionsLoading"
                       />
                     </Field>
@@ -1302,20 +1774,54 @@ onMounted(() => {
                         placeholder="Select execution room"
                         search-placeholder="Search room"
                         empty-message="No rooms found."
-                        :disabled="selectedServiceId === null || executionRoomOptionsLoading"
+                        :disabled="
+                          (!isCreatingService && selectedServiceId === null) ||
+                          executionRoomOptionsLoading
+                        "
                         :loading="executionRoomOptionsLoading"
                         allow-clear
                       />
                     </Field>
                   </div>
-                  <div class="mt-4 flex justify-end">
+                  <ul
+                    v-if="serviceFormErrors.length"
+                    class="mt-2 space-y-1 text-sm text-destructive"
+                  >
+                    <li v-for="error in serviceFormErrors" :key="error">
+                      {{ error }}
+                    </li>
+                  </ul>
+                  <div class="mt-4 flex flex-wrap justify-end gap-2">
+                    <Button
+                      v-if="isCreatingService"
+                      type="button"
+                      variant="outline"
+                      :disabled="serviceCreateLoading"
+                      @click="handleServiceCancel"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      :disabled="
+                        serviceCreateLoading ||
+                        serviceGroupOptionsLoading ||
+                        executionRoomOptionsLoading
+                      "
+                      @click="handleServiceCreate"
+                    >
+                      <Loader2 v-if="serviceCreateLoading" class="mr-2 h-4 w-4 animate-spin" />
+                      <PlusIcon v-else-if="!isCreatingService" class="mr-2 h-4 w-4" />
+                      {{ isCreatingService ? 'Add Service' : 'New Service' }}
+                    </Button>
                     <Button
                       type="button"
                       :disabled="
                         serviceUpdateLoading ||
                         selectedServiceId === null ||
                         serviceGroupOptionsLoading ||
-                        executionRoomOptionsLoading
+                        executionRoomOptionsLoading ||
+                        isCreatingService
                       "
                       @click="handleServiceUpdate"
                     >

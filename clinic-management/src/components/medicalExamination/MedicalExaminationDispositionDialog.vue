@@ -2,7 +2,7 @@
 import type { CalendarDate, DateValue } from '@internationalized/date'
 import { getLocalTimeZone, parseDate } from '@internationalized/date'
 import { computed, ref, watch } from 'vue'
-import { CalendarIcon, Loader2 } from 'lucide-vue-next'
+import { CalendarIcon, Loader2, Pencil, Trash2 } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 import type { AcceptableValue } from 'reka-ui'
 
@@ -363,6 +363,14 @@ const syncFormState = () => {
   }
 }
 
+const requestFollowUpDialog = () => {
+  emit('follow-up-requested')
+}
+
+const clearFollowUpAppointment = () => {
+  emit('follow-up-cleared')
+}
+
 watch(
   () => props.open,
   (open) => {
@@ -633,14 +641,50 @@ const handleSave = () => {
           </h3>
           <div
             v-if="!followUpSummary"
-            class="rounded-md border border-dashed p-4 text-sm text-muted-foreground"
+            class="space-y-3 rounded-md border border-dashed p-4 text-sm text-muted-foreground"
           >
-            Select appointment details to finalize the follow-up disposition.
+            <p>Select appointment details to finalize the follow-up disposition.</p>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              :disabled="saving"
+              @click="requestFollowUpDialog"
+            >
+              Open scheduling dialog
+            </Button>
           </div>
-          <div v-else class="space-y-2 rounded-md border p-4 text-sm text-foreground">
-            <div class="flex flex-wrap items-baseline justify-between gap-2">
-              <span class="font-medium">Scheduled For</span>
-              <span>{{ followUpSummary.scheduledAt }}</span>
+          <div v-else class="space-y-3 rounded-md border p-4 text-sm text-foreground">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Scheduled For
+                </p>
+                <p class="text-sm text-foreground">{{ followUpSummary.scheduledAt }}</p>
+              </div>
+              <div class="flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  :disabled="saving"
+                  @click="requestFollowUpDialog"
+                >
+                  <Pencil class="h-4 w-4" />
+                  <span class="sr-only">Edit follow-up appointment</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  class="text-destructive hover:text-destructive"
+                  :disabled="saving"
+                  @click="clearFollowUpAppointment"
+                >
+                  <Trash2 class="h-4 w-4" />
+                  <span class="sr-only">Remove follow-up appointment</span>
+                </Button>
+              </div>
             </div>
             <div>
               <span class="font-medium">Reason:</span>
