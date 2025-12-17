@@ -93,6 +93,7 @@ const canSeeMedicalExamination = computed(() => isAdmin.value || roleKey.value =
 const canSeeDiagnostics = computed(() => isAdmin.value || roleKey.value === 'technician')
 const canSeeBilling = computed(() => isAdmin.value || roleKey.value === 'accountant')
 const canSeeCatalogs = computed(() => isAdmin.value)
+const canSeeReports = computed(() => true)
 
 const systemMenu: MenuItem[] = [
   { name: 'Room Configuration', path: '/room-configuration/' },
@@ -182,22 +183,15 @@ const catalogMenu: MenuRouteItem[] = [
             </NavigationMenuContent>
           </NavigationMenuItem>
 
-          <NavigationMenuItem v-if="canSeeMedicalExamination">
-            <NavigationMenuTrigger>Medical Examination</NavigationMenuTrigger>
-            <NavigationMenuContent>
-              <ul class="grid w-[200px] gap-2">
-                <li v-for="item in medicalExaminationMenu" :key="item.name">
-                  <NavigationMenuLink as-child>
-                    <router-link
-                      :to="item.path"
-                      class="block rounded-md px-3 py-2 text-sm font-medium hover:bg-primary/10"
-                    >
-                      {{ item.name }}
-                    </router-link>
-                  </NavigationMenuLink>
-                </li>
-              </ul>
-            </NavigationMenuContent>
+          <NavigationMenuItem v-if="canSeeMedicalExamination" class="bg-white rounded-md">
+            <NavigationMenuLink
+              as-child
+              class="px-4 hover:rounded-md hover:text-primary-foreground"
+            >
+              <router-link to="/medical-examination/" class="font-medium">
+                Medical Examination
+              </router-link>
+            </NavigationMenuLink>
           </NavigationMenuItem>
 
           <NavigationMenuItem v-if="canSeeDiagnostics">
@@ -242,6 +236,14 @@ const catalogMenu: MenuRouteItem[] = [
               class="px-4 hover:rounded-md hover:text-primary-foreground"
             >
               <router-link to="/billing" class="font-medium">Billing</router-link>
+            </NavigationMenuLink>
+          </NavigationMenuItem>
+          <NavigationMenuItem v-if="canSeeReports" class="bg-white rounded-md">
+            <NavigationMenuLink
+              as-child
+              class="px-4 hover:rounded-md hover:text-primary-foreground"
+            >
+              <router-link to="/reports/" class="font-medium">Reports</router-link>
             </NavigationMenuLink>
           </NavigationMenuItem>
         </NavigationMenuList>
