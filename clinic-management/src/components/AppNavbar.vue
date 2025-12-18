@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
 import logoUrl from '@/assets/images/CTU_logo.png'
+import { resolveRoleKey, type RoleKey } from '@/lib/roles'
 
 import {
   NavigationMenu,
@@ -61,32 +62,7 @@ const handleMenuItemClick = async (item: MenuItem) => {
   await item.action()
 }
 
-type RoleKey = 'admin' | 'doctor' | 'nurse' | 'technician' | 'accountant' | 'other'
-
-const toRoleKey = (roleName: string | null | undefined): RoleKey => {
-  if (!roleName) {
-    return 'other'
-  }
-
-  const normalized = roleName.trim().toLowerCase()
-
-  switch (normalized) {
-    case 'admin':
-      return 'admin'
-    case 'bác sĩ':
-      return 'doctor'
-    case 'điều dưỡng':
-      return 'nurse'
-    case 'kỹ thuật viên':
-      return 'technician'
-    case 'kế toán':
-      return 'accountant'
-    default:
-      return 'other'
-  }
-}
-
-const roleKey = computed<RoleKey>(() => toRoleKey(authStore.user?.role?.name ?? null))
+const roleKey = computed<RoleKey>(() => resolveRoleKey(authStore.user?.role?.name))
 const isAdmin = computed(() => roleKey.value === 'admin')
 const canSeeReception = computed(() => isAdmin.value || roleKey.value === 'nurse')
 const canSeeMedicalExamination = computed(() => isAdmin.value || roleKey.value === 'doctor')

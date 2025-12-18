@@ -50,6 +50,10 @@ import MedicalExaminationServicesDialog, {
 } from '@/components/medicalExamination/MedicalExaminationServicesDialog.vue'
 import MedicalExaminationDispositionDialog from '@/components/medicalExamination/MedicalExaminationDispositionDialog.vue'
 import MedicalExaminationFollowUpDialog from '@/components/medicalExamination/MedicalExaminationFollowUpDialog.vue'
+import {
+  isFollowUpDisposition,
+  normalizeDispositionValue,
+} from '@/components/medicalExamination/disposition'
 import type { FollowUpAppointmentDetails } from '@/components/medicalExamination/types'
 import type { GetMedicalRecordsParams, MedicalRecordSummary } from '@/services/medicalRecord'
 import { getMedicalRecords, updateMedicalRecord } from '@/services/medicalRecord'
@@ -61,6 +65,7 @@ import {
   type MedicalExaminationDetail,
 } from '@/services/medicalExamination'
 import { ApiError } from '@/services/http'
+import { normalizeText } from '@/lib/utils'
 import {
   createServiceOrder,
   createServiceOrderDetail,
@@ -140,11 +145,31 @@ const hasWorkspaceSelection = computed(() =>
   Boolean(selectedRoom.value || selectedDepartment.value),
 )
 
-const serviceTypeCategoryMap: Record<string, ServiceOrderCategory> = {
-  'xét nghiệm': 'lab',
-  'chẩn đoán hình ảnh và thăm dò chức năng': 'imaging',
-  'phẫu thuật - thủ thuật': 'procedure',
+const normalizeCategoryKey = (value: string): string => {
+  return normalizeText(value)
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ')
 }
+
+const serviceTypeCategoryEntries: Array<[string, ServiceOrderCategory]> = [
+  ['laboratory', 'lab'],
+  ['lab', 'lab'],
+  ['lab test', 'lab'],
+  ['xet nghiem', 'lab'],
+  ['diagnostic imaging', 'imaging'],
+  ['imaging', 'imaging'],
+  ['imaging services', 'imaging'],
+  ['chan doan hinh anh va tham do chuc nang', 'imaging'],
+  ['surgery', 'procedure'],
+  ['procedures', 'procedure'],
+  ['procedure', 'procedure'],
+  ['phau thuat thu thuat', 'procedure'],
+]
+
+const serviceTypeCategoryMap = new Map<string, ServiceOrderCategory>(
+  serviceTypeCategoryEntries.map(([label, category]) => [normalizeCategoryKey(label), category]),
+)
 
 const resolveServiceOrderCategory = (
   typeName: string | null | undefined,
@@ -153,8 +178,26 @@ const resolveServiceOrderCategory = (
     return null
   }
 
-  const normalized = typeName.trim().toLowerCase()
-  return serviceTypeCategoryMap[normalized] ?? null
+  const normalized = normalizeCategoryKey(typeName)
+  return serviceTypeCategoryMap.get(normalized) ?? null
+}
+
+const normalizeExaminationDisposition = (
+  examination: MedicalExaminationDetail | null,
+): MedicalExaminationDetail | null => {
+  if (!examination) {
+    return null
+  }
+
+  const normalized = normalizeDispositionValue(examination.disposition)
+  if (normalized === examination.disposition) {
+    return examination
+  }
+
+  return {
+    ...examination,
+    disposition: normalized,
+  }
 }
 
 interface AppliedFiltersState {
@@ -363,8 +406,16 @@ const cancelServiceOrder = (order: DiagnosticOrderSummaryRow) => {
   requestCancelServiceOrderInternal(order)
 }
 
-const updateServiceOrder = (order: DiagnosticOrderSummaryRow, category: ServiceOrderCategory) => {
+const openServiceOrderUpdate = (
+  order: DiagnosticOrderSummaryRow,
+  category: ServiceOrderCategory,
+) => {
   if (!ensureRecordEditable()) {
+    return
+  }
+
+  if (!canUpdateServiceOrder(order.status)) {
+    toast.info('Service orders can only be updated before they are sent.')
     return
   }
 
@@ -377,7 +428,6 @@ const servicesSaving = ref(false)
 const dispositionDialogOpen = ref(false)
 const dispositionSaving = ref(false)
 const dispositionDefaultEndTime = ref<string | null>(null)
-const FOLLOW_UP_DISPOSITION_VALUE = 'Hẹn khám'
 const followUpAppointment = ref<FollowUpAppointmentDetails | null>(null)
 const followUpAppointmentToDeleteId = ref<number | null>(null)
 const followUpDialogOpen = ref(false)
@@ -625,14 +675,15 @@ const handleSaveDisposition = async (payload: {
     return
   }
 
-  const isFollowUpDisposition = payload.disposition === FOLLOW_UP_DISPOSITION_VALUE
+  const canonicalDisposition = normalizeDispositionValue(payload.disposition) ?? payload.disposition
+  const followUpSelected = isFollowUpDisposition(canonicalDisposition)
 
-  if (isFollowUpDisposition && !followUpAppointment.value) {
+  if (followUpSelected && !followUpAppointment.value) {
     toast.error('Please schedule a follow-up appointment before saving.')
     return
   }
 
-  if (isFollowUpDisposition && followUpAppointment.value?.roomId === null) {
+  if (followUpSelected && followUpAppointment.value?.roomId === null) {
     toast.error('Please choose a clinic room for the follow-up appointment.')
     return
   }
@@ -652,10 +703,10 @@ const handleSaveDisposition = async (payload: {
   let createdAppointmentId: number | null = null
   let persistedAppointment: FollowUpAppointmentDetails | null = null
   const appointmentSnapshot = followUpAppointment.value
-  const appointmentIdToDelete = !isFollowUpDisposition ? followUpAppointmentToDeleteId.value : null
+  const appointmentIdToDelete = !followUpSelected ? followUpAppointmentToDeleteId.value : null
 
   try {
-    if (isFollowUpDisposition && appointmentSnapshot) {
+    if (followUpSelected && appointmentSnapshot) {
       if (appointmentSnapshot.roomId === null) {
         throw new Error('Follow-up appointment is missing room information.')
       }
@@ -694,7 +745,7 @@ const handleSaveDisposition = async (payload: {
       }),
       updateMedicalExamination(medicalRecordExamination.value.id, {
         phuongPhapDieuTri: treatmentValue,
-        xuTri: payload.disposition,
+        xuTri: canonicalDisposition,
       }),
     ])
 
@@ -702,13 +753,13 @@ const handleSaveDisposition = async (payload: {
       record.id === updatedRecord.id ? updatedRecord : record,
     )
     selectedRecordId.value = updatedRecord.id
-    medicalRecordExamination.value = updatedExam
+    medicalRecordExamination.value = normalizeExaminationDisposition(updatedExam)
     dispositionDefaultEndTime.value = payload.endTime
 
     if (persistedAppointment) {
       followUpAppointment.value = persistedAppointment
       followUpAppointmentToDeleteId.value = null
-    } else if (!isFollowUpDisposition) {
+    } else if (!followUpSelected) {
       followUpAppointment.value = null
       followUpAppointmentToDeleteId.value = null
     }
@@ -828,7 +879,7 @@ const loadSelectedRecordDetail = async () => {
     }
 
     medicalRecordPatientDetail.value = patient
-    medicalRecordExamination.value = examination
+    medicalRecordExamination.value = normalizeExaminationDisposition(examination)
   } catch (error) {
     if (requestId !== medicalRecordLoadToken.value) {
       return
@@ -1067,8 +1118,7 @@ const loadLatestFollowUpAppointment = async (patientId: number) => {
       from: now,
     })
 
-    let selectedAppointment: AppointmentSummary | null =
-      upcomingAppointments.length > 0 ? upcomingAppointments[0] : null
+    let selectedAppointment: AppointmentSummary | null = upcomingAppointments[0] ?? null
 
     if (!selectedAppointment) {
       const { appointments: historicalAppointments, pagination } = await getAppointments({
@@ -1076,7 +1126,7 @@ const loadLatestFollowUpAppointment = async (patientId: number) => {
         limit: 1,
       })
 
-      selectedAppointment = historicalAppointments.length > 0 ? historicalAppointments[0] : null
+      selectedAppointment = historicalAppointments[0] ?? null
 
       if (pagination.totalPages > 1) {
         const { appointments: lastPageAppointments } = await getAppointments({
@@ -1085,8 +1135,8 @@ const loadLatestFollowUpAppointment = async (patientId: number) => {
           page: pagination.totalPages,
         })
 
-        selectedAppointment =
-          lastPageAppointments.length > 0 ? lastPageAppointments[0] : selectedAppointment
+        const fallback = selectedAppointment ?? null
+        selectedAppointment = lastPageAppointments[0] ?? fallback
       }
     }
 
@@ -1495,7 +1545,7 @@ const handleConfirmDeleteOrder = async () => {
     return
   }
 
-  const success = await deleteServiceOrderById(target.id)
+  const success = await deleteServiceOrderByIdInternal(target.id)
   if (success) {
     deleteOrderDialogOpen.value = false
     deleteOrderTarget.value = null
@@ -2228,7 +2278,7 @@ watch(filteredRecords, (list) => {
                                   isOrderActionInProgress(order.id) ||
                                   servicesSaving
                                 "
-                                @select="handleSendServiceOrder(order.id)"
+                                @select="sendServiceOrder(order.id)"
                               >
                                 Send order
                               </ContextMenuItem>
@@ -2238,7 +2288,7 @@ watch(filteredRecords, (list) => {
                                   isOrderActionInProgress(order.id) ||
                                   servicesSaving
                                 "
-                                @select="requestCancelServiceOrder(order)"
+                                @select="cancelServiceOrder(order)"
                               >
                                 Cancel send
                               </ContextMenuItem>
@@ -2249,7 +2299,7 @@ watch(filteredRecords, (list) => {
                                   isOrderActionInProgress(order.id) ||
                                   servicesSaving
                                 "
-                                @select="requestUpdateServiceOrder(order, 'lab')"
+                                @select="openServiceOrderUpdate(order, 'lab')"
                               >
                                 Update order
                               </ContextMenuItem>
@@ -2489,7 +2539,7 @@ watch(filteredRecords, (list) => {
                                   isOrderActionInProgress(order.id) ||
                                   servicesSaving
                                 "
-                                @select="handleSendServiceOrder(order.id)"
+                                @select="sendServiceOrder(order.id)"
                               >
                                 Send order
                               </ContextMenuItem>
@@ -2499,7 +2549,7 @@ watch(filteredRecords, (list) => {
                                   isOrderActionInProgress(order.id) ||
                                   servicesSaving
                                 "
-                                @select="requestCancelServiceOrder(order)"
+                                @select="cancelServiceOrder(order)"
                               >
                                 Cancel send
                               </ContextMenuItem>
@@ -2510,7 +2560,7 @@ watch(filteredRecords, (list) => {
                                   isOrderActionInProgress(order.id) ||
                                   servicesSaving
                                 "
-                                @select="requestUpdateServiceOrder(order, 'imaging')"
+                                @select="openServiceOrderUpdate(order, 'imaging')"
                               >
                                 Update order
                               </ContextMenuItem>
@@ -2750,7 +2800,7 @@ watch(filteredRecords, (list) => {
                                   isOrderActionInProgress(order.id) ||
                                   servicesSaving
                                 "
-                                @select="handleSendServiceOrder(order.id)"
+                                @select="sendServiceOrder(order.id)"
                               >
                                 Send order
                               </ContextMenuItem>
@@ -2760,7 +2810,7 @@ watch(filteredRecords, (list) => {
                                   isOrderActionInProgress(order.id) ||
                                   servicesSaving
                                 "
-                                @select="requestCancelServiceOrder(order)"
+                                @select="cancelServiceOrder(order)"
                               >
                                 Cancel send
                               </ContextMenuItem>
@@ -2771,7 +2821,7 @@ watch(filteredRecords, (list) => {
                                   isOrderActionInProgress(order.id) ||
                                   servicesSaving
                                 "
-                                @select="requestUpdateServiceOrder(order, 'procedure')"
+                                @select="openServiceOrderUpdate(order, 'procedure')"
                               >
                                 Update order
                               </ContextMenuItem>

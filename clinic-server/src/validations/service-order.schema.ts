@@ -3,11 +3,11 @@ import { z } from "zod";
 const orderCodeSchema = z
   .string()
   .trim()
-  .min(1, "Mã phiếu chỉ định không được để trống")
-  .max(30, "Mã phiếu chỉ định không được vượt quá 30 ký tự")
+  .min(1, "Service order code is required")
+  .max(30, "Service order code must not exceed 30 characters")
   .regex(
     /^[A-Za-z0-9_-]+$/,
-    "Mã phiếu chỉ định chỉ được chứa chữ cái, số, dấu gạch ngang và gạch dưới",
+    "Service order code may only contain letters, numbers, hyphens, and underscores",
   )
   .transform((value) => value.toUpperCase());
 
@@ -15,18 +15,18 @@ const baseServiceOrderBody = z.object({
   maPhieuCD: orderCodeSchema,
   benhAnId: z.coerce
     .number()
-    .int("Bệnh án không hợp lệ")
-    .min(1, "Bệnh án không hợp lệ"),
+    .int("Medical record is invalid")
+    .min(1, "Medical record is invalid"),
   thoiGianTao: z.coerce.date(),
   trangThai: z.coerce
     .number()
-    .int("Trạng thái không hợp lệ"),
+    .int("Status is invalid"),
   nvChiDinhId: z
     .union([
       z.coerce
         .number()
-        .int("Nhân viên chỉ định không hợp lệ")
-        .min(1, "Nhân viên chỉ định không hợp lệ"),
+        .int("Ordering employee is invalid")
+        .min(1, "Ordering employee is invalid"),
       z.null(),
     ])
     .optional(),
@@ -37,77 +37,77 @@ const addServiceOrderBody = baseServiceOrderBody;
 const updateServiceOrderBody = baseServiceOrderBody
   .partial()
   .refine((payload) => Object.values(payload).some((value) => value !== undefined), {
-    message: "Không có dữ liệu cập nhật",
+    message: "No data to update",
     path: ["global"],
   });
 
 const serviceOrderParam = z.object({
   id: z.coerce
     .number()
-    .int("Phiếu chỉ định không hợp lệ")
-    .min(1, "Phiếu chỉ định không hợp lệ"),
+    .int("Service order is invalid")
+    .min(1, "Service order is invalid"),
 });
 
 const getServiceOrdersQuery = z.object({
   page: z.coerce
     .number()
-    .int("Trang phải là số nguyên")
-    .min(1, "Trang phải từ 1 trở lên")
-    .max(1000, "Trang không được vượt quá 1000")
+    .int("Page must be an integer")
+    .min(1, "Page must be at least 1")
+    .max(1000, "Page must not exceed 1000")
     .default(1),
   limit: z.coerce
     .number()
-    .int("Giới hạn phải là số nguyên")
-    .min(1, "Giới hạn phải từ 1 trở lên")
-    .max(100, "Giới hạn không được vượt quá 100")
+    .int("Limit must be an integer")
+    .min(1, "Limit must be at least 1")
+    .max(100, "Limit must not exceed 100")
     .default(20),
   search: z
     .string()
     .trim()
-    .max(100, "Từ khóa tìm kiếm không được vượt quá 100 ký tự")
+    .max(100, "Search term must not exceed 100 characters")
     .optional()
     .transform((value) => (value ? value : undefined)),
   medicalRecordId: z.coerce
     .number()
-    .int("Bệnh án không hợp lệ")
-    .min(1, "Bệnh án không hợp lệ")
+    .int("Medical record is invalid")
+    .min(1, "Medical record is invalid")
     .optional(),
 });
 
 const serviceOrderDetailParam = z.object({
   id: z.coerce
     .number()
-    .int("Chi tiết phiếu chỉ định không hợp lệ")
-    .min(1, "Chi tiết phiếu chỉ định không hợp lệ"),
+    .int("Service order detail is invalid")
+    .min(1, "Service order detail is invalid"),
 });
 
 const serviceOrderDetailsByOrderParam = z.object({
   serviceOrderId: z.coerce
     .number()
-    .int("Phiếu chỉ định không hợp lệ")
-    .min(1, "Phiếu chỉ định không hợp lệ"),
+    .int("Service order is invalid")
+    .min(1, "Service order is invalid"),
 });
 
 const baseServiceOrderDetailBody = z.object({
   phieuChiDinhId: z.coerce
     .number()
-    .int("Phiếu chỉ định không hợp lệ")
-    .min(1, "Phiếu chỉ định không hợp lệ"),
+    .int("Service order is invalid")
+    .min(1, "Service order is invalid"),
   dichVuId: z.coerce
     .number()
-    .int("Dịch vụ không hợp lệ")
-    .min(1, "Dịch vụ không hợp lệ"),
+    .int("Service is invalid")
+    .min(1, "Service is invalid"),
   soLuong: z.coerce
     .number()
-    .int("Số lượng phải là số nguyên")
-    .min(1, "Số lượng phải lớn hơn 0"),
+    .int("Quantity must be an integer")
+    .min(1, "Quantity must be greater than 0"),
   tongTien: z.coerce
     .number()
-    .min(0, "Tổng tiền không được âm"),
+    .min(0, "Total amount cannot be negative"),
   yeuCauKQ: z.coerce
-    .boolean("Yêu cầu kết quả không hợp lệ"),
+    .boolean("Result request flag is invalid"),
   trangThaiDongTien: z.coerce
-    .boolean("Trạng thái đóng tiền không hợp lệ"),
+    .boolean("Payment status is invalid"),
 });
 
 const addServiceOrderDetailBody = baseServiceOrderDetailBody;
@@ -115,7 +115,7 @@ const addServiceOrderDetailBody = baseServiceOrderDetailBody;
 const updateServiceOrderDetailBody = baseServiceOrderDetailBody
   .partial()
   .refine((payload) => Object.values(payload).some((value) => value !== undefined), {
-    message: "Không có dữ liệu cập nhật",
+    message: "No data to update",
     path: ["global"],
   });
 

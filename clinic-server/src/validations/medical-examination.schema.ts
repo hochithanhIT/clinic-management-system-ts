@@ -3,11 +3,11 @@ import { z, ZodIssueCode } from "zod";
 const codeSchema = z
   .string()
   .trim()
-  .min(1, "Mã phiếu khám không được để trống")
-  .max(30, "Mã phiếu khám không được vượt quá 30 ký tự")
+  .min(1, "Medical examination code is required")
+  .max(30, "Medical examination code must not exceed 30 characters")
   .regex(
     /^[A-Za-z0-9_-]+$/,
-    "Mã phiếu khám chỉ được chứa chữ cái, số, dấu gạch ngang và gạch dưới",
+    "Medical examination code may only contain letters, numbers, hyphens, and underscores",
   );
 
 const optionalLargeText = (field: string) =>
@@ -16,7 +16,7 @@ const optionalLargeText = (field: string) =>
       z
         .string()
         .trim()
-        .max(5000, `${field} không được vượt quá 5000 ký tự`),
+        .max(5000, `${field} must not exceed 5000 characters`),
       z.null(),
     ])
     .optional()
@@ -38,9 +38,9 @@ const optionalInt = (field: string, max: number) =>
       z
         .coerce
         .number()
-        .int(`${field} phải là số nguyên`)
-        .min(0, `${field} không hợp lệ`)
-        .max(max, `${field} không hợp lệ`),
+        .int(`${field} must be an integer`)
+        .min(0, `${field} is invalid`)
+        .max(max, `${field} is invalid`),
       z.null(),
     ])
     .optional()
@@ -58,8 +58,8 @@ const optionalFloat = (field: string, min: number, max: number) =>
       z
         .coerce
         .number()
-        .min(min, `${field} không hợp lệ`)
-        .max(max, `${field} không hợp lệ`),
+        .min(min, `${field} is invalid`)
+        .max(max, `${field} is invalid`),
       z.null(),
     ])
     .optional()
@@ -75,25 +75,25 @@ const baseMedicalExaminationBody = z.object({
   maPhieu: codeSchema.optional(),
   benhAnId: z.coerce
     .number()
-    .int("Bệnh án không hợp lệ")
-    .min(1, "Bệnh án không hợp lệ"),
+    .int("Medical record is invalid")
+    .min(1, "Medical record is invalid"),
   thoiGianKham: z.coerce.date(),
-  quaTrinhBenhLy: optionalLargeText("Quá trình bệnh lý"),
-  tienSuBanThan: optionalLargeText("Tiền sử bản thân"),
-  tienSuGiaDinh: optionalLargeText("Tiền sử gia đình"),
-  khamToanThan: optionalLargeText("Khám toàn thân"),
-  khamBoPhan: optionalLargeText("Khám bộ phận"),
-  mach: optionalInt("Mạch", 300),
-  nhietDo: optionalFloat("Nhiệt độ", 30, 45),
-  nhipTho: optionalInt("Nhịp thở", 200),
-  canNang: optionalFloat("Cân nặng", 0, 500),
-  chieuCao: optionalFloat("Chiều cao", 0, 300),
-  huyetApTThu: optionalInt("Huyết áp tâm thu", 400),
-  huyetApTTr: optionalInt("Huyết áp tâm trương", 300),
+  quaTrinhBenhLy: optionalLargeText("Disease course"),
+  tienSuBanThan: optionalLargeText("Personal medical history"),
+  tienSuGiaDinh: optionalLargeText("Family medical history"),
+  khamToanThan: optionalLargeText("General examination"),
+  khamBoPhan: optionalLargeText("Focused examination"),
+  mach: optionalInt("Pulse", 300),
+  nhietDo: optionalFloat("Temperature", 30, 45),
+  nhipTho: optionalInt("Respiratory rate", 200),
+  canNang: optionalFloat("Weight", 0, 500),
+  chieuCao: optionalFloat("Height", 0, 300),
+  huyetApTThu: optionalInt("Systolic blood pressure", 400),
+  huyetApTTr: optionalInt("Diastolic blood pressure", 300),
   bmi: optionalFloat("BMI", 0, 150),
-  chanDoanBanDau: optionalLargeText("Chẩn đoán ban đầu"),
-  phuongPhapDieuTri: optionalLargeText("Phương pháp điều trị"),
-  xuTri: optionalLargeText("Xử trí"),
+  chanDoanBanDau: optionalLargeText("Initial diagnosis"),
+  phuongPhapDieuTri: optionalLargeText("Treatment plan"),
+  xuTri: optionalLargeText("Management"),
 });
 
 const createMedicalExaminationBody = baseMedicalExaminationBody;
@@ -101,22 +101,22 @@ const createMedicalExaminationBody = baseMedicalExaminationBody;
 const updateMedicalExaminationBody = baseMedicalExaminationBody
   .partial()
   .refine((data) => Object.values(data).some((value) => value !== undefined), {
-    message: "Không có dữ liệu cập nhật",
+    message: "No data to update",
     path: ["global"],
   });
 
 const medicalExaminationParam = z.object({
   id: z.coerce
     .number()
-    .int("Phiếu khám bệnh không hợp lệ")
-    .min(1, "Phiếu khám bệnh không hợp lệ"),
+    .int("Medical examination is invalid")
+    .min(1, "Medical examination is invalid"),
 });
 
 const medicalExaminationByMedicalRecordParam = z.object({
   medicalRecordId: z.coerce
     .number()
-    .int("Bệnh án không hợp lệ")
-    .min(1, "Bệnh án không hợp lệ"),
+    .int("Medical record is invalid")
+    .min(1, "Medical record is invalid"),
 });
 
 const updateDiagnosisBody = z
@@ -126,12 +126,12 @@ const updateDiagnosisBody = z
         z.object({
           benhId: z.coerce
             .number()
-            .int("Bệnh không hợp lệ")
-            .min(1, "Bệnh không hợp lệ"),
+            .int("Disease is invalid")
+            .min(1, "Disease is invalid"),
           benhChinh: z.boolean(),
         }),
       )
-      .max(50, "Danh sách chẩn đoán không được vượt quá 50 mục"),
+      .max(50, "Diagnosis list must not exceed 50 entries"),
   })
   .superRefine((data, ctx) => {
     const { diagnoses } = data;
@@ -141,7 +141,7 @@ const updateDiagnosisBody = z
       if (seen.has(diag.benhId)) {
         ctx.addIssue({
           code: ZodIssueCode.custom,
-          message: "Bệnh bị trùng lặp trong danh sách",
+          message: "Disease is duplicated in the list",
           path: ["diagnoses", index, "benhId"],
         });
       } else {
@@ -153,7 +153,7 @@ const updateDiagnosisBody = z
     if (primaryCount > 1) {
       ctx.addIssue({
         code: ZodIssueCode.custom,
-        message: "Chỉ được chọn một bệnh chính",
+        message: "Only one primary disease may be selected",
         path: ["diagnoses"],
       });
     }

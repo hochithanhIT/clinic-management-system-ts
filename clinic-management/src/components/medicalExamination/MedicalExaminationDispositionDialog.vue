@@ -30,6 +30,11 @@ import { Textarea } from '@/components/ui/textarea'
 import type { MedicalRecordSummary } from '@/services/medicalRecord'
 import type { PatientSummary } from '@/services/patient'
 import type { MedicalExaminationDetail } from '@/services/medicalExamination'
+import {
+  DISPOSITION_OPTIONS,
+  isFollowUpDisposition,
+  normalizeDispositionValue,
+} from './disposition'
 import type { FollowUpAppointmentDetails } from './types'
 
 interface DispositionOrderRow {
@@ -49,14 +54,6 @@ interface DispositionDiagnosisRow {
   name: string
   isPrimary: boolean
 }
-
-const FOLLOW_UP_VALUE = 'Hẹn khám'
-
-const DISPOSITION_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
-  { value: 'Khám xong cho về', label: 'Discharge after examination' },
-  { value: 'Cấp toa cho về', label: 'Provide prescription and discharge' },
-  { value: FOLLOW_UP_VALUE, label: 'Schedule follow-up appointment' },
-]
 
 const props = defineProps<{
   open: boolean
@@ -165,9 +162,12 @@ const initialDiagnosis = computed(() => props.examinationDetail?.initialDiagnosi
 const currentTreatmentMethod = computed(
   () => props.examinationDetail?.treatmentMethod?.trim() || '—',
 )
-const currentDisposition = computed(() => props.examinationDetail?.disposition?.trim() || '—')
+const currentDisposition = computed(() => {
+  const value = normalizeDispositionValue(props.examinationDetail?.disposition ?? null)
+  return value?.trim() || '—'
+})
 
-const isFollowUpSelected = computed(() => disposition.value === FOLLOW_UP_VALUE)
+const isFollowUpSelected = computed(() => isFollowUpDisposition(disposition.value))
 
 const diagnosisRows = computed<DispositionDiagnosisRow[]>(() => {
   const source = props.examinationDetail?.diagnoses ?? []
@@ -355,10 +355,13 @@ const syncFormState = () => {
   setEndDateTimeFromString(defaultTime)
   endDatePopoverOpen.value = false
   treatmentMethod.value = props.examinationDetail?.treatmentMethod ?? ''
-  disposition.value = props.examinationDetail?.disposition ?? null
-  lastDispositionValue.value = disposition.value
+  const canonicalDisposition = normalizeDispositionValue(
+    props.examinationDetail?.disposition ?? null,
+  )
+  disposition.value = canonicalDisposition
+  lastDispositionValue.value = canonicalDisposition
 
-  if (disposition.value === FOLLOW_UP_VALUE && !props.followUpAppointment) {
+  if (isFollowUpDisposition(canonicalDisposition) && !props.followUpAppointment) {
     emit('follow-up-requested')
   }
 }
@@ -403,10 +406,11 @@ watch(
     }
 
     treatmentMethod.value = detail?.treatmentMethod ?? ''
-    disposition.value = detail?.disposition ?? null
-    lastDispositionValue.value = disposition.value
+    const canonicalDisposition = normalizeDispositionValue(detail?.disposition ?? null)
+    disposition.value = canonicalDisposition
+    lastDispositionValue.value = canonicalDisposition
 
-    if (disposition.value === FOLLOW_UP_VALUE && !props.followUpAppointment) {
+    if (isFollowUpDisposition(canonicalDisposition) && !props.followUpAppointment) {
       emit('follow-up-requested')
     }
   },
@@ -420,20 +424,21 @@ const handleClose = () => {
 const handleDispositionChange = (value: AcceptableValue) => {
   if (value === null || value === undefined) {
     disposition.value = null
-    if (lastDispositionValue.value === FOLLOW_UP_VALUE) {
+    if (isFollowUpDisposition(lastDispositionValue.value)) {
       emit('follow-up-cleared')
     }
     lastDispositionValue.value = null
     return
   }
 
-  disposition.value = String(value)
-  if (disposition.value === FOLLOW_UP_VALUE) {
+  const canonical = normalizeDispositionValue(String(value)) ?? String(value)
+  disposition.value = canonical
+  if (isFollowUpDisposition(canonical)) {
     emit('follow-up-requested')
-  } else if (lastDispositionValue.value === FOLLOW_UP_VALUE) {
+  } else if (isFollowUpDisposition(lastDispositionValue.value)) {
     emit('follow-up-cleared')
   }
-  lastDispositionValue.value = disposition.value
+  lastDispositionValue.value = canonical
 }
 
 const handleSave = () => {

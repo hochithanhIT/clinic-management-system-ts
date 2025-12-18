@@ -74,7 +74,7 @@ const addTitle = async (req: Request, res: Response, next: NextFunction) => {
     });
 
     if (existing) {
-      return Send.badRequest(res, null, "Tên chức danh đã tồn tại");
+      return Send.badRequest(res, null, "Title name already exists");
     }
 
     const title = await prisma.chucDanh.create({
@@ -82,7 +82,7 @@ const addTitle = async (req: Request, res: Response, next: NextFunction) => {
       select: titleSelect,
     });
 
-    return Send.success(res, { title }, "Tạo chức danh thành công");
+    return Send.success(res, { title }, "Title created successfully");
   } catch (error) {
     if (error instanceof z.ZodError) {
       return Send.validationErrors(res, error.flatten().fieldErrors);
@@ -90,7 +90,7 @@ const addTitle = async (req: Request, res: Response, next: NextFunction) => {
 
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === "P2002") {
-        return Send.badRequest(res, null, "Chức danh đã tồn tại");
+        return Send.badRequest(res, null, "Title already exists");
       }
     }
 
@@ -113,7 +113,7 @@ const updateTitle = async (
     });
 
     if (!existing) {
-      return Send.notFound(res, null, "Không tìm thấy chức danh");
+      return Send.notFound(res, null, "Title not found");
     }
 
     const updateData: Prisma.ChucDanhUpdateInput = {};
@@ -130,7 +130,7 @@ const updateTitle = async (
       });
 
       if (duplicate) {
-        return Send.badRequest(res, null, "Tên chức danh đã tồn tại");
+        return Send.badRequest(res, null, "Title name already exists");
       }
 
       updateData.tenChucDanh = tenChucDanh;
@@ -142,7 +142,7 @@ const updateTitle = async (
       select: titleSelect,
     });
 
-    return Send.success(res, { title }, "Cập nhật chức danh thành công");
+    return Send.success(res, { title }, "Title updated successfully");
   } catch (error) {
     if (error instanceof z.ZodError) {
       return Send.validationErrors(res, error.flatten().fieldErrors);
@@ -150,10 +150,10 @@ const updateTitle = async (
 
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === "P2002") {
-        return Send.badRequest(res, null, "Chức danh đã tồn tại");
+        return Send.badRequest(res, null, "Title already exists");
       }
       if (error.code === "P2025") {
-        return Send.notFound(res, null, "Không tìm thấy chức danh");
+        return Send.notFound(res, null, "Title not found");
       }
     }
 
@@ -173,7 +173,7 @@ const deleteTitle = async (
       where: { id },
     });
 
-    return Send.success(res, null, "Xóa chức danh thành công");
+    return Send.success(res, null, "Title deleted successfully");
   } catch (error) {
     if (error instanceof z.ZodError) {
       return Send.validationErrors(res, error.flatten().fieldErrors);
@@ -181,14 +181,14 @@ const deleteTitle = async (
 
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === "P2025") {
-        return Send.notFound(res, null, "Không tìm thấy chức danh");
+        return Send.notFound(res, null, "Title not found");
       }
 
       if (error.code === "P2003") {
         return Send.badRequest(
           res,
           null,
-          "Không thể xóa chức danh vì đang được sử dụng",
+          "Unable to delete title because it is in use",
         );
       }
     }

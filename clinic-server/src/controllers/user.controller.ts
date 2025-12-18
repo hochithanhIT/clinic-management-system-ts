@@ -101,12 +101,12 @@ const resolveReferenceId = async <T extends { id: number }>(
 		if (entity) {
 			return entity.id;
 		}
-		throw new ReferenceError(`${entityName} không tồn tại`);
+		throw new ReferenceError(`${entityName} does not exist`);
 	}
 
 	const fallback = await fallbackQuery();
 	if (!fallback) {
-		throw new ReferenceError(`Không tìm thấy ${entityName.toLowerCase()}`);
+		throw new ReferenceError(`Unable to locate ${entityName.toLowerCase()}`);
 	}
 
 	return fallback.id;
@@ -185,7 +185,7 @@ const getUser = async (
 		});
 
 		if (!user) {
-			return Send.notFound(res, null, "Không tìm thấy người dùng");
+			return Send.notFound(res, null, "User not found");
 		}
 
 		return Send.success(res, { user });
@@ -222,11 +222,11 @@ const createUser = async (
 		]);
 
 		if (phoneConflict) {
-			return Send.badRequest(res, null, "Số điện thoại đã được sử dụng");
+			return Send.badRequest(res, null, "Phone number is already in use");
 		}
 
 		if (certConflict) {
-			return Send.badRequest(res, null, "Số chứng chỉ đã được sử dụng");
+			return Send.badRequest(res, null, "License number is already in use");
 		}
 
 		const [department, role] = await Promise.all([
@@ -241,11 +241,11 @@ const createUser = async (
 		]);
 
 		if (!department) {
-			return Send.badRequest(res, null, "Khoa không tồn tại");
+			return Send.badRequest(res, null, "Department does not exist");
 		}
 
 		if (!role) {
-			return Send.badRequest(res, null, "Vai trò không tồn tại");
+			return Send.badRequest(res, null, "Role does not exist");
 		}
 
 		const [titleId, positionId] = await Promise.all([
@@ -261,7 +261,7 @@ const createUser = async (
 							select: { id: true },
 							orderBy: { id: "asc" },
 						}),
-				"Chức danh"
+					"Title"
 			),
 			resolveReferenceId(
 				payload.chucVuId,
@@ -275,7 +275,7 @@ const createUser = async (
 							select: { id: true },
 							orderBy: { id: "asc" },
 						}),
-				"Chức vụ"
+					"Position"
 			),
 		]);
 
@@ -300,7 +300,7 @@ const createUser = async (
 			select: userSelect,
 		});
 
-		return Send.success(res, { user: createdUser }, "Tạo người dùng thành công");
+		return Send.success(res, { user: createdUser }, "User created successfully");
 	} catch (error) {
 		if (error instanceof z.ZodError) {
 			return Send.validationErrors(res, error.flatten().fieldErrors);
@@ -312,7 +312,7 @@ const createUser = async (
 
 		if (error instanceof Prisma.PrismaClientKnownRequestError) {
 			if (error.code === "P2002") {
-				return Send.badRequest(res, null, "Thông tin người dùng bị trùng lặp");
+				return Send.badRequest(res, null, "User information already exists");
 			}
 		}
 
@@ -335,7 +335,7 @@ const updateUser = async (
 		});
 
 		if (!existingUser) {
-			return Send.notFound(res, null, "Không tìm thấy người dùng");
+			return Send.notFound(res, null, "User not found");
 		}
 
 		const maNV = payload.maNV?.toUpperCase();
@@ -371,15 +371,15 @@ const updateUser = async (
 		]);
 
 		if (codeConflict) {
-			return Send.badRequest(res, null, "Mã nhân viên đã tồn tại");
+			return Send.badRequest(res, null, "Employee code already exists");
 		}
 
 		if (phoneConflict) {
-			return Send.badRequest(res, null, "Số điện thoại đã được sử dụng");
+			return Send.badRequest(res, null, "Phone number is already in use");
 		}
 
 		if (certConflict) {
-			return Send.badRequest(res, null, "Số chứng chỉ đã được sử dụng");
+			return Send.badRequest(res, null, "License number is already in use");
 		}
 
 		const [khoa, chucDanh, chucVu, vaiTro] = await Promise.all([
@@ -410,19 +410,19 @@ const updateUser = async (
 		]);
 
 		if (payload.khoaId && !khoa) {
-			return Send.badRequest(res, null, "Khoa không tồn tại");
+			return Send.badRequest(res, null, "Department does not exist");
 		}
 
 		if (payload.chucDanhId && !chucDanh) {
-			return Send.badRequest(res, null, "Chức danh không tồn tại");
+			return Send.badRequest(res, null, "Title does not exist");
 		}
 
 		if (payload.chucVuId && !chucVu) {
-			return Send.badRequest(res, null, "Chức vụ không tồn tại");
+			return Send.badRequest(res, null, "Position does not exist");
 		}
 
 		if (payload.vaiTroId && !vaiTro) {
-			return Send.badRequest(res, null, "Vai trò không tồn tại");
+			return Send.badRequest(res, null, "Role does not exist");
 		}
 
 		const updateData: Prisma.NhanVienUpdateInput = {};
@@ -461,7 +461,7 @@ const updateUser = async (
 			select: userSelect,
 		});
 
-		return Send.success(res, { user: updatedUser }, "Cập nhật người dùng thành công");
+		return Send.success(res, { user: updatedUser }, "User updated successfully");
 	} catch (error) {
 		if (error instanceof z.ZodError) {
 			return Send.validationErrors(res, error.flatten().fieldErrors);
@@ -469,7 +469,7 @@ const updateUser = async (
 
 		if (error instanceof Prisma.PrismaClientKnownRequestError) {
 			if (error.code === "P2002") {
-				return Send.badRequest(res, null, "Thông tin người dùng bị trùng lặp");
+				return Send.badRequest(res, null, "User information already exists");
 			}
 		}
 
@@ -489,7 +489,7 @@ const deleteUser = async (
 			where: { id },
 		});
 
-		return Send.success(res, null, "Xóa người dùng thành công");
+		return Send.success(res, null, "User deleted successfully");
 	} catch (error) {
 		if (error instanceof z.ZodError) {
 			return Send.validationErrors(res, error.flatten().fieldErrors);
@@ -497,11 +497,11 @@ const deleteUser = async (
 
 		if (error instanceof Prisma.PrismaClientKnownRequestError) {
 			if (error.code === "P2025") {
-				return Send.notFound(res, null, "Không tìm thấy người dùng");
+				return Send.notFound(res, null, "User not found");
 			}
 
 			if (error.code === "P2003") {
-				return Send.badRequest(res, null, "Không thể xóa người dùng vì đang được sử dụng");
+				return Send.badRequest(res, null, "Unable to delete user because it is in use");
 			}
 		}
 

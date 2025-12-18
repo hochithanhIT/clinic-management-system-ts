@@ -932,11 +932,6 @@ export const useServiceOrders = ({
       return
     }
 
-    if (!canUpdateServiceOrder(order.status)) {
-      toast.info('Service orders can only be updated before they are sent.')
-      return
-    }
-
     openServicesDialogForOrder(order.id, category)
   }
 

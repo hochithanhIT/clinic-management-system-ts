@@ -3,20 +3,20 @@ import { z } from "zod";
 const basePagination = {
   page: z.coerce
     .number()
-    .int("Trang phải là số nguyên")
-    .min(1, "Trang phải từ 1 trở lên")
-    .max(1000, "Trang không được vượt quá 1000")
+    .int("Page must be an integer")
+    .min(1, "Page must be at least 1")
+    .max(1000, "Page must not exceed 1000")
     .default(1),
   limit: z.coerce
     .number()
-    .int("Giới hạn phải là số nguyên")
-    .min(1, "Giới hạn phải từ 1 trở lên")
-    .max(100, "Giới hạn không được vượt quá 100")
+    .int("Limit must be an integer")
+    .min(1, "Limit must be at least 1")
+    .max(100, "Limit must not exceed 100")
     .default(20),
   search: z
     .string()
     .trim()
-    .max(100, "Từ khóa tìm kiếm không được vượt quá 100 ký tự")
+    .max(100, "Search term must not exceed 100 characters")
     .optional()
     .transform((value) => (value ? value : undefined)),
 };
@@ -28,13 +28,13 @@ const getProvincesQuery = z
     ...basePagination,
     cityId: z.coerce
       .number()
-      .int("Tỉnh/thành phố không hợp lệ")
-      .min(1, "Tỉnh/thành phố không hợp lệ")
+      .int("City/Province is invalid")
+      .min(1, "City/Province is invalid")
       .optional(),
     provinceId: z.coerce
       .number()
-      .int("Tỉnh/thành phố không hợp lệ")
-      .min(1, "Tỉnh/thành phố không hợp lệ")
+      .int("City/Province is invalid")
+      .min(1, "City/Province is invalid")
       .optional(),
   })
   .transform(({ cityId, provinceId, ...rest }) => ({
@@ -46,61 +46,61 @@ const addCityBody = z.object({
   maTinhTP: z
     .string()
     .trim()
-    .min(1, "Mã tỉnh/thành phố không được để trống")
-    .max(20, "Mã tỉnh/thành phố không được vượt quá 20 ký tự")
-    .regex(/^[A-Za-z0-9_-]+$/, "Mã tỉnh/thành phố chỉ được chứa chữ, số, gạch ngang và gạch dưới")
+    .min(1, "City/Province code is required")
+    .max(20, "City/Province code must not exceed 20 characters")
+    .regex(/^[A-Za-z0-9_-]+$/, "City/Province code may only contain letters, numbers, hyphens, and underscores")
     .transform((value) => value.toUpperCase()),
   tenTinhTP: z
     .string()
     .trim()
-    .min(1, "Tên tỉnh/thành phố không được để trống")
-    .max(100, "Tên tỉnh/thành phố không được vượt quá 100 ký tự"),
+    .min(1, "City/Province name is required")
+    .max(100, "City/Province name must not exceed 100 characters"),
 });
 
 const addProvinceBody = z.object({
   maXaPhuong: z
     .string()
     .trim()
-    .min(1, "Mã xã/phường không được để trống")
-    .max(20, "Mã xã/phường không được vượt quá 20 ký tự")
-    .regex(/^[A-Za-z0-9_-]+$/, "Mã xã/phường chỉ được chứa chữ, số, gạch ngang và gạch dưới")
+    .min(1, "Ward/Commune code is required")
+    .max(20, "Ward/Commune code must not exceed 20 characters")
+    .regex(/^[A-Za-z0-9_-]+$/, "Ward/Commune code may only contain letters, numbers, hyphens, and underscores")
     .transform((value) => value.toUpperCase()),
   tenXaPhuong: z
     .string()
     .trim()
-    .min(1, "Tên xã/phường không được để trống")
-    .max(100, "Tên xã/phường không được vượt quá 100 ký tự"),
+    .min(1, "Ward/Commune name is required")
+    .max(100, "Ward/Commune name must not exceed 100 characters"),
   tinhTPId: z.coerce
     .number()
-    .int("Tỉnh/thành phố không hợp lệ")
-    .min(1, "Tỉnh/thành phố không hợp lệ"),
+    .int("City/Province is invalid")
+    .min(1, "City/Province is invalid"),
 });
 
 const provinceParam = z.object({
   id: z.coerce
     .number()
-    .int("Xã/phường không hợp lệ")
-    .min(1, "Xã/phường không hợp lệ"),
+    .int("Ward/Commune is invalid")
+    .min(1, "Ward/Commune is invalid"),
 });
 
 const cityParam = z.object({
   id: z.coerce
     .number()
-    .int("Tỉnh/thành phố không hợp lệ")
-    .min(1, "Tỉnh/thành phố không hợp lệ"),
+    .int("City/Province is invalid")
+    .min(1, "City/Province is invalid"),
 });
 
 const updateCityBody = addCityBody
   .partial()
   .refine((data) => Object.values(data).some((value) => value !== undefined), {
-    message: "Không có dữ liệu cập nhật",
+    message: "No data to update",
     path: ["global"],
   });
 
 const updateProvinceBody = addProvinceBody
   .partial()
   .refine((data) => Object.values(data).some((value) => value !== undefined), {
-    message: "Không có dữ liệu cập nhật",
+    message: "No data to update",
     path: ["global"],
   });
 

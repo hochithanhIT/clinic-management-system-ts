@@ -3,8 +3,8 @@ import { z } from "zod";
 const nameSchema = z
   .string()
   .trim()
-  .min(1, "Tên loại dịch vụ là bắt buộc")
-  .max(100, "Tên loại dịch vụ không vượt quá 100 ký tự");
+  .min(1, "Service type name is required")
+  .max(100, "Service type name must not exceed 100 characters");
 
 const addServiceTypeBody = z.object({
   tenLoai: nameSchema,
@@ -13,15 +13,15 @@ const addServiceTypeBody = z.object({
 const updateServiceTypeBody = addServiceTypeBody
   .partial()
   .refine((payload) => Object.values(payload).some((value) => value !== undefined), {
-    message: "Không có dữ liệu cập nhật",
+    message: "No data to update",
     path: ["global"],
   });
 
 const serviceTypeParam = z.object({
   id: z.coerce
     .number()
-    .int("Loại dịch vụ không hợp lệ")
-    .min(1, "Loại dịch vụ không hợp lệ"),
+    .int("Service type is invalid")
+    .min(1, "Service type is invalid"),
 });
 
 const serviceTypeSchema = {

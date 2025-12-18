@@ -49,11 +49,11 @@ const changePassword = z
         confirmPassword: passwordSchema,
     })
     .refine((data) => data.newPassword === data.confirmPassword, {
-        message: "Mật khẩu xác nhận không khớp",
+        message: "Confirm password does not match",
         path: ["confirmPassword"],
     })
     .refine((data) => data.newPassword !== data.currentPassword, {
-        message: "Mật khẩu mới phải khác mật khẩu hiện tại",
+        message: "New password must be different from the current password",
         path: ["newPassword"],
     });
 //     password_confirmation: z.string().min(1, "Password confirmation is required")

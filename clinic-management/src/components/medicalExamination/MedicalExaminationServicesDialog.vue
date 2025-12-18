@@ -34,6 +34,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { normalizeText } from '@/lib/utils'
 import type { MedicalRecordSummary } from '@/services/medicalRecord'
 import type { PatientSummary } from '@/services/patient'
 import type { MedicalExaminationDetail } from '@/services/medicalExamination'
@@ -165,11 +166,15 @@ const orderDateValue = ref<CalendarDate | undefined>(undefined)
 const orderTimeValue = ref('')
 
 const normalizeServiceTypeName = (value: string | null | undefined): string => {
-  return typeof value === 'string' ? value.trim().toLocaleLowerCase('vi-VN') : ''
+  return normalizeText(value ?? '')
 }
 
+const CONSULTATION_TYPE_ALIASES = new Set(
+  ['consultation', 'exam fee', 'examination fee', 'cong kham'].map((label) => normalizeText(label)),
+)
+
 const isConsultationServiceType = (value: string | null | undefined): boolean => {
-  return normalizeServiceTypeName(value) === 'công khám'
+  return CONSULTATION_TYPE_ALIASES.has(normalizeServiceTypeName(value))
 }
 
 const shouldRequireResultForType = (value: string | null | undefined): boolean => {

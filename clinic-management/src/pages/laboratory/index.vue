@@ -381,7 +381,7 @@ const {
           :disabled="isCancelReceiveDisabled"
           :title="
             hasSavedResultsForSelectedOrder
-              ? 'Results already exist and this order cannot be reverted.'
+              ? 'Existing results will remain after cancelling receive.'
               : undefined
           "
           @click="handleCancelReceive"

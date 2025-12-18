@@ -9,6 +9,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import ComboBox from '@/components/ComboBox.vue'
+import { normalizeText } from '@/lib/utils'
+import { resolveRoleKey } from '@/lib/roles'
+import { useAuthStore } from '@/stores/auth'
 import { useWorkspaceStore } from '@/stores/workspace'
 
 definePage({
@@ -19,8 +22,30 @@ definePage({
 })
 
 const workspaceStore = useWorkspaceStore()
+const authStore = useAuthStore()
 const { department: storedDepartment, room: storedRoom } = storeToRefs(workspaceStore)
 const router = useRouter()
+
+const roleKey = computed(() => resolveRoleKey(authStore.user?.role?.name))
+const isAccountant = computed(() => roleKey.value === 'accountant')
+const isDoctor = computed(() => roleKey.value === 'doctor')
+const isNurse = computed(() => roleKey.value === 'nurse')
+const isTechnician = computed(() => roleKey.value === 'technician')
+const hideRestrictedDepartments = computed(() => isDoctor.value || isNurse.value)
+
+const financeDepartmentLabel = 'Phòng Tài Chính'
+const financeDepartmentKey = normalizeText(financeDepartmentLabel)
+const restrictedDepartmentLabels = [
+  'Khoa Chẩn Đoán Hình Ảnh',
+  'Khoa Xét Nghiệm',
+  'Khoa Dược',
+  financeDepartmentLabel,
+]
+const restrictedDepartmentKeys = restrictedDepartmentLabels.map((label) => normalizeText(label))
+const technicianAllowedDepartmentLabels = ['Khoa Chẩn Đoán Hình Ảnh', 'Khoa Xét Nghiệm']
+const technicianAllowedDepartmentKeys = technicianAllowedDepartmentLabels.map((label) =>
+  normalizeText(label),
+)
 
 const departments = ref<DepartmentSummary[]>([])
 const rooms = ref<RoomSummary[]>([])
@@ -58,16 +83,77 @@ const showErrorToast = (error: unknown, fallback: string) => {
   toast.error(message)
 }
 
+const fetchAllDepartments = async (): Promise<DepartmentSummary[]> => {
+  const collected: DepartmentSummary[] = []
+  let page = 1
+  let totalPages = 1
+
+  while (page <= totalPages) {
+    const { departments: chunk, pagination } = await getDepartments({ page, limit: 100 })
+
+    if (!chunk.length) {
+      break
+    }
+
+    collected.push(...chunk)
+    totalPages = Math.max(1, pagination.totalPages)
+    page += 1
+  }
+
+  return collected
+}
+
 const loadDepartments = async () => {
   loadingDepartments.value = true
   try {
     const previousDepartmentId = selectedDepartmentId.value
-    const result = await getDepartments({ limit: 100 })
-    departments.value = result.departments
+    const allDepartments = await fetchAllDepartments()
+
+    let availableDepartments = allDepartments
+
+    if (isAccountant.value) {
+      availableDepartments = availableDepartments.filter(
+        (department) => normalizeText(department.name) === financeDepartmentKey,
+      )
+    } else if (isTechnician.value) {
+      availableDepartments = availableDepartments.filter((department) =>
+        technicianAllowedDepartmentKeys.includes(normalizeText(department.name)),
+      )
+    } else if (hideRestrictedDepartments.value) {
+      availableDepartments = availableDepartments.filter(
+        (department) => !restrictedDepartmentKeys.includes(normalizeText(department.name)),
+      )
+    }
+
+    departments.value = availableDepartments
+
+    if (isAccountant.value && availableDepartments.length === 0) {
+      selectedDepartmentId.value = null
+      rooms.value = []
+      workspaceStore.clear()
+      toast.error(`Finance department (${financeDepartmentLabel}) is not available.`)
+      return
+    }
+
+    if (isTechnician.value && availableDepartments.length === 0) {
+      selectedDepartmentId.value = null
+      rooms.value = []
+      workspaceStore.clear()
+      toast.error('No diagnostic departments are available for your role.')
+      return
+    }
+
+    if (hideRestrictedDepartments.value && availableDepartments.length === 0) {
+      selectedDepartmentId.value = null
+      rooms.value = []
+      workspaceStore.clear()
+      toast.error('No departments available for your role.')
+      return
+    }
 
     const storedDepartmentId = storedDepartment.value?.id
     const matchedStoredDepartment = storedDepartmentId
-      ? result.departments.find((department) => department.id === storedDepartmentId)
+      ? availableDepartments.find((department) => department.id === storedDepartmentId)
       : null
 
     if (storedDepartmentId && !matchedStoredDepartment) {
@@ -78,8 +164,8 @@ const loadDepartments = async () => {
       selectedDepartmentId.value = matchedStoredDepartment.id
     }
 
-    if (!selectedDepartmentId.value) {
-      const firstDepartment = result.departments[0]
+    if (!selectedDepartmentId.value && availableDepartments.length) {
+      const firstDepartment = availableDepartments[0]
       selectedDepartmentId.value = firstDepartment ? firstDepartment.id : null
     }
 
@@ -189,6 +275,7 @@ watch(selectedDepartmentId, (departmentId) => {
                 search-placeholder="Search department..."
                 empty-message="No departments found."
                 :loading="loadingDepartments"
+                :disabled="isAccountant"
               />
             </div>
             <div class="flex flex-col space-y-1.5">

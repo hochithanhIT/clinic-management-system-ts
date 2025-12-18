@@ -38,6 +38,7 @@ import {
 import { useAuthStore } from '@/stores/auth'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { VisArea, VisAxis, VisLine, VisXYContainer } from '@unovis/vue'
+import { resolveRoleKey } from '@/lib/roles'
 
 const authStore = useAuthStore()
 
@@ -51,22 +52,10 @@ const doctorSummary = ref<DoctorSummary | null>(null)
 const hasRequestedNurseReport = ref(false)
 const hasRequestedDoctorSummary = ref(false)
 
-const normalizedRoleName = computed(() => authStore.user?.role?.name?.trim().toLowerCase() ?? '')
-const isNurse = computed(() => {
-  const name = normalizedRoleName.value
-  if (!name) {
-    return false
-  }
-  return name === 'điều dưỡng' || name === 'dieu duong' || name === 'nurse'
-})
+const resolvedRole = computed(() => resolveRoleKey(authStore.user?.role?.name))
+const isNurse = computed(() => resolvedRole.value === 'nurse')
 
-const isDoctor = computed(() => {
-  const name = normalizedRoleName.value
-  if (!name) {
-    return false
-  }
-  return name === 'bác sĩ' || name === 'bac si' || name === 'doctor' || name === 'physician'
-})
+const isDoctor = computed(() => resolvedRole.value === 'doctor')
 
 const admissionsByStaff = computed(() => nurseReport.value?.admissionsByStaff ?? [])
 

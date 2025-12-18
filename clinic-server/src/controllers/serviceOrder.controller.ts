@@ -467,7 +467,11 @@ const deleteServiceOrder = async (
       where: { pcdId: id },
       select: {
         id: true,
-        ketQua: { select: { id: true } },
+        ketQua: {
+          select: {
+            id: true,
+          },
+        },
         hoaDonChiTiet: {
           select: {
             id: true,
@@ -477,7 +481,6 @@ const deleteServiceOrder = async (
       },
     });
 
-    const hasResults = relatedDetails.some((detail) => detail.ketQua !== null);
     const hasActiveInvoices = relatedDetails.some((detail) =>
       detail.hoaDonChiTiet.some((invoiceDetail) => {
         const status = invoiceDetail.hoaDon?.trangThai;
@@ -488,15 +491,29 @@ const deleteServiceOrder = async (
       }),
     );
 
-    if (hasResults || hasActiveInvoices) {
+    if (hasActiveInvoices) {
       return Send.badRequest(
         res,
         null,
-        "Không thể xóa phiếu chỉ định đã có kết quả hoặc hóa đơn",
+        "Không thể xóa phiếu chỉ định đã được lập hóa đơn",
       );
     }
 
+    const resultIds = relatedDetails
+      .map((detail) => detail.ketQua?.id ?? null)
+      .filter((resultId): resultId is number => resultId !== null);
+
     await prisma.$transaction(async (tx) => {
+      if (resultIds.length > 0) {
+        await tx.ketQuaChiTiet.deleteMany({
+          where: { ketQuaId: { in: resultIds } },
+        });
+
+        await tx.ketQua.deleteMany({
+          where: { id: { in: resultIds } },
+        });
+      }
+
       await tx.hoaDonChiTiet.deleteMany({
         where: { ctpcdId: { in: relatedDetails.map((detail) => detail.id) } },
       });

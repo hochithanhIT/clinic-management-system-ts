@@ -3,25 +3,25 @@ import { z } from "zod";
 const getAppointmentsQuery = z.object({
   page: z.coerce
     .number()
-    .int("Trang phải là số nguyên")
-    .min(1, "Trang phải từ 1 trở lên")
-    .max(1000, "Trang không được vượt quá 1000")
+    .int("Page must be an integer")
+    .min(1, "Page must be at least 1")
+    .max(1000, "Page must not exceed 1000")
     .default(1),
   limit: z.coerce
     .number()
-    .int("Giới hạn phải là số nguyên")
-    .min(1, "Giới hạn phải từ 1 trở lên")
-    .max(100, "Giới hạn không được vượt quá 100")
+    .int("Limit must be an integer")
+    .min(1, "Limit must be at least 1")
+    .max(100, "Limit must not exceed 100")
     .default(20),
   benhNhanId: z.coerce
     .number()
-    .int("Bệnh nhân không hợp lệ")
-    .min(1, "Bệnh nhân không hợp lệ")
+    .int("Patient is invalid")
+    .min(1, "Patient is invalid")
     .optional(),
   phongId: z.coerce
     .number()
-    .int("Phòng không hợp lệ")
-    .min(1, "Phòng không hợp lệ")
+    .int("Room is invalid")
+    .min(1, "Room is invalid")
     .optional(),
   from: z.coerce.date().optional(),
   to: z.coerce.date().optional(),
@@ -34,7 +34,7 @@ const getAppointmentsQuery = z.object({
     return true;
   },
   {
-    message: "Khoảng thời gian không hợp lệ",
+    message: "Invalid time range",
     path: ["from"],
   },
 );
@@ -42,8 +42,8 @@ const getAppointmentsQuery = z.object({
 const appointmentParam = z.object({
   id: z.coerce
     .number()
-    .int("Hẹn khám không hợp lệ")
-    .min(1, "Hẹn khám không hợp lệ"),
+    .int("Appointment is invalid")
+    .min(1, "Appointment is invalid"),
 });
 
 const notesField = z
@@ -51,7 +51,7 @@ const notesField = z
     z
       .string()
       .trim()
-      .max(2000, "Ghi chú không được vượt quá 2000 ký tự"),
+      .max(2000, "Notes must not exceed 2000 characters"),
     z.null(),
   ])
   .optional()
@@ -72,26 +72,26 @@ const baseAppointmentBody = z.object({
   reason: z
     .string()
     .trim()
-    .min(1, "Lý do hẹn khám không được để trống")
-    .max(255, "Lý do hẹn khám không được vượt quá 255 ký tự"),
+    .min(1, "Appointment reason is required")
+    .max(255, "Appointment reason must not exceed 255 characters"),
   notes: notesField,
   phongId: z.coerce
     .number()
-    .int("Phòng không hợp lệ")
-    .min(1, "Phòng không hợp lệ"),
+    .int("Room is invalid")
+    .min(1, "Room is invalid"),
 });
 
 const createAppointmentBody = baseAppointmentBody.extend({
   benhNhanId: z.coerce
     .number()
-    .int("Bệnh nhân không hợp lệ")
-    .min(1, "Bệnh nhân không hợp lệ"),
+    .int("Patient is invalid")
+    .min(1, "Patient is invalid"),
 });
 
 const updateAppointmentBody = baseAppointmentBody
   .partial()
   .refine((data) => Object.values(data).some((value) => value !== undefined), {
-    message: "Không có dữ liệu cập nhật",
+    message: "No data to update",
     path: ["global"],
   });
 

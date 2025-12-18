@@ -15,6 +15,7 @@ import {
 import { getMedicalRecords, type MedicalRecordSummary } from '@/services/medicalRecord'
 import { ApiError } from '@/services/http'
 import { createResult, getResults, updateResult, type ResultSummary } from '@/services/result'
+import { normalizeText } from '@/lib/utils'
 
 export const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const
 export type PageSizeOption = (typeof PAGE_SIZE_OPTIONS)[number]
@@ -56,7 +57,9 @@ interface ResultDraft {
   deliveredAt: string
 }
 
-const SERVICE_TYPE_LABORATORY = 'xét nghiệm'
+const LAB_SERVICE_TYPE_ALIASES = new Set(
+  ['laboratory', 'lab', 'lab test', 'xet nghiem'].map((label) => normalizeText(label)),
+)
 
 export const useLaboratoryPage = () => {
   const { formatDate, formatDateTime, getDefaultFromDate, parseDateInput, startOfDay, endOfDay } =
@@ -360,11 +363,7 @@ export const useLaboratoryPage = () => {
       return true
     }
 
-    if (selectedOrder.value?.status !== 2) {
-      return true
-    }
-
-    return hasSavedResultsForSelectedOrder.value
+    return selectedOrder.value?.status !== 2
   })
 
   const normalizeDateRange = () => {
@@ -458,11 +457,11 @@ export const useLaboratoryPage = () => {
       detail.service.group?.name ??
       ''
 
-    return typeName.trim().toLowerCase()
+    return normalizeText(typeName)
   }
 
   const isLaboratoryService = (detail: ServiceOrderDetailSummary): boolean => {
-    return getServiceTypeName(detail) === SERVICE_TYPE_LABORATORY
+    return LAB_SERVICE_TYPE_ALIASES.has(getServiceTypeName(detail))
   }
 
   const mapDetailRows = (details: ServiceOrderDetailSummary[]): LaboratoryDetailRow[] => {
@@ -914,11 +913,6 @@ export const useLaboratoryPage = () => {
 
   const handleCancelReceive = async () => {
     if (!selectedOrder.value) {
-      return
-    }
-
-    if (hasSavedResultsForSelectedOrder.value) {
-      toast.warning('Results have already been recorded. Cancel receive is not allowed.')
       return
     }
 
