@@ -78,7 +78,7 @@ const systemMenu: MenuItem[] = [
 ]
 const receptionMenu: MenuRouteItem[] = [
   { name: 'Patient Registration', path: '/patient-intake/' },
-  { name: 'Follow-up Appointment', path: '/' },
+  { name: 'Follow-up Appointment', path: '/follow-up-appointment/' },
   { name: 'Administrative Info', path: '/administrative-info/' },
 ]
 const medicalExaminationMenu: MenuRouteItem[] = [

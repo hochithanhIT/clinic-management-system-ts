@@ -23,6 +23,7 @@ import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuSeparator,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
 
@@ -43,6 +44,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'select', record: MedicalRecordSummary): void
+  (e: 'history-requested', record: MedicalRecordSummary): void
   (e: 'page-change', page: number): void
   (e: 'reopen-requested', record: MedicalRecordSummary): void
 }>()
@@ -57,6 +59,10 @@ const handlePageChange = (page: number) => {
 
 const handleContextMenu = (record: MedicalRecordSummary) => {
   handleSelect(record)
+}
+
+const handleHistorySelect = (record: MedicalRecordSummary) => {
+  emit('history-requested', record)
 }
 
 const handleReopenSelect = (record: MedicalRecordSummary) => {
@@ -135,7 +141,11 @@ const paginationSummary = computed(() => {
                   <TableCell>{{ props.formatDateTime(record.enteredAt) }}</TableCell>
                 </TableRow>
               </ContextMenuTrigger>
-              <ContextMenuContent class="w-48">
+              <ContextMenuContent class="w-56">
+                <ContextMenuItem @select="handleHistorySelect(record)">
+                  View examination history
+                </ContextMenuItem>
+                <ContextMenuSeparator />
                 <ContextMenuItem
                   :disabled="record.status !== 2"
                   @select="handleReopenSelect(record)"

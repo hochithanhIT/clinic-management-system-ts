@@ -32,7 +32,7 @@ defineProps<{
   isLoading: boolean
   pagination: PaginationMeta | null
   currentPage: number
-  deletingPatientId: number | null
+  deletingRecordId: number | null
   actionDisabled: boolean
   recordsSummary: string
   formatDate: (value: string | null | undefined) => string
@@ -98,7 +98,7 @@ const formatPatientAddress = (patient: MedicalRecordSummary['patient']): string 
                 <TableRow
                   :class="[
                     'cursor-pointer outline-none transition-colors',
-                    deletingPatientId === record.patient.id ? 'opacity-60' : '',
+                    deletingRecordId === record.id ? 'opacity-60' : '',
                     selectedRecordId === record.id ? 'bg-muted/60' : 'hover:bg-muted/40',
                   ]"
                   role="button"
@@ -175,7 +175,7 @@ const formatPatientAddress = (patient: MedicalRecordSummary['patient']): string 
                   @select="emit('delete', record)"
                 >
                   <Trash2 class="h-4 w-4" />
-                  Delete patient
+                  Delete medical record
                 </ContextMenuItem>
               </ContextMenuContent>
             </ContextMenu>

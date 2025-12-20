@@ -42,14 +42,17 @@ import { ApiError } from '@/services/http'
 import { getOccupations } from '@/services/occupation'
 import { getCities, getProvinces } from '@/services/location'
 import { getRooms } from '@/services/room'
-import { createPatient, deletePatient } from '@/services/patient'
+import { createPatient, deletePatient, getPatients } from '@/services/patient'
+import type { PatientSummary } from '@/services/patient'
 import {
   createMedicalRecord,
+  deleteMedicalRecord,
   getMedicalRecords,
   updateMedicalRecord,
 } from '@/services/medicalRecord'
 import type { MedicalRecordSummary } from '@/services/medicalRecord'
 import type { PaginationMeta } from '@/services/types'
+import { normalizeText } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth'
 import { useWorkspaceStore } from '@/stores/workspace'
 
@@ -137,10 +140,10 @@ const loadingCities = ref(false)
 const loadingWards = ref(false)
 const loadingRooms = ref(false)
 const isSubmitting = ref(false)
-const deletingPatientId = ref<number | null>(null)
+const deletingRecordId = ref<number | null>(null)
 const deleteDialogOpen = ref(false)
 const pendingDeleteRecord = ref<MedicalRecordSummary | null>(null)
-const isDeletingPatient = computed(() => deletingPatientId.value !== null)
+const isDeletingRecord = computed(() => deletingRecordId.value !== null)
 const pendingDeletePatientName = computed(() => pendingDeleteRecord.value?.patient.fullName ?? '')
 const pendingDeletePatientCode = computed(() => pendingDeleteRecord.value?.patient.code ?? '')
 const pendingDeletePatientDisplay = computed(() => {
@@ -231,6 +234,8 @@ const handleLoadError = (message: string) => {
 }
 
 const FETCH_LIMIT = 100
+const PATIENT_SEARCH_LIMIT = 25
+const UNFINISHED_MEDICAL_RECORD_STATUSES = [0, 1] as const
 const OCCUPATION_PAGE_SIZE = 40
 
 const authStore = useAuthStore()
@@ -639,8 +644,8 @@ const handleRecordsPageSizeChange = async (value: AcceptableValue) => {
   await loadMedicalRecords()
 }
 
-const requestDeletePatient = (record: MedicalRecordSummary) => {
-  if (isDeletingPatient.value || medicalRecordsLoading.value) {
+const requestDeleteRecord = (record: MedicalRecordSummary) => {
+  if (isDeletingRecord.value || medicalRecordsLoading.value) {
     return
   }
 
@@ -648,26 +653,42 @@ const requestDeletePatient = (record: MedicalRecordSummary) => {
   deleteDialogOpen.value = true
 }
 
-const confirmDeletePatient = async () => {
-  if (!pendingDeleteRecord.value || isDeletingPatient.value) {
+const confirmDeleteRecord = async () => {
+  if (!pendingDeleteRecord.value || isDeletingRecord.value) {
     return
   }
 
   const target = pendingDeleteRecord.value
-  deletingPatientId.value = target.patient.id
+  deletingRecordId.value = target.id
+  const patientId = target.patient.id
   let shouldCloseDialog = false
   try {
-    await deletePatient(target.patient.id)
-    toast.success('Patient deleted successfully.')
+    await deleteMedicalRecord(target.id)
+    try {
+      const { medicalRecords: remainingRecords } = await getMedicalRecords({
+        page: 1,
+        limit: 1,
+        patientId,
+      })
+
+      if (remainingRecords.length === 0) {
+        await deletePatient(patientId)
+      }
+    } catch (cleanupError) {
+      console.warn('Unable to perform patient cleanup after deleting medical record.', cleanupError)
+    }
+    toast.success('Medical record deleted successfully.')
     pendingDeleteRecord.value = null
     shouldCloseDialog = true
     await loadMedicalRecords()
   } catch (error) {
     const message =
-      error instanceof ApiError ? error.message : 'Unable to delete patient, please try again.'
+      error instanceof ApiError
+        ? error.message
+        : 'Unable to delete medical record, please try again.'
     toast.error(message)
   } finally {
-    deletingPatientId.value = null
+    deletingRecordId.value = null
     if (shouldCloseDialog) {
       deleteDialogOpen.value = false
     }
@@ -675,7 +696,7 @@ const confirmDeletePatient = async () => {
 }
 
 const handleDeleteDialogOpenChange = (open: boolean) => {
-  if (isDeletingPatient.value) {
+  if (isDeletingRecord.value) {
     deleteDialogOpen.value = true
     return
   }
@@ -687,7 +708,7 @@ const handleDeleteDialogOpenChange = (open: boolean) => {
 }
 
 const handleChangeRoom = (record: MedicalRecordSummary) => {
-  if (medicalRecordsLoading.value || isDeletingPatient.value) {
+  if (medicalRecordsLoading.value || isDeletingRecord.value) {
     return
   }
 
@@ -1040,6 +1061,99 @@ const resolveBirthDate = (): Date | null => {
   return value.toDate(timeZone)
 }
 
+const normalizePhoneNumber = (value: string): string => value.replace(/\D/g, '')
+
+const extractBirthDateKey = (value: string | null | undefined): string | null => {
+  if (!value) {
+    return null
+  }
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return null
+  }
+
+  return date.toISOString().slice(0, 10)
+}
+
+const findExistingPatient = async ({
+  fullName,
+  birthDate,
+  phone,
+}: {
+  fullName: string
+  birthDate: Date
+  phone: string | null
+}): Promise<PatientSummary | null> => {
+  const normalizedName = normalizeText(fullName)
+  const birthDateKey = birthDate.toISOString().slice(0, 10)
+  const normalizedPhone = phone ? normalizePhoneNumber(phone) : null
+
+  const matches = (candidate: PatientSummary): boolean => {
+    if (normalizeText(candidate.fullName) !== normalizedName) {
+      return false
+    }
+
+    const candidateBirthDate = extractBirthDateKey(candidate.birthDate)
+    if (!candidateBirthDate || candidateBirthDate !== birthDateKey) {
+      return false
+    }
+
+    if (!normalizedPhone) {
+      return true
+    }
+
+    const candidatePhone = candidate.phone ? normalizePhoneNumber(candidate.phone) : null
+    if (!candidatePhone) {
+      return false
+    }
+
+    return candidatePhone === normalizedPhone
+  }
+
+  const fetchAndFind = async (searchValue: string | null): Promise<PatientSummary | null> => {
+    if (!searchValue) {
+      return null
+    }
+
+    try {
+      const { patients } = await getPatients({ search: searchValue, limit: PATIENT_SEARCH_LIMIT })
+      return patients.find(matches) ?? null
+    } catch (error) {
+      console.error('Unable to search patients.', error)
+      return null
+    }
+  }
+
+  if (phone) {
+    const foundByPhone = await fetchAndFind(phone.trim())
+    if (foundByPhone) {
+      return foundByPhone
+    }
+  }
+
+  return fetchAndFind(fullName)
+}
+
+const findUnfinishedMedicalRecord = async (
+  patientId: number,
+): Promise<MedicalRecordSummary | null> => {
+  for (const status of UNFINISHED_MEDICAL_RECORD_STATUSES) {
+    const { medicalRecords } = await getMedicalRecords({
+      page: 1,
+      limit: 1,
+      patientId,
+      status,
+    })
+
+    if (medicalRecords.length > 0) {
+      return medicalRecords[0]
+    }
+  }
+
+  return null
+}
+
 const handleSave = async () => {
   if (isSubmitting.value) {
     return
@@ -1090,16 +1204,38 @@ const handleSave = async () => {
   isSubmitting.value = true
 
   try {
-    const patient = await createPatient({
-      hoTen: trimmedName,
-      ngaySinh: birthDate.toISOString(),
-      gioiTinh: genderValueMap[form.gender],
-      ngheNghiepId: form.occupationId,
-      xaPhuongId: form.wardId,
-      ...(form.phone.trim() ? { sdt: form.phone.trim() } : {}),
-      ...(form.relativeName.trim() ? { hoTenNguoiNha: form.relativeName.trim() } : {}),
-      ...(form.relativePhone.trim() ? { sdtNguoiNha: form.relativePhone.trim() } : {}),
-    })
+    const trimmedPhone = form.phone.trim()
+    const existingPatient =
+      (await findExistingPatient({
+        fullName: trimmedName,
+        birthDate,
+        phone: trimmedPhone ? trimmedPhone : null,
+      })) ?? null
+
+    if (existingPatient) {
+      const unfinishedRecord = await findUnfinishedMedicalRecord(existingPatient.id)
+      if (unfinishedRecord) {
+        const message = unfinishedRecord.code
+          ? `This patient already has an unfinished medical record (${unfinishedRecord.code}). Please complete it before creating a new one.`
+          : 'This patient already has an unfinished medical record. Please complete it before creating a new one.'
+        setFormError(message)
+        toast.error(message)
+        return
+      }
+    }
+
+    const patient =
+      existingPatient ??
+      (await createPatient({
+        hoTen: trimmedName,
+        ngaySinh: birthDate.toISOString(),
+        gioiTinh: genderValueMap[form.gender],
+        ngheNghiepId: form.occupationId,
+        xaPhuongId: form.wardId,
+        ...(trimmedPhone ? { sdt: trimmedPhone } : {}),
+        ...(form.relativeName.trim() ? { hoTenNguoiNha: form.relativeName.trim() } : {}),
+        ...(form.relativePhone.trim() ? { sdtNguoiNha: form.relativePhone.trim() } : {}),
+      }))
 
     const medicalRecord = await createMedicalRecord({
       benhNhanId: patient.id,
@@ -1109,9 +1245,11 @@ const handleSave = async () => {
       ...(form.roomId !== null ? { phongId: form.roomId } : {}),
     })
 
-    toast.success(
-      `Patient saved successfully. Patient code: ${patient.code}, medical record: ${medicalRecord.code}.`,
-    )
+    const successMessage = existingPatient
+      ? `Existing patient reused. Patient code: ${patient.code}, medical record: ${medicalRecord.code}.`
+      : `Patient saved successfully. Patient code: ${patient.code}, medical record: ${medicalRecord.code}.`
+
+    toast.success(successMessage)
     recordsPage.value = 1
     await loadMedicalRecords()
     resetForm()
@@ -1258,8 +1396,8 @@ onMounted(() => {
                   :is-loading="medicalRecordsLoading"
                   :pagination="medicalRecordsPagination"
                   :current-page="recordsPage"
-                  :deleting-patient-id="deletingPatientId"
-                  :action-disabled="isDeletingPatient || medicalRecordsLoading"
+                  :deleting-record-id="deletingRecordId"
+                  :action-disabled="isDeletingRecord || medicalRecordsLoading"
                   :records-summary="recordsSummary"
                   :format-date="formatDate"
                   :format-date-time="formatDateTime"
@@ -1270,16 +1408,16 @@ onMounted(() => {
                   @page-change="handleRecordsPageChange"
                   @change-room="handleChangeRoom"
                   @select="handleRecordSelect"
-                  @delete="requestDeletePatient"
+                  @delete="requestDeleteRecord"
                 />
               </div>
               <DeletePatientDialog
                 :open="deleteDialogOpen"
                 :patient-display="pendingDeletePatientDisplay"
-                :is-deleting="isDeletingPatient"
+                :is-deleting="isDeletingRecord"
                 :can-confirm="Boolean(pendingDeleteRecord)"
                 @update:open="handleDeleteDialogOpenChange"
-                @confirm="confirmDeletePatient"
+                @confirm="confirmDeleteRecord"
               />
               <Dialog :open="changeRoomDialogOpen" @update:open="handleChangeRoomDialogOpenChange">
                 <DialogContent class="max-w-lg">

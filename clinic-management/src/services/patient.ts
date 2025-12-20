@@ -65,6 +65,16 @@ interface PatientResponse {
   patient: PatientResponseData
 }
 
+interface PatientListResponse {
+  patients: PatientResponseData[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+  }
+}
+
 const mapPatient = (patient: PatientResponseData): PatientSummary => {
   return {
     id: patient.id,
@@ -95,6 +105,33 @@ const mapPatient = (patient: PatientResponseData): PatientSummary => {
             : null,
         }
       : null,
+  }
+}
+
+export interface GetPatientsParams {
+  page?: number
+  limit?: number
+  search?: string
+}
+
+export interface GetPatientsResult {
+  patients: PatientSummary[]
+  pagination: PatientListResponse["pagination"]
+}
+
+export const getPatients = async (params: GetPatientsParams = {}): Promise<GetPatientsResult> => {
+  const response = await apiFetch<ApiSuccessResponse<PatientListResponse>>("/patient", {
+    method: "GET",
+    params: {
+      page: params.page,
+      limit: params.limit,
+      search: params.search,
+    },
+  })
+
+  return {
+    patients: response.data.patients.map(mapPatient),
+    pagination: response.data.pagination,
   }
 }
 

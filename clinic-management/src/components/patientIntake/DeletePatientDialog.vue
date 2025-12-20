@@ -27,11 +27,11 @@ const emit = defineEmits<{
   <AlertDialog :open="open" @update:open="emit('update:open', $event)">
     <AlertDialogContent>
       <AlertDialogHeader>
-        <AlertDialogTitle>Delete patient?</AlertDialogTitle>
+        <AlertDialogTitle>Delete medical record?</AlertDialogTitle>
         <AlertDialogDescription>
-          Are you sure you want to delete
-          <span v-if="patientDisplay" class="font-medium">"{{ patientDisplay }}"</span>
-          <span v-else class="font-medium">this patient</span>
+          Are you sure you want to delete this medical record
+          <span v-if="patientDisplay" class="font-medium">for "{{ patientDisplay }}"</span>
+          <span v-else class="font-medium">for this patient</span>
           ? This action cannot be undone.
         </AlertDialogDescription>
       </AlertDialogHeader>
@@ -44,7 +44,7 @@ const emit = defineEmits<{
           :disabled="isDeleting || !canConfirm"
           @click="emit('confirm')"
         >
-          {{ isDeleting ? 'Deleting...' : 'Delete patient' }}
+          {{ isDeleting ? 'Deleting...' : 'Delete record' }}
         </Button>
       </AlertDialogFooter>
     </AlertDialogContent>

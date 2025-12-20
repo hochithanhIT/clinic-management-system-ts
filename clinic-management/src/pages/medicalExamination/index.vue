@@ -21,6 +21,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -269,6 +277,51 @@ const selectedRecord = computed(() => {
   }
 
   return filteredRecords.value.find((record) => record.id === selectedRecordId.value) ?? null
+})
+
+const historyDialogOpen = ref(false)
+const historyRecordsLoading = ref(false)
+const historyRecordsError = ref<string | null>(null)
+const historyRecords = ref<MedicalRecordSummary[]>([])
+const historySelectedRecordId = ref<number | null>(null)
+const historyPatientId = ref<number | null>(null)
+const historyPatientName = ref('')
+const historyPatientCode = ref<string | null>(null)
+const historyExamDetails = ref<Record<number, MedicalExaminationDetail | null>>({})
+const historyExamLoadingId = ref<number | null>(null)
+
+const historySelectedRecord = computed(() => {
+  const recordId = historySelectedRecordId.value
+  if (recordId === null) {
+    return null
+  }
+
+  return historyRecords.value.find((record) => record.id === recordId) ?? null
+})
+
+const historySelectedExamDetail = computed(() => {
+  const recordId = historySelectedRecordId.value
+  if (recordId === null) {
+    return null
+  }
+
+  return historyExamDetails.value[recordId] ?? null
+})
+
+const historyExamLoading = computed(() => {
+  const recordId = historySelectedRecordId.value
+  return recordId !== null && historyExamLoadingId.value === recordId
+})
+
+const historyPatientDisplay = computed(() => {
+  const name = historyPatientName.value.trim()
+  const code = historyPatientCode.value?.trim() ?? ''
+
+  if (name && code) {
+    return `${name} (${code})`
+  }
+
+  return name || code
 })
 
 const startExamDisabled = computed(() => {
@@ -913,6 +966,62 @@ const toDisplayNumber = (value: number | null | undefined, fractionDigits?: numb
   return fractionDigits !== undefined ? numeric.toFixed(fractionDigits) : String(numeric)
 }
 
+const formatHistoryText = (value: string | null | undefined): string => {
+  if (!value) {
+    return '—'
+  }
+
+  const trimmed = value.trim()
+  return trimmed.length ? trimmed : '—'
+}
+
+const historyExamMetrics = computed(() => {
+  const exam = historySelectedExamDetail.value
+
+  if (!exam) {
+    return {
+      weight: '—',
+      height: '—',
+      bmi: '—',
+      pulse: '—',
+      temperature: '—',
+      respiratoryRate: '—',
+      bloodPressure: '—',
+    }
+  }
+
+  const weightDisplay = toDisplayNumber(exam.weight, 1)
+  const heightDisplay = toDisplayNumber(exam.height, 1)
+  const bmiDisplay = toDisplayNumber(exam.bmi, 1)
+  const pulseDisplay = toDisplayNumber(exam.pulse)
+  const temperatureDisplay = toDisplayNumber(exam.temperature, 1)
+  const respiratoryDisplay = toDisplayNumber(exam.respiratoryRate)
+
+  let bloodPressure = '—'
+  const systolic = exam.systolicBloodPressure
+  const diastolic = exam.diastolicBloodPressure
+
+  if (systolic !== null || diastolic !== null) {
+    if (systolic !== null && diastolic !== null) {
+      bloodPressure = `${systolic}/${diastolic} mmHg`
+    } else if (systolic !== null) {
+      bloodPressure = `${systolic} mmHg`
+    } else if (diastolic !== null) {
+      bloodPressure = `${diastolic} mmHg`
+    }
+  }
+
+  return {
+    weight: weightDisplay ? `${weightDisplay} kg` : '—',
+    height: heightDisplay ? `${heightDisplay} cm` : '—',
+    bmi: bmiDisplay ?? '—',
+    pulse: pulseDisplay ? `${pulseDisplay} bpm` : '—',
+    temperature: temperatureDisplay ? `${temperatureDisplay} °C` : '—',
+    respiratoryRate: respiratoryDisplay ? `${respiratoryDisplay} breaths/min` : '—',
+    bloodPressure,
+  }
+})
+
 const medicalRecordExamBloodPressure = computed(() => {
   const examination = medicalRecordExamination.value
 
@@ -1553,6 +1662,8 @@ const handleConfirmDeleteOrder = async () => {
 }
 
 let fetchToken = 0
+let historyFetchToken = 0
+let historyExamDetailToken = 0
 
 const loadRecords = async () => {
   if (!hasWorkspaceSelection.value) {
@@ -1662,6 +1773,161 @@ const handlePageSizeChange = (value: AcceptableValue) => {
   currentPage.value = 1
 }
 
+const resetHistoryDialogState = () => {
+  historyRecordsLoading.value = false
+  historyRecordsError.value = null
+  historyRecords.value = []
+  historySelectedRecordId.value = null
+  historyPatientId.value = null
+  historyPatientName.value = ''
+  historyPatientCode.value = null
+  historyExamDetails.value = {}
+  historyExamLoadingId.value = null
+}
+
+const loadHistoryRecords = async (patientId: number, targetRecordId?: number) => {
+  historyFetchToken += 1
+  const requestId = historyFetchToken
+
+  historyRecordsLoading.value = true
+  historyRecordsError.value = null
+  historyRecords.value = []
+  historySelectedRecordId.value = null
+  historyExamDetails.value = {}
+  historyExamLoadingId.value = null
+
+  try {
+    const aggregated: MedicalRecordSummary[] = []
+    let page = 1
+    let totalPages = 1
+
+    while (page <= totalPages) {
+      const { medicalRecords, pagination } = await getMedicalRecords({
+        patientId,
+        page,
+        limit: 100,
+      })
+
+      aggregated.push(...medicalRecords)
+      totalPages = Math.max(1, pagination.totalPages)
+      page += 1
+    }
+
+    if (
+      requestId !== historyFetchToken ||
+      historyPatientId.value !== patientId ||
+      !historyDialogOpen.value
+    ) {
+      return
+    }
+
+    const toTimestamp = (value: string): number => {
+      const time = new Date(value).getTime()
+      return Number.isNaN(time) ? 0 : time
+    }
+
+    const sorted = aggregated.sort((a, b) => toTimestamp(b.enteredAt) - toTimestamp(a.enteredAt))
+
+    historyRecords.value = sorted
+
+    if (!sorted.length) {
+      historySelectedRecordId.value = null
+      return
+    }
+
+    const initialRecord =
+      (typeof targetRecordId === 'number'
+        ? sorted.find((record) => record.id === targetRecordId)
+        : undefined) ?? sorted[0]
+
+    historySelectedRecordId.value = initialRecord.id
+  } catch (error) {
+    if (
+      requestId !== historyFetchToken ||
+      historyPatientId.value !== patientId ||
+      !historyDialogOpen.value
+    ) {
+      return
+    }
+
+    const message =
+      error instanceof ApiError
+        ? error.message
+        : 'Unable to load medical history. Please try again.'
+    historyRecordsError.value = message
+    toast.error(message)
+  } finally {
+    if (requestId === historyFetchToken) {
+      historyRecordsLoading.value = false
+    }
+  }
+}
+
+const loadHistoryExamDetail = async (recordId: number) => {
+  if (!historyDialogOpen.value) {
+    return
+  }
+
+  if (Object.prototype.hasOwnProperty.call(historyExamDetails.value, recordId)) {
+    return
+  }
+
+  historyExamDetailToken += 1
+  const requestId = historyExamDetailToken
+
+  historyExamLoadingId.value = recordId
+
+  try {
+    const detail = await getMedicalExaminationByMedicalRecord(recordId)
+
+    if (requestId !== historyExamDetailToken || !historyDialogOpen.value) {
+      return
+    }
+
+    historyExamDetails.value = {
+      ...historyExamDetails.value,
+      [recordId]: detail,
+    }
+  } catch (error) {
+    if (requestId !== historyExamDetailToken || !historyDialogOpen.value) {
+      return
+    }
+
+    const message =
+      error instanceof ApiError
+        ? error.message
+        : 'Unable to load examination details. Please try again.'
+    toast.error(message)
+    historyExamDetails.value = {
+      ...historyExamDetails.value,
+      [recordId]: null,
+    }
+  } finally {
+    if (requestId === historyExamDetailToken && historyExamLoadingId.value === recordId) {
+      historyExamLoadingId.value = null
+    }
+  }
+}
+
+const handleHistoryRequested = (record: MedicalRecordSummary) => {
+  resetHistoryDialogState()
+
+  historyPatientId.value = record.patient.id
+  historyPatientName.value = record.patient.fullName
+  historyPatientCode.value = record.patient.code ?? null
+  historyDialogOpen.value = true
+
+  void loadHistoryRecords(record.patient.id, record.id)
+}
+
+const handleHistoryRecordSelect = (record: MedicalRecordSummary) => {
+  if (historySelectedRecordId.value === record.id) {
+    return
+  }
+
+  historySelectedRecordId.value = record.id
+}
+
 const handleStartExamination = async () => {
   if (!selectedRecord.value || selectedRecord.value.status !== 0) {
     return
@@ -1747,6 +2013,25 @@ const handleResetFilters = async () => {
   filters.status = 'all'
   await applyFilters()
 }
+
+watch(historyDialogOpen, (open) => {
+  if (!open) {
+    resetHistoryDialogState()
+  }
+})
+
+watch(
+  () => historySelectedRecordId.value,
+  (recordId) => {
+    if (recordId === null || !historyDialogOpen.value) {
+      return
+    }
+
+    if (!Object.prototype.hasOwnProperty.call(historyExamDetails.value, recordId)) {
+      void loadHistoryExamDetail(recordId)
+    }
+  },
+)
 
 watch(
   () => [selectedDepartment.value?.id ?? null, selectedRoom.value?.id ?? null],
@@ -1885,6 +2170,7 @@ watch(filteredRecords, (list) => {
                     :get-disposition-label="getDispositionLabel"
                     :format-date-time="formatDateTime"
                     @select="handleRowSelect"
+                    @history-requested="handleHistoryRequested"
                     @page-change="handlePageChange"
                     @reopen-requested="handleRequestReopenRecord"
                   />
@@ -3021,6 +3307,355 @@ watch(filteredRecords, (list) => {
         :initial-value="followUpAppointment"
         @save="handleFollowUpDialogSave"
       />
+      <Dialog v-model:open="historyDialogOpen">
+        <DialogContent class="w-full sm:max-w-5xl md:max-w-6xl lg:max-w-7xl">
+          <DialogHeader>
+            <DialogTitle>Examination history</DialogTitle>
+            <DialogDescription v-if="historyPatientDisplay">
+              {{ historyPatientDisplay }}
+            </DialogDescription>
+          </DialogHeader>
+          <div class="grid gap-4 md:grid-cols-[minmax(0,16rem)_minmax(0,1fr)]">
+            <div class="space-y-3">
+              <div
+                v-if="historyRecordsLoading"
+                class="flex items-center gap-2 text-sm text-muted-foreground"
+              >
+                <Loader2 class="h-4 w-4 animate-spin" />
+                Loading medical history...
+              </div>
+              <Alert v-else-if="historyRecordsError" variant="destructive">
+                <AlertCircle class="mr-2 h-5 w-5" />
+                <AlertTitle>Unable to load medical history</AlertTitle>
+                <AlertDescription>
+                  {{ historyRecordsError }}
+                </AlertDescription>
+              </Alert>
+              <div
+                v-else-if="!historyRecords.length"
+                class="rounded-md border border-dashed px-3 py-4 text-sm text-muted-foreground"
+              >
+                No medical records found for this patient.
+              </div>
+              <ul v-else class="max-h-80 space-y-2 overflow-y-auto pr-1">
+                <li v-for="record in historyRecords" :key="record.id">
+                  <button
+                    type="button"
+                    class="w-full rounded-md border px-3 py-2 text-left text-sm transition-colors"
+                    :class="[
+                      record.id === historySelectedRecordId
+                        ? 'border-primary bg-primary/10'
+                        : 'hover:border-primary/50 hover:bg-muted/70',
+                    ]"
+                    @click="handleHistoryRecordSelect(record)"
+                  >
+                    <div class="flex items-center justify-between gap-2">
+                      <span class="font-semibold text-foreground">
+                        {{ record.code || 'No code' }}
+                      </span>
+                      <span
+                        class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                      >
+                        {{ getMedicalRecordStatusLabel(record.status) }}
+                      </span>
+                    </div>
+                    <p class="mt-1 text-xs text-muted-foreground">
+                      {{ formatDateTime(record.enteredAt) }}
+                    </p>
+                    <p class="mt-1 text-xs text-muted-foreground">
+                      {{ formatHistoryText(record.reason) }}
+                    </p>
+                  </button>
+                </li>
+              </ul>
+            </div>
+            <div class="space-y-4">
+              <div
+                v-if="historyRecordsLoading"
+                class="py-12 text-center text-sm text-muted-foreground"
+              >
+                Loading examination details...
+              </div>
+              <div
+                v-else-if="!historySelectedRecord"
+                class="py-12 text-center text-sm text-muted-foreground"
+              >
+                Select a medical record to view examination details.
+              </div>
+              <template v-else>
+                <div class="rounded-md border px-4 py-3">
+                  <h4 class="text-sm font-semibold text-foreground">Medical record</h4>
+                  <dl class="mt-3 grid gap-2 text-sm md:grid-cols-2">
+                    <div>
+                      <dt class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        Record code
+                      </dt>
+                      <dd class="text-foreground">{{ historySelectedRecord.code || '—' }}</dd>
+                    </div>
+                    <div>
+                      <dt class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        Status
+                      </dt>
+                      <dd class="text-foreground">
+                        {{ getMedicalRecordStatusLabel(historySelectedRecord.status) }}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        Entered at
+                      </dt>
+                      <dd class="text-foreground">
+                        {{ formatDateTime(historySelectedRecord.enteredAt) }}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        Completed at
+                      </dt>
+                      <dd class="text-foreground">
+                        {{ formatDateTime(historySelectedRecord.completedAt) }}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        Clinic room
+                      </dt>
+                      <dd class="text-foreground">
+                        {{ historySelectedRecord.clinicRoom?.name ?? '—' }}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        Doctor in charge
+                      </dt>
+                      <dd class="text-foreground">
+                        {{ formatStaffLabel(historySelectedRecord.doctor, 'Not assigned') }}
+                      </dd>
+                    </div>
+                    <div class="md:col-span-2">
+                      <dt class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        Admission reason
+                      </dt>
+                      <dd class="text-foreground">
+                        {{ formatHistoryText(historySelectedRecord.reason) }}
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+                <div class="rounded-md border px-4 py-3">
+                  <div class="flex items-center gap-2">
+                    <h4 class="text-sm font-semibold text-foreground">Examination</h4>
+                    <Loader2
+                      v-if="historyExamLoading"
+                      class="h-4 w-4 animate-spin text-muted-foreground"
+                    />
+                  </div>
+                  <div v-if="historyExamLoading" class="mt-3 text-sm text-muted-foreground">
+                    Loading examination details...
+                  </div>
+                  <div v-else-if="historySelectedExamDetail" class="space-y-4">
+                    <dl class="grid gap-2 text-sm md:grid-cols-2">
+                      <div>
+                        <dt
+                          class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                        >
+                          Exam time
+                        </dt>
+                        <dd class="text-foreground">
+                          {{ formatDateTime(historySelectedExamDetail.examTime) }}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt
+                          class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                        >
+                          Disposition
+                        </dt>
+                        <dd class="text-foreground">
+                          {{
+                            normalizeDispositionValue(historySelectedExamDetail.disposition) ??
+                            formatHistoryText(historySelectedExamDetail.disposition)
+                          }}
+                        </dd>
+                      </div>
+                      <div class="md:col-span-2">
+                        <dt
+                          class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                        >
+                          Treatment method
+                        </dt>
+                        <dd class="text-foreground">
+                          {{ formatHistoryText(historySelectedExamDetail.treatmentMethod) }}
+                        </dd>
+                      </div>
+                    </dl>
+                    <div class="grid gap-3 md:grid-cols-2">
+                      <div>
+                        <p
+                          class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                        >
+                          General assessment
+                        </p>
+                        <p class="text-sm text-foreground">
+                          {{ formatHistoryText(historySelectedExamDetail.generalAssessment) }}
+                        </p>
+                      </div>
+                      <div>
+                        <p
+                          class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                        >
+                          System assessment
+                        </p>
+                        <p class="text-sm text-foreground">
+                          {{ formatHistoryText(historySelectedExamDetail.systemAssessment) }}
+                        </p>
+                      </div>
+                      <div>
+                        <p
+                          class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                        >
+                          Medical history
+                        </p>
+                        <p class="text-sm text-foreground">
+                          {{ formatHistoryText(historySelectedExamDetail.diseaseProgression) }}
+                        </p>
+                      </div>
+                      <div>
+                        <p
+                          class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                        >
+                          Personal history
+                        </p>
+                        <p class="text-sm text-foreground">
+                          {{ formatHistoryText(historySelectedExamDetail.personalHistory) }}
+                        </p>
+                      </div>
+                      <div>
+                        <p
+                          class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                        >
+                          Family history
+                        </p>
+                        <p class="text-sm text-foreground">
+                          {{ formatHistoryText(historySelectedExamDetail.familyHistory) }}
+                        </p>
+                      </div>
+                      <div>
+                        <p
+                          class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                        >
+                          Initial diagnosis
+                        </p>
+                        <p class="text-sm text-foreground">
+                          {{ formatHistoryText(historySelectedExamDetail.initialDiagnosis) }}
+                        </p>
+                      </div>
+                    </div>
+                    <div>
+                      <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        Diagnoses
+                      </p>
+                      <div
+                        v-if="historySelectedExamDetail.diagnoses.length"
+                        class="mt-2 space-y-2 text-sm"
+                      >
+                        <div
+                          v-for="diagnosis in historySelectedExamDetail.diagnoses"
+                          :key="`${diagnosis.diseaseId}-${diagnosis.isPrimary}`"
+                          class="flex flex-wrap items-center gap-2"
+                        >
+                          <span
+                            class="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary"
+                          >
+                            {{ diagnosis.isPrimary ? 'Primary' : 'Secondary' }}
+                          </span>
+                          <span class="font-medium text-foreground">
+                            {{ diagnosis.disease?.code ?? '—' }}
+                          </span>
+                          <span class="text-muted-foreground">
+                            {{ diagnosis.disease?.name ?? '—' }}
+                          </span>
+                        </div>
+                      </div>
+                      <p v-else class="mt-2 text-sm text-muted-foreground">
+                        No diagnoses recorded.
+                      </p>
+                    </div>
+                    <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                      <div>
+                        <p
+                          class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                        >
+                          Weight
+                        </p>
+                        <p class="text-sm text-foreground">{{ historyExamMetrics.weight }}</p>
+                      </div>
+                      <div>
+                        <p
+                          class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                        >
+                          Height
+                        </p>
+                        <p class="text-sm text-foreground">{{ historyExamMetrics.height }}</p>
+                      </div>
+                      <div>
+                        <p
+                          class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                        >
+                          BMI
+                        </p>
+                        <p class="text-sm text-foreground">{{ historyExamMetrics.bmi }}</p>
+                      </div>
+                      <div>
+                        <p
+                          class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                        >
+                          Pulse
+                        </p>
+                        <p class="text-sm text-foreground">{{ historyExamMetrics.pulse }}</p>
+                      </div>
+                      <div>
+                        <p
+                          class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                        >
+                          Temperature
+                        </p>
+                        <p class="text-sm text-foreground">{{ historyExamMetrics.temperature }}</p>
+                      </div>
+                      <div>
+                        <p
+                          class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                        >
+                          Respiratory Rate
+                        </p>
+                        <p class="text-sm text-foreground">
+                          {{ historyExamMetrics.respiratoryRate }}
+                        </p>
+                      </div>
+                      <div>
+                        <p
+                          class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                        >
+                          Blood Pressure
+                        </p>
+                        <p class="text-sm text-foreground">
+                          {{ historyExamMetrics.bloodPressure }}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <p v-else class="mt-3 text-sm text-muted-foreground">
+                    No examination has been recorded for this medical record.
+                  </p>
+                </div>
+              </template>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" @click="historyDialogOpen = false">Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <AlertDialog :open="deleteOrderDialogOpen" @update:open="handleDeleteDialogOpenChange">
         <AlertDialogContent>
           <AlertDialogHeader>

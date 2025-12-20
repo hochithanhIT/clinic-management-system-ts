@@ -730,8 +730,82 @@ const deleteMedicalRecord = async (
     const { id }: MedicalRecordParam =
       medicalRecordSchema.medicalRecordParam.parse(req.params);
 
-    await prisma.benhAn.delete({
+    const existingRecord = await prisma.benhAn.findUnique({
       where: { id },
+      select: { id: true, trangThai: true },
+    });
+
+    if (!existingRecord) {
+      return Send.notFound(res, null, "Không tìm thấy bệnh án");
+    }
+
+    if (existingRecord.trangThai === clinicConstants.medicalRecordStatus.completed) {
+      return Send.badRequest(
+        res,
+        null,
+        "Completed medical records cannot be deleted.",
+      );
+    }
+
+    await prisma.$transaction(async (tx) => {
+      const examinationSheet = await tx.phieuKhamBenh.findUnique({
+        where: { benhAnId: id },
+        select: { id: true },
+      });
+
+      if (examinationSheet) {
+        await tx.chanDoan.deleteMany({ where: { pkbId: examinationSheet.id } });
+        await tx.phieuKhamBenh.delete({ where: { id: examinationSheet.id } });
+      }
+
+      await tx.ketQuaChiTiet.deleteMany({
+        where: {
+          ketQua: {
+            chiTietPCD: {
+              phieuChiDinh: {
+                benhAnId: id,
+              },
+            },
+          },
+        },
+      });
+
+      await tx.ketQua.deleteMany({
+        where: {
+          chiTietPCD: {
+            phieuChiDinh: {
+              benhAnId: id,
+            },
+          },
+        },
+      });
+
+      await tx.hoaDonChiTiet.deleteMany({
+        where: {
+          OR: [
+            { hoaDon: { benhAnId: id } },
+            {
+              chiTietPCD: {
+                phieuChiDinh: {
+                  benhAnId: id,
+                },
+              },
+            },
+          ],
+        },
+      });
+
+      await tx.hoaDon.deleteMany({ where: { benhAnId: id } });
+
+      await tx.chiTietPhieuChiDinh.deleteMany({
+        where: {
+          phieuChiDinh: { benhAnId: id },
+        },
+      });
+
+      await tx.phieuChiDinh.deleteMany({ where: { benhAnId: id } });
+
+      await tx.benhAn.delete({ where: { id } });
     });
 
     return Send.success(res, null, "Xóa bệnh án thành công");

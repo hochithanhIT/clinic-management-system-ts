@@ -423,7 +423,7 @@ const deletePatient = async (
       return Send.badRequest(
         res,
         null,
-        "Không thể xóa bệnh nhân vì đã có phiếu khám bệnh hoặc phiếu chỉ định dịch vụ",
+        "Unable to delete this patient because medical records or service orders already exist",
       );
     }
 

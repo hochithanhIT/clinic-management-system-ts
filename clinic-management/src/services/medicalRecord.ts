@@ -341,6 +341,12 @@ export const updateMedicalRecord = async (
   return mapMedicalRecord(medicalRecord)
 }
 
+export const deleteMedicalRecord = async (medicalRecordId: number): Promise<void> => {
+  await apiFetch<ApiSuccessResponse<null>>(`/medical-record/${medicalRecordId}`, {
+    method: "DELETE",
+  })
+}
+
 const mapMedicalRecord = (record: GetMedicalRecordsResponse["medicalRecords"][number]): MedicalRecordSummary => {
   const mapStaff = (
     staff: CreateMedicalRecordResponse["medicalRecord"]["nvTiepNhan"],

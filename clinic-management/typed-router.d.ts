@@ -86,6 +86,13 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/followUpAppointment/': RouteRecordInfo<
+      '/followUpAppointment/',
+      '/followUpAppointment',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
     '/laboratory/': RouteRecordInfo<
       '/laboratory/',
       '/laboratory',
@@ -192,6 +199,12 @@ declare module 'vue-router/auto-routes' {
     'src/pages/changePassword/index.vue': {
       routes:
         | '/changePassword/'
+      views:
+        | never
+    }
+    'src/pages/followUpAppointment/index.vue': {
+      routes:
+        | '/followUpAppointment/'
       views:
         | never
     }
