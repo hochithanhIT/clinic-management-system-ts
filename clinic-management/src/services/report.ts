@@ -60,6 +60,50 @@ export interface DoctorSummary {
   range: "day" | "week" | "month" | "year"
 }
 
+interface AccountantRevenueReportResponse {
+  period: "daily" | "monthly" | "yearly"
+  range: {
+    start: string
+    end: string
+  }
+  totalRevenue: number
+  totalInvoices: number
+  breakdown: Array<{
+    employeeId: number
+    employeeCode: string
+    employeeName: string
+    totalRevenue: number
+    invoiceCount: number
+  }>
+  timeline: Array<{
+    date: string
+    totalRevenue: number
+    invoiceCount: number
+  }>
+}
+
+export interface AccountantRevenueReport {
+  period: "daily" | "monthly" | "yearly"
+  range: {
+    start: string
+    end: string
+  }
+  totalRevenue: number
+  totalInvoices: number
+  breakdown: Array<{
+    employeeId: number
+    employeeCode: string
+    employeeName: string
+    totalRevenue: number
+    invoiceCount: number
+  }>
+  timeline: Array<{
+    date: string
+    totalRevenue: number
+    invoiceCount: number
+  }>
+}
+
 export const getNurseReceptionReport = async (params?: {
   detailRange?: "day" | "week" | "month" | "year"
 }): Promise<NurseReceptionReport> => {
@@ -132,5 +176,54 @@ export const getDoctorSummary = async (params?: {
       examinedAt: item.examinedAt,
     })),
     range: response.data.range,
+  }
+}
+
+export const getAccountantRevenueReport = async (params?: {
+  period?: "daily" | "monthly" | "yearly"
+  from?: string
+  to?: string
+}): Promise<AccountantRevenueReport> => {
+  const searchParams = new URLSearchParams()
+
+  if (params?.period) {
+    searchParams.set("period", params.period)
+  }
+
+  if (params?.from) {
+    searchParams.set("from", params.from)
+  }
+
+  if (params?.to) {
+    searchParams.set("to", params.to)
+  }
+
+  const query = searchParams.toString()
+  const url = `/report/accountant-revenue${query ? `?${query}` : ""}`
+
+  const response = await apiFetch<ApiSuccessResponse<AccountantRevenueReportResponse>>(url, {
+    method: "GET",
+  })
+
+  return {
+    period: response.data.period,
+    range: {
+      start: response.data.range.start,
+      end: response.data.range.end,
+    },
+    totalRevenue: response.data.totalRevenue,
+    totalInvoices: response.data.totalInvoices,
+    breakdown: response.data.breakdown.map((item) => ({
+      employeeId: item.employeeId,
+      employeeCode: item.employeeCode,
+      employeeName: item.employeeName,
+      totalRevenue: item.totalRevenue,
+      invoiceCount: item.invoiceCount,
+    })),
+    timeline: response.data.timeline.map((item) => ({
+      date: item.date,
+      totalRevenue: item.totalRevenue,
+      invoiceCount: item.invoiceCount,
+    })),
   }
 }

@@ -16,4 +16,10 @@ router.get(
   reportController.getDoctorSummary
 );
 
+router.get(
+  "/accountant-revenue",
+  authMiddleware.authenticateUser,
+  reportController.getAccountantRevenueReport
+);
+
 export default router;
